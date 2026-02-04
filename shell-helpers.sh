@@ -101,17 +101,17 @@ function wty() {
 
   # Create session if it doesn't exist
   if ! tmux has-session -t "$session_name" 2>/dev/null; then
-    # Create new session with claude on the left
+    # Create new session with claude on the left (pane 0)
     tmux new-session -d -s "$session_name" -c "$dir" "claude"
 
-    # Split horizontally - terminal on the right
-    tmux split-window -h -t "$session_name" -c "$dir"
+    # Split horizontally - terminal on the right (pane 1)
+    tmux split-window -h -t "${session_name}:0.0" -c "$dir"
 
-    # Split the right pane (terminal) vertically - yazi at bottom right
-    tmux split-window -v -t "$session_name" -c "$dir" "y"
+    # Split pane 1 vertically - yazi at bottom right (pane 2)
+    tmux split-window -v -t "${session_name}:0.1" -c "$dir" "y"
 
     # Select the terminal pane (top right, pane 1)
-    tmux select-pane -t "$session_name:0.1"
+    tmux select-pane -t "${session_name}:0.1"
   fi
 
   # Attach or switch depending on whether we're in tmux
@@ -330,17 +330,17 @@ function wtyg() {
 
   # Create session if it doesn't exist
   if ! tmux has-session -t "$session_name" 2>/dev/null; then
-    # Create new session with claude on the left
+    # Create new session with claude on the left (pane 0)
     tmux new-session -d -s "$session_name" -c "$dir" "claude"
 
-    # Split horizontally - terminal on the right
-    tmux split-window -h -t "$session_name" -c "$dir"
+    # Split horizontally - terminal on the right (pane 1)
+    tmux split-window -h -t "${session_name}:0.0" -c "$dir"
 
-    # Split the right pane (terminal) vertically - yazi at bottom right
-    tmux split-window -v -t "$session_name" -c "$dir" "y"
+    # Split pane 1 vertically - yazi at bottom right (pane 2)
+    tmux split-window -v -t "${session_name}:0.1" -c "$dir" "y"
 
     # Select the terminal pane (top right, pane 1)
-    tmux select-pane -t "$session_name:0.1"
+    tmux select-pane -t "${session_name}:0.1"
   fi
 
   # Attach or switch depending on whether we're in tmux
