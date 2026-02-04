@@ -11,6 +11,9 @@ All notable changes to this project will be documented in this file.
   - tmux: `%hidden` color variables, true color RGB support
   - Starship: `palette` feature for consistent colors
   - Yazi: full v26.x theme format with all sections
+- **Rules in CLAUDE.md**:
+  - Never clone repos (use worktrees instead)
+  - Never use /tmp for code or worktrees
 
 ### Changed
 - **`wt` now opens tmux layout** - same behavior as `wty` (claude + terminal + yazi)
