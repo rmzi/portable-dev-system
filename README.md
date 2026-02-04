@@ -82,6 +82,7 @@ The installer modifies these files on your system:
 | `.claude/settings.json` | Created |
 | `.claude/hooks.json` | Created |
 | `.claude/skills/*.md` | Created |
+| `.claude/.pds-version` | Version marker for updates |
 
 ### Existing Claude Config (Collision Handling)
 
@@ -96,6 +97,32 @@ Merge the PDS skills from .pds-incoming/ with my existing .claude/ config.
 Add the Skills System section from .pds-incoming/CLAUDE.md to my CLAUDE.md,
 copy any new skills, and remove .pds-incoming/
 ```
+
+---
+
+## Updating PDS
+
+### Update project skills
+
+```bash
+cd ~/your-project
+pds-update
+```
+
+This updates `.claude/skills/*.md` to the latest version. Project-specific skills (in subdirectories) are untouched.
+
+### Update system shell helpers
+
+```bash
+pds-update -s
+source ~/.pds/shell-helpers.sh
+```
+
+This updates `~/.pds/shell-helpers.sh` to get new commands and fixes.
+
+### Version tracking
+
+PDS tracks the installed version in `.claude/.pds-version`. Run `pds-update` to check if updates are available.
 
 ---
 
