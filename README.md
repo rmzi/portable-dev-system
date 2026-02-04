@@ -30,7 +30,7 @@
 
 ```bash
 # 1. Install dependencies
-brew install yazi zoxide fzf ripgrep fd bat starship tmux
+brew install yazi zoxide fzf ripgrep fd bat starship tmux lazygit
 
 # 2. Run installer
 curl -fsSL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash
