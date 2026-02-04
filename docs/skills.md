@@ -13,7 +13,6 @@ Skills encode team knowledge and workflows. Claude reads and follows them automa
 | `/test` | Test strategy and patterns | Writing or running tests |
 | `/design` | Architecture decision records | New features, significant changes |
 | `/worktree` | Git worktree workflow | Branch isolation, parallel work |
-| `/bootstrap` | New project setup | Starting a new project |
 | `/quickref` | Command cheatsheet | Quick reference |
 
 ---
@@ -40,9 +39,6 @@ Architecture Decision Records (ADRs) format. Documents the "why" behind signific
 
 ### /worktree
 Git worktrees for isolated parallel development. Commands, naming conventions, workflow patterns. Use when working on multiple branches simultaneously.
-
-### /bootstrap
-New project setup checklist: structure, tooling, CI/CD, documentation. Use when starting a new project from scratch.
 
 ### /quickref
 Quick reference for common commands: git, tmux, shell helpers. Handy cheatsheet.

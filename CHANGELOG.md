@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.1] - 2026-02-04
+
+### Removed
+- `/bootstrap` skill - redundant with `pds-init` and README quick start
+
 ## [0.6.0] - 2026-02-04
 
 ### Added

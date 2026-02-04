@@ -31,7 +31,6 @@ Terminal-first, AI-assisted dev methodology using worktrees for isolation.
 | `/test` | Writing or running tests |
 | `/design` | Architecture decisions, new features |
 | `/worktree` | Branch isolation, parallel work |
-| `/bootstrap` | New project setup |
 | `/quickref` | Command reference |
 
 ---
