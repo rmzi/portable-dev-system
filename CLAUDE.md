@@ -37,6 +37,16 @@ Terminal-first, AI-assisted dev methodology using worktrees for isolation.
 
 ## Key Commands
 
-- `wty` - Open worktree in tmux layout
+- `wt` / `wty` - Pick worktree, open in tmux layout
 - `wta -b feature/x` - Create new worktree + branch
+- `wts` - Global session picker (from anywhere)
 - `clauder` - Resume Claude session for current directory
+
+---
+
+## Rules
+
+**NEVER clone the repository.** Always use git worktrees for isolation:
+- Need a new branch? Use `git worktree add` or `wta -b branch`
+- Need to work on existing branch? Use `git worktree add` or `wta branch`
+- Cloning creates disconnected copies. Worktrees share git history and stay in sync.
