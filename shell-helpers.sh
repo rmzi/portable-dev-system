@@ -42,46 +42,63 @@ function wt() {
 }
 
 # wty - fuzzy pick a worktree and open tmux layout with claude, terminal, and yazi
+#       or create a new worktree: wty branch | wty -b new-branch
 # Layout: ┌─────────────┬─────────────┐
 #         │             │  terminal   │
 #         │   claude    ├─────────────┤
 #         │             │    yazi     │
 #         └─────────────┴─────────────┘
 function wty() {
-  local selection=$(git worktree list 2>/dev/null | \
-    awk '{
-      path=$1
-      branch=$NF
-      gsub(/\[|\]/, "", branch)
-      n=split(path, parts, "/")
-      dir=parts[n]
-      printf "%-20s  %-30s  %s\n", branch, dir, path
-    }' | \
-    fzf --height 40% --reverse --header="BRANCH               DIR                            PATH")
+  local dir branch
 
-  if [[ -n "$selection" ]]; then
-    local dir=$(echo "$selection" | awk '{print $NF}')
-    local branch=$(echo "$selection" | awk '{print $1}')
-
-    local session_name="wt-${branch//\//-}"
-
-    if tmux has-session -t "$session_name" 2>/dev/null; then
-      tmux attach -t "$session_name"
+  if [[ -n "$1" ]]; then
+    # Create new worktree
+    if [[ "$1" == "-b" ]]; then
+      branch="$2"
+      dir="../$(basename $(pwd))-${branch//\//-}"
+      git worktree add "$dir" -b "$branch" || return 1
     else
-      # Create new session with claude on the left
-      tmux new-session -d -s "$session_name" -c "$dir" "claude"
-
-      # Split horizontally - terminal on the right
-      tmux split-window -h -t "$session_name" -c "$dir"
-
-      # Split the right pane (terminal) vertically - yazi at bottom right
-      tmux split-window -v -t "$session_name" -c "$dir" "y"
-
-      # Select the terminal pane (top right, pane 1)
-      tmux select-pane -t "$session_name:0.1"
-
-      tmux attach -t "$session_name"
+      branch="$1"
+      dir="../$(basename $(pwd))-${branch//\//-}"
+      git worktree add "$dir" "$branch" || return 1
     fi
+    dir=$(cd "$dir" && pwd)  # Get absolute path
+  else
+    # Fuzzy select existing worktree
+    local selection=$(git worktree list 2>/dev/null | \
+      awk '{
+        path=$1
+        branch=$NF
+        gsub(/\[|\]/, "", branch)
+        n=split(path, parts, "/")
+        dir=parts[n]
+        printf "%-20s  %-30s  %s\n", branch, dir, path
+      }' | \
+      fzf --height 40% --reverse --header="BRANCH               DIR                            PATH")
+
+    [[ -z "$selection" ]] && return
+    dir=$(echo "$selection" | awk '{print $NF}')
+    branch=$(echo "$selection" | awk '{print $1}')
+  fi
+
+  local session_name="wt-${branch//\//-}"
+
+  if tmux has-session -t "$session_name" 2>/dev/null; then
+    tmux attach -t "$session_name"
+  else
+    # Create new session with claude on the left
+    tmux new-session -d -s "$session_name" -c "$dir" "claude"
+
+    # Split horizontally - terminal on the right
+    tmux split-window -h -t "$session_name" -c "$dir"
+
+    # Split the right pane (terminal) vertically - yazi at bottom right
+    tmux split-window -v -t "$session_name" -c "$dir" "y"
+
+    # Select the terminal pane (top right, pane 1)
+    tmux select-pane -t "$session_name:0.1"
+
+    tmux attach -t "$session_name"
   fi
 }
 
@@ -215,30 +232,76 @@ function gadd-fzf() {
 }
 
 # -----------------------------------------------------------------------------
-# Ghostty Helpers (native splits, no tmux needed)
+# Ghostty Helpers (with tmux for session persistence)
 # -----------------------------------------------------------------------------
-# wtyg - open worktree layout using Ghostty native splits
-# Requires: Ghostty with shell integration
+# wtyg - fuzzy pick a worktree and open tmux layout (with session resume)
+#        or create a new worktree: wtyg branch | wtyg -b new-branch
+# Layout: ┌─────────────┬─────────────┐
+#         │             │  terminal   │
+#         │   claude    ├─────────────┤
+#         │             │    yazi     │
+#         └─────────────┴─────────────┘
+# Session persistence: reattaching restores terminal AND Claude conversation
 function wtyg() {
-  local selection=$(git worktree list 2>/dev/null | \
-    awk '{
-      path=$1
-      branch=$NF
-      gsub(/\[|\]/, "", branch)
-      n=split(path, parts, "/")
-      dir=parts[n]
-      printf "%-20s  %-30s  %s\n", branch, dir, path
-    }' | \
-    fzf --height 40% --reverse --header="BRANCH               DIR                            PATH")
+  local dir branch
 
-  if [[ -n "$selection" ]]; then
-    local dir=$(echo "$selection" | awk '{print $NF}')
-    cd "$dir"
-    # Open Claude in current pane, user can Cmd+D to split for terminal/yazi
-    echo "Opened worktree: $dir"
-    echo "Use Cmd+D (split right) and Cmd+Shift+D (split down) to create layout"
+  if [[ -n "$1" ]]; then
+    # Create new worktree
+    if [[ "$1" == "-b" ]]; then
+      branch="$2"
+      dir="../$(basename $(pwd))-${branch//\//-}"
+      git worktree add "$dir" -b "$branch" || return 1
+    else
+      branch="$1"
+      dir="../$(basename $(pwd))-${branch//\//-}"
+      git worktree add "$dir" "$branch" || return 1
+    fi
+    dir=$(cd "$dir" && pwd)  # Get absolute path
+  else
+    # Fuzzy select existing worktree
+    local selection=$(git worktree list 2>/dev/null | \
+      awk '{
+        path=$1
+        branch=$NF
+        gsub(/\[|\]/, "", branch)
+        n=split(path, parts, "/")
+        dir=parts[n]
+        printf "%-20s  %-30s  %s\n", branch, dir, path
+      }' | \
+      fzf --height 40% --reverse --header="BRANCH               DIR                            PATH")
+
+    [[ -z "$selection" ]] && return
+    dir=$(echo "$selection" | awk '{print $NF}')
+    branch=$(echo "$selection" | awk '{print $1}')
+  fi
+
+  local session_name="wtyg-${branch//\//-}"
+
+  if tmux has-session -t "$session_name" 2>/dev/null; then
+    # Reattach to existing session (terminal + claude preserved)
+    tmux attach -t "$session_name"
+  else
+    # Create new session with claude --resume on the left
+    tmux new-session -d -s "$session_name" -c "$dir" "claude --resume"
+
+    # Split horizontally - terminal on the right
+    tmux split-window -h -t "$session_name" -c "$dir"
+
+    # Split the right pane (terminal) vertically - yazi at bottom right
+    tmux split-window -v -t "$session_name" -c "$dir" "y"
+
+    # Select the terminal pane (top right, pane 1)
+    tmux select-pane -t "$session_name:0.1"
+
+    tmux attach -t "$session_name"
   fi
 }
+
+# -----------------------------------------------------------------------------
+# Claude Code
+# -----------------------------------------------------------------------------
+# Always resume previous session by default (use \claude to bypass)
+alias claude='claude --resume'
 
 # -----------------------------------------------------------------------------
 # Zoxide - Smart cd (must be installed: brew install zoxide)
