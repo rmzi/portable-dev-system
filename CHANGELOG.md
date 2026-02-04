@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.1] - 2026-02-04
+
+### Added
+- **lazygit** added to dependencies
+- **Auto-update workflow** - Claude checks `.pds-version` at session start and updates if outdated
+- **gi keybind** for yazi - opens lazygit (requires `~/.config/yazi/keymap.toml` config)
+- **branch-tone-hook.sh** wrapper script for Claude Code stop hooks
+
+### Fixed
+- Branch-tone hook subshell issues in Claude Code
+
 ## [0.5.0] - 2026-02-04
 
 ### Added
