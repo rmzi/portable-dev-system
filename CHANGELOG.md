@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.0] - 2026-02-04
+
+### Added
+- **`wts` command** - global session picker, jump to any tmux session from anywhere
+- **Timestamp in prompt** - see when each command was run (`HH:MM:SS`)
+- **Modern theming** with color palettes:
+  - tmux: `%hidden` color variables, true color RGB support
+  - Starship: `palette` feature for consistent colors
+  - Yazi: full v26.x theme format with all sections
+
+### Changed
+- **`wt` now opens tmux layout** - same behavior as `wty` (claude + terminal + yazi)
+- **Visual distinction** between tools:
+  - Terminal/tmux: GREEN accent
+  - Yazi: BLUE accent
+- **Yazi pane size** - now 70% of right column (was 50%)
+
+### Fixed
+- `wty -b` / `wta -b` argument order for `git worktree add`
+- Yazi theme format for v26.x (was using deprecated section names)
+- macOS compatibility for `wts` (removed `head -n -1`)
+
 ## [0.6.1] - 2026-02-04
 
 ### Removed

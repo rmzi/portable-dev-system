@@ -22,7 +22,7 @@ function y() {
 # Worktree Helpers
 # -----------------------------------------------------------------------------
 
-# wt - fuzzy pick a worktree and cd to it
+# wt - fuzzy pick a worktree and open tmux layout (same as wty for selection)
 function wt() {
   local selection=$(git worktree list 2>/dev/null | \
     awk '{
@@ -39,16 +39,41 @@ function wt() {
     local dir=$(echo "$selection" | awk '{print $NF}')
     local branch=$(echo "$selection" | awk '{print $1}')
     command -v branch-tone &>/dev/null && (cd "$dir" && branch-tone "$branch") &>/dev/null &
-    cd "$dir"
+
+    local session_name="wt-${branch//\//-}"
+
+    # Create session if it doesn't exist
+    if ! tmux has-session -t "$session_name" 2>/dev/null; then
+      # Create new session with claude on the left
+      tmux new-session -d -s "$session_name" -c "$dir" "claude"
+
+      # Split right pane for terminal
+      tmux split-window -h -t "$session_name" -c "$dir"
+
+      # Split bottom-right pane for yazi (70% of right column)
+      tmux split-window -v -p 70 -t "$session_name" -c "$dir" "yazi"
+
+      # Select the terminal pane (top right)
+      tmux select-pane -t "$session_name" -U
+    fi
+
+    # Attach or switch depending on whether we're in tmux
+    if [[ -n "$TMUX" ]]; then
+      tmux switch-client -t "$session_name"
+    else
+      tmux attach -t "$session_name"
+    fi
   fi
 }
 
-# wty - fuzzy pick a worktree and open tmux layout with claude, terminal, and yazi
-#       or create a new worktree: wty branch | wty -b new-branch
+# wty - open tmux layout for a worktree (can also create new worktrees)
+#       Usage: wty           - fuzzy select existing worktree
+#              wty branch    - use existing branch
+#              wty -b branch - create new branch
 # Layout: ┌─────────────┬─────────────┐
-#         │             │  terminal   │
+#         │             │  terminal   │  (~30%)
 #         │   claude    ├─────────────┤
-#         │             │    yazi     │
+#         │   (50%)     │    yazi     │  (~70%)
 #         └─────────────┴─────────────┘
 function wty() {
   local dir branch existing_wt
@@ -71,7 +96,7 @@ function wty() {
 
       # Try new branch first if -b, fall back to existing
       if [[ "$1" == "-b" ]]; then
-        git worktree add "$dir" -b "$branch" 2>/dev/null || git worktree add "$dir" "$branch" || return 1
+        git worktree add -b "$branch" "$dir" 2>/dev/null || git worktree add "$dir" "$branch" || return 1
       else
         git worktree add "$dir" "$branch" || return 1
       fi
@@ -107,8 +132,8 @@ function wty() {
     # Split right pane for terminal
     tmux split-window -h -t "$session_name" -c "$dir"
 
-    # Split bottom-right pane for yazi
-    tmux split-window -v -t "$session_name" -c "$dir" "yazi"
+    # Split bottom-right pane for yazi (70% of right column)
+    tmux split-window -v -p 70 -t "$session_name" -c "$dir" "yazi"
 
     # Select the terminal pane (top right)
     tmux select-pane -t "$session_name" -U
@@ -145,7 +170,7 @@ function wta() {
 
   # Try new branch first if -b, fall back to existing
   if [[ "$1" == "-b" ]]; then
-    git worktree add "$dir" -b "$branch" 2>/dev/null || git worktree add "$dir" "$branch"
+    git worktree add -b "$branch" "$dir" 2>/dev/null || git worktree add "$dir" "$branch"
   else
     git worktree add "$dir" "$branch"
   fi && {
@@ -162,6 +187,41 @@ function wtr() {
   local dir=$(git worktree list 2>/dev/null | fzf --height 40% --reverse | awk '{print $1}')
   if [[ -n "$dir" ]]; then
     git worktree remove "$dir"
+  fi
+}
+
+# wts - global session picker: see all tmux sessions from anywhere, jump to one
+#       Shows session name, working directory, and git branch
+function wts() {
+  local sessions=$(tmux list-sessions -F "#{session_name}" 2>/dev/null)
+
+  if [[ -z "$sessions" ]]; then
+    echo "No active tmux sessions."
+    echo "Use 'wt' in a git repo to create one."
+    return 1
+  fi
+
+  # Build a list with session name, directory, and branch info
+  local session_list=()
+  while IFS= read -r session; do
+    # Get the working directory of the first pane in the session
+    local session_path=$(tmux display-message -t "$session" -p "#{pane_current_path}" 2>/dev/null)
+    local dir_name=$(basename "$session_path" 2>/dev/null || echo "?")
+    local branch=$(cd "$session_path" 2>/dev/null && git branch --show-current 2>/dev/null || echo "-")
+    session_list+=("$(printf "%-25s  %-20s  %-15s  %s" "$session" "$dir_name" "$branch" "$session_path")")
+  done <<< "$sessions"
+
+  local selection=$(printf '%s\n' "${session_list[@]}" | \
+    fzf --height 40% --reverse --header="SESSION                   DIR                   BRANCH           PATH")
+
+  if [[ -n "$selection" ]]; then
+    local session_name=$(echo "$selection" | awk '{print $1}')
+
+    if [[ -n "$TMUX" ]]; then
+      tmux switch-client -t "$session_name"
+    else
+      tmux attach -t "$session_name"
+    fi
   fi
 }
 
