@@ -83,8 +83,15 @@ Before committing:
 - [ ] `git diff --staged` reviewed
 - [ ] No debug code or console.logs
 - [ ] No secrets or credentials
-- [ ] Tests pass
+- [ ] Tests pass (run test suite before committing)
 - [ ] Commit is atomic (single logical change)
+
+## Pre-Push Checklist
+
+Before pushing:
+- [ ] Pull and rebase: `git pull --rebase origin <branch>`
+- [ ] Tests still pass after rebase
+- [ ] No merge conflicts introduced
 
 ## The Atomic Commit Test
 
