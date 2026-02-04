@@ -1,17 +1,38 @@
 {
   "permissions": {
     "allow": [
+      "Read",
+      "Grep",
+      "Glob",
       "Bash(git status)",
       "Bash(git diff*)",
       "Bash(git log*)",
       "Bash(git worktree*)",
+      "Bash(git branch*)",
+      "Bash(git show*)",
       "Bash(npm test*)",
       "Bash(npm run test*)",
+      "Bash(npm run lint*)",
       "Bash(pytest*)",
       "Bash(make test*)",
       "Bash(cargo test*)",
-      "Bash(go test*)"
+      "Bash(cargo check*)",
+      "Bash(go test*)",
+      "Bash(go vet*)"
     ],
-    "deny": []
+    "deny": [
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(**/secrets/**)",
+      "Read(**/*.pem)",
+      "Read(**/*credential*)",
+      "Write(**/.env*)",
+      "Write(**/secrets/**)",
+      "Write(**/*.pem)",
+      "Bash(curl *)",
+      "Bash(wget *)",
+      "Bash(rm -rf *)",
+      "Bash(sudo *)"
+    ]
   }
 }

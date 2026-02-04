@@ -24,7 +24,7 @@ fi
 # Check for required dependencies
 echo "📦 Checking dependencies..."
 MISSING=""
-for cmd in fzf yazi git; do
+for cmd in fzf yazi git tmux; do
   if ! command -v $cmd &> /dev/null; then
     MISSING="$MISSING $cmd"
   fi
@@ -35,7 +35,7 @@ if [[ -n "$MISSING" ]]; then
   echo "⚠️  Missing required tools:$MISSING"
   echo ""
   echo "Install with:"
-  echo "  brew install yazi zoxide fzf ripgrep fd bat"
+  echo "  brew install yazi zoxide fzf tmux ripgrep fd bat"
   echo ""
   read -p "Continue anyway? (y/n) " -n 1 -r
   echo ""
@@ -67,6 +67,12 @@ echo ""
 echo "Next steps:"
 echo "  1. Restart your terminal or run: source $SHELL_RC"
 echo "  2. Copy .claude/ to your projects for Claude Code skills"
-echo "  3. Try: wt, wty, y"
+echo "  3. Try: wt, wty, y, ts, twt"
+echo ""
+echo "Commands:"
+echo "  wt   - fuzzy pick worktree and cd"
+echo "  wty  - fuzzy pick worktree and open tmux (claude + terminal + yazi)"
+echo "  ts   - list/attach tmux sessions"
+echo "  twt  - tmux session for current directory"
 echo ""
 echo "Docs: https://github.com/rmzi/portable-dev-system"

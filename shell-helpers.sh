@@ -41,7 +41,12 @@ function wt() {
   fi
 }
 
-# wty - fuzzy pick a worktree and open in yazi
+# wty - fuzzy pick a worktree and open tmux layout with claude, terminal, and yazi
+# Layout: ┌─────────────┬─────────────┐
+#         │             │  terminal   │
+#         │   claude    ├─────────────┤
+#         │             │    yazi     │
+#         └─────────────┴─────────────┘
 function wty() {
   local selection=$(git worktree list 2>/dev/null | \
     awk '{
@@ -56,7 +61,27 @@ function wty() {
 
   if [[ -n "$selection" ]]; then
     local dir=$(echo "$selection" | awk '{print $NF}')
-    cd "$dir" && y
+    local branch=$(echo "$selection" | awk '{print $1}')
+
+    local session_name="wt-${branch//\//-}"
+
+    if tmux has-session -t "$session_name" 2>/dev/null; then
+      tmux attach -t "$session_name"
+    else
+      # Create new session with claude on the left
+      tmux new-session -d -s "$session_name" -c "$dir" "claude"
+
+      # Split horizontally - terminal on the right
+      tmux split-window -h -t "$session_name" -c "$dir"
+
+      # Split the right pane (terminal) vertically - yazi at bottom right
+      tmux split-window -v -t "$session_name" -c "$dir" "y"
+
+      # Select the terminal pane (top right, pane 1)
+      tmux select-pane -t "$session_name:0.1"
+
+      tmux attach -t "$session_name"
+    fi
   fi
 }
 
@@ -85,6 +110,50 @@ function wtr() {
     git worktree remove "$dir"
   fi
 }
+
+# -----------------------------------------------------------------------------
+# Tmux Session Helpers
+# -----------------------------------------------------------------------------
+# ts - list or attach to tmux sessions
+function ts() {
+  if [[ -z "$1" ]]; then
+    # No arg: list sessions or show help
+    if tmux list-sessions 2>/dev/null; then
+      echo ""
+      echo "Attach: ts <name> | New: ts -n <name>"
+    else
+      echo "No sessions. Create one: ts -n <name>"
+    fi
+  elif [[ "$1" == "-n" ]]; then
+    # New session
+    tmux new-session -s "$2"
+  else
+    # Attach to existing
+    tmux attach -t "$1" 2>/dev/null || tmux new-session -s "$1"
+  fi
+}
+
+# tsk - kill a tmux session (fuzzy select)
+function tsk() {
+  local session=$(tmux list-sessions -F "#{session_name}" 2>/dev/null | fzf --height 40% --reverse)
+  if [[ -n "$session" ]]; then
+    tmux kill-session -t "$session"
+  fi
+}
+
+# twt - create/attach tmux session for current worktree
+function twt() {
+  local session_name=$(basename $(pwd))
+  if tmux has-session -t "$session_name" 2>/dev/null; then
+    tmux attach -t "$session_name"
+  else
+    tmux new-session -s "$session_name"
+  fi
+}
+
+# Quick aliases
+alias tl='tmux list-sessions'
+alias td='tmux detach'
 
 # -----------------------------------------------------------------------------
 # Zoxide - Smart cd (must be installed: brew install zoxide)
