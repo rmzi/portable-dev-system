@@ -215,8 +215,39 @@ function gadd-fzf() {
 }
 
 # -----------------------------------------------------------------------------
+# Ghostty Helpers (native splits, no tmux needed)
+# -----------------------------------------------------------------------------
+# wtyg - open worktree layout using Ghostty native splits
+# Requires: Ghostty with shell integration
+function wtyg() {
+  local selection=$(git worktree list 2>/dev/null | \
+    awk '{
+      path=$1
+      branch=$NF
+      gsub(/\[|\]/, "", branch)
+      n=split(path, parts, "/")
+      dir=parts[n]
+      printf "%-20s  %-30s  %s\n", branch, dir, path
+    }' | \
+    fzf --height 40% --reverse --header="BRANCH               DIR                            PATH")
+
+  if [[ -n "$selection" ]]; then
+    local dir=$(echo "$selection" | awk '{print $NF}')
+    cd "$dir"
+    # Open Claude in current pane, user can Cmd+D to split for terminal/yazi
+    echo "Opened worktree: $dir"
+    echo "Use Cmd+D (split right) and Cmd+Shift+D (split down) to create layout"
+  fi
+}
+
+# -----------------------------------------------------------------------------
 # Zoxide - Smart cd (must be installed: brew install zoxide)
 # -----------------------------------------------------------------------------
 if command -v zoxide &> /dev/null; then
-  eval "$(zoxide init zsh)"
+  # Detect shell and init zoxide accordingly
+  if [[ -n "$ZSH_VERSION" ]]; then
+    eval "$(zoxide init zsh)"
+  elif [[ -n "$BASH_VERSION" ]]; then
+    eval "$(zoxide init bash)"
+  fi
 fi

@@ -5,6 +5,10 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 [![Terminal First](https://img.shields.io/badge/terminal-first-black?logo=gnometerminal)](https://en.wikipedia.org/wiki/Command-line_interface)
+[![macOS](https://img.shields.io/badge/macOS-supported-000000?logo=apple)](https://www.apple.com/macos/)
+[![Linux](https://img.shields.io/badge/Linux-supported-FCC624?logo=linux&logoColor=black)](https://www.linux.org/)
+[![Ghostty](https://img.shields.io/badge/Ghostty-ready-orange)](https://ghostty.org/)
+[![tmux](https://img.shields.io/badge/tmux-supported-1BB91F)](https://github.com/tmux/tmux)
 
 A terminal-first, AI-assisted development methodology designed for **isolation**, **clarity**, and **craft**.
 
@@ -29,8 +33,18 @@ This system fixes that:
 ### 1. Install tools
 
 ```bash
-brew install yazi zoxide fzf ripgrep fd bat
+# macOS
+brew install yazi zoxide fzf ripgrep fd bat starship tmux
+
+# Ubuntu/Debian
+sudo apt install fzf ripgrep fd-find bat tmux
+# + install yazi, zoxide, starship from their repos (see links below)
+
+# Arch
+sudo pacman -S yazi zoxide fzf ripgrep fd bat starship tmux
 ```
+
+> **Note:** [yazi](https://github.com/sxyazi/yazi), [zoxide](https://github.com/ajeetdsouza/zoxide), and [starship](https://starship.rs) have install instructions for all platforms.
 
 ### 2. Grab the shell helpers
 
@@ -47,6 +61,59 @@ cp -r .claude/ /path/to/your/project/
 ```
 
 Done. You now have superpowers.
+
+---
+
+## What's Included
+
+| File | Purpose |
+|------|---------|
+| `shell-helpers.sh` | Worktree, tmux, git, and navigation functions |
+| `tmux.conf` | Tmux configuration (prefix, splits, navigation) |
+| `ghostty.config` | Ghostty terminal config (splits, keybinds, quick terminal) |
+| `starship.toml` | Cross-shell prompt with git info |
+| `.claude/skills/` | Claude Code skills for your workflow |
+| `.claude/hooks.json` | Pre-configured Claude hooks |
+| `.claude/settings.json` | Claude Code settings |
+| `install.sh` | Automated installer |
+
+### Optional: Tmux + Starship
+
+```bash
+# Copy tmux config
+cp tmux.conf ~/.tmux.conf
+
+# Copy starship config
+mkdir -p ~/.config && cp starship.toml ~/.config/starship.toml
+
+# Add to ~/.zshrc
+eval "$(starship init zsh)"
+```
+
+### Optional: Ghostty (recommended)
+
+If you use [Ghostty](https://ghostty.org/), you can use native splits instead of tmux for local dev:
+
+```bash
+# Copy Ghostty config
+mkdir -p ~/.config/ghostty && cp ghostty.config ~/.config/ghostty/config
+```
+
+**Ghostty keybindings included:**
+
+| Action | macOS | Linux |
+|--------|-------|-------|
+| Split right | `Cmd+D` | `Ctrl+Shift+D` |
+| Split down | `Cmd+Shift+D` | `Ctrl+Shift+S` |
+| Navigate splits | `Alt+H/J/K/L` | `Alt+H/J/K/L` |
+| Zoom split | `Cmd+Shift+Z` | `Ctrl+Shift+Z` |
+| Quick terminal | `Cmd+`` ` | `Super+`` ` |
+
+**When to use Ghostty vs tmux:**
+- **Ghostty native splits**: Local dev, quick sessions, lighter weight
+- **tmux**: Remote SSH, persistent sessions, detach/reattach
+
+Both work great together — use Ghostty for the terminal, tmux when you need persistence.
 
 ---
 
@@ -85,19 +152,20 @@ Fork this repo and add your own skills:
 
 ## Terminal Layout
 
+The `wty` command creates this tmux layout:
+
 ```
 ┌────────────────────────────────────────────────┐
 │ iTerm2 / Ghostty / Kitty                       │
-│ ┌──────────────────────────────┬─────────────┐ │
-│ │                              │             │ │
-│ │   Shell / Claude Code        │    yazi     │ │
-│ │                              │  (files)    │ │
-│ │                              │             │ │
-│ └──────────────────────────────┴─────────────┘ │
+│ ┌──────────────────────────┬──────────────────┐│
+│ │                          │    terminal      ││
+│ │      Claude Code         ├──────────────────┤│
+│ │                          │      yazi        ││
+│ └──────────────────────────┴──────────────────┘│
 └────────────────────────────────────────────────┘
-
-Split: Cmd+D (iTerm) or Ctrl-b | (tmux)
 ```
+
+Or manually split: `Cmd+D` (iTerm) or `Ctrl-b |` (tmux)
 
 ---
 
@@ -108,7 +176,8 @@ Split: Cmd+D (iTerm) or Ctrl-b | (tmux)
 | Command | What it does |
 |---------|--------------|
 | `wt` | Fuzzy pick a worktree → cd there |
-| `wty` | Fuzzy pick a worktree → open in yazi |
+| `wty` | Fuzzy pick a worktree → open tmux layout (Claude + terminal + yazi) |
+| `wtyg` | Fuzzy pick a worktree → cd there (use Ghostty native splits) |
 | `wta feature/x` | Create worktree from existing branch |
 | `wta -b feature/x` | Create worktree + new branch |
 | `wtl` | List all worktrees |
@@ -120,6 +189,42 @@ Split: Cmd+D (iTerm) or Ctrl-b | (tmux)
 |---------|--------------|
 | `y` | Open yazi file manager |
 | `z <partial>` | Smart cd (learns your habits) |
+
+### Tmux Sessions
+
+| Command | What it does |
+|---------|--------------|
+| `ts` | List tmux sessions |
+| `ts <name>` | Attach to session (or create if doesn't exist) |
+| `ts -n <name>` | Create new session |
+| `tsk` | Fuzzy pick a session to kill |
+| `twt` | Create/attach session named after current directory |
+| `tl` | List sessions (alias) |
+| `td` | Detach from current session |
+
+### Git Shortcuts
+
+| Command | What it does |
+|---------|--------------|
+| `gst` | `git status` |
+| `gco <branch>` | `git checkout` |
+| `gcb <branch>` | `git checkout -b` (new branch) |
+| `gp` | `git push` |
+| `gl` | `git pull` |
+| `ga <files>` | `git add` |
+| `gc` | `git commit` |
+| `gd` | `git diff` |
+| `gds` | `git diff --staged` |
+| `glog` | `git log --oneline -20` |
+
+### Fuzzy Git (fzf-powered)
+
+| Command | What it does |
+|---------|--------------|
+| `gco-fzf` | Fuzzy checkout branch |
+| `glog-fzf` | Browse commits with preview |
+| `gstash-fzf` | Fuzzy apply stash |
+| `gadd-fzf` | Fuzzy stage files |
 
 ### Claude Code Skills
 
