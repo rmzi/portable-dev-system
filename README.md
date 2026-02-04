@@ -59,8 +59,9 @@ cd ~/your-project && pds-init
 
 | Topic | Link |
 |-------|------|
+| Skills catalog | [docs/skills.md](docs/skills.md) |
+| Command reference | [docs/commands.md](docs/commands.md) |
 | Installation details | [docs/install.md](docs/install.md) |
-| Full command reference | [docs/commands.md](docs/commands.md) |
 | Team setup | [docs/teams.md](docs/teams.md) |
 | Philosophy | [docs/philosophy.md](docs/philosophy.md) |
 

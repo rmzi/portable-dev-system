@@ -105,14 +105,16 @@
 
 ## Claude Code Skills
 
-| Skill | When to Use |
-|-------|-------------|
-| `/ethos` | Starting work, when stuck |
-| `/commit` | Before any git commit |
-| `/review` | Before submitting PRs |
-| `/debug` | Troubleshooting issues |
-| `/test` | Writing or running tests |
-| `/design` | Architecture decisions |
-| `/worktree` | Branch isolation, worktree commands |
-| `/bootstrap` | New project setup |
-| `/quickref` | Command cheatsheet |
+See [Skills Catalog](skills.md) for full descriptions.
+
+| Skill | Purpose |
+|-------|---------|
+| `/ethos` | Principles, MECE |
+| `/commit` | Commit format |
+| `/review` | PR checklist |
+| `/debug` | Troubleshooting |
+| `/test` | Test strategy |
+| `/design` | Architecture |
+| `/worktree` | Branch isolation |
+| `/bootstrap` | New project |
+| `/quickref` | Cheatsheet |
