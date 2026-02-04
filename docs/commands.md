@@ -6,7 +6,6 @@
 |---------|--------------|
 | `wt` | Fuzzy pick a worktree → cd there |
 | `wty` | Fuzzy pick a worktree → open tmux layout |
-| `wtyg` | Same as wty (for Ghostty users) |
 | `wta feature/x` | Create worktree from existing branch |
 | `wta -b feature/x` | Create worktree + new branch |
 | `wtl` | List all worktrees |

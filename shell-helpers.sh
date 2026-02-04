@@ -268,9 +268,6 @@ function gadd-fzf() {
   fi
 }
 
-# wtyg - alias for wty (kept for backward compatibility)
-alias wtyg='wty'
-
 # -----------------------------------------------------------------------------
 # Claude Code
 # -----------------------------------------------------------------------------

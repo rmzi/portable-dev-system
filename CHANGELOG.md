@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.0] - 2026-02-04
+
+### Added
+- **Optional branch-tone integration** - terminal bell plays branch-specific sound
+- **Skills catalog** (`docs/skills.md`) - descriptions and usage for all skills
+
+### Removed
+- **wtyg command** - use `wty` instead (no backwards compat needed)
+
+### Changed
+- **wty navigates to existing worktree** if branch is already checked out
+
+### Fixed
+- **Nested tmux sessions** - wty uses `switch-client` when inside tmux, `attach` when outside
+- **Pane targeting** - explicit pane selection for reliable split layout
+- **branch-tone repo detection** - works correctly in worktree directories
+- **branch-tone subshell** - runs in background without blocking
+
 ## [0.4.0] - 2026-02-04
 
 ### Added
