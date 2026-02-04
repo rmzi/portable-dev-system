@@ -38,7 +38,7 @@ function wt() {
   if [[ -n "$selection" ]]; then
     local dir=$(echo "$selection" | awk '{print $NF}')
     local branch=$(echo "$selection" | awk '{print $1}')
-    command -v branch-tone &>/dev/null && branch-tone "$branch" &>/dev/null &
+    command -v branch-tone &>/dev/null && (cd "$dir" && branch-tone "$branch") &>/dev/null &
     cd "$dir"
   fi
 }
@@ -95,7 +95,7 @@ function wty() {
     branch=$(echo "$selection" | awk '{print $1}')
   fi
 
-  command -v branch-tone &>/dev/null && branch-tone "$branch" &>/dev/null &
+  command -v branch-tone &>/dev/null && (cd "$dir" && branch-tone "$branch") &>/dev/null &
 
   local session_name="wt-${branch//\//-}"
 
@@ -136,7 +136,7 @@ function wta() {
   existing_wt=$(git worktree list 2>/dev/null | grep "\[$branch\]" | awk '{print $1}')
   if [[ -n "$existing_wt" ]]; then
     echo "Branch '$branch' already checked out at: $existing_wt"
-    command -v branch-tone &>/dev/null && branch-tone "$branch" &>/dev/null &
+    command -v branch-tone &>/dev/null && (cd "$existing_wt" && branch-tone "$branch") &>/dev/null &
     cd "$existing_wt"
     return 0
   fi
@@ -149,7 +149,7 @@ function wta() {
   else
     git worktree add "$dir" "$branch"
   fi && {
-    command -v branch-tone &>/dev/null && branch-tone "$branch" &>/dev/null &
+    command -v branch-tone &>/dev/null && (cd "$dir" && branch-tone "$branch") &>/dev/null &
     cd "$dir"
   }
 }
