@@ -87,7 +87,7 @@ function wty() {
     tmux attach -t "$session_name"
   else
     # Create new session with claude on the left
-    tmux new-session -d -s "$session_name" -c "$dir" "claude"
+    tmux new-session -d -s "$session_name" -c "$dir" "claude --continue"
 
     # Split horizontally - terminal on the right
     tmux split-window -h -t "$session_name" -c "$dir"
@@ -281,8 +281,8 @@ function wtyg() {
     # Reattach to existing session (terminal + claude preserved)
     tmux attach -t "$session_name"
   else
-    # Create new session with claude --resume on the left
-    tmux new-session -d -s "$session_name" -c "$dir" "claude --resume"
+    # Create new session with claude --continue on the left
+    tmux new-session -d -s "$session_name" -c "$dir" "claude --continue"
 
     # Split horizontally - terminal on the right
     tmux split-window -h -t "$session_name" -c "$dir"
@@ -300,8 +300,161 @@ function wtyg() {
 # -----------------------------------------------------------------------------
 # Claude Code
 # -----------------------------------------------------------------------------
-# Always resume previous session by default (use \claude to bypass)
-alias claude='claude --resume'
+# clauder = claude --continue (auto-resume most recent session)
+alias clauder='claude --continue'
+
+# pds-init - install PDS skills to current project
+# Downloads .claude/ config from the repo
+# Handles collisions by placing files in .pds-incoming/ for manual merge
+function pds-init() {
+  local repo_url="https://raw.githubusercontent.com/rmzi/portable-dev-system/main"
+  local skills=(bootstrap commit debug design ethos quickref review test worktree wt)
+  local has_collision=false
+  local collision_dir=".pds-incoming"
+  local errors=0
+
+  # Check network connectivity
+  if ! curl -fsSL --connect-timeout 5 "$repo_url/CLAUDE.md" > /dev/null 2>&1; then
+    echo "❌ Cannot reach GitHub. Check your internet connection."
+    return 1
+  fi
+
+  # Check for existing files
+  if [[ -f "CLAUDE.md" ]] || [[ -d ".claude" ]]; then
+    has_collision=true
+    echo "⚠️  Existing Claude configuration detected!"
+    echo ""
+    if [[ -f "CLAUDE.md" ]]; then
+      echo "   Found: CLAUDE.md"
+    fi
+    if [[ -d ".claude" ]]; then
+      echo "   Found: .claude/"
+    fi
+    echo ""
+    echo "📁 Installing PDS files to $collision_dir/ for manual merge..."
+    echo ""
+    mkdir -p "$collision_dir/.claude/skills"
+  else
+    echo "📝 Installing PDS skills to $(pwd)/.claude/"
+    mkdir -p .claude/skills
+  fi
+
+  local target_dir="."
+  if [[ "$has_collision" == true ]]; then
+    target_dir="$collision_dir"
+  fi
+
+  # Download CLAUDE.md
+  if curl -fsSL "$repo_url/CLAUDE.md" > "$target_dir/CLAUDE.md" 2>/dev/null; then
+    echo "  ✓ CLAUDE.md"
+  else
+    echo "  ✗ CLAUDE.md (failed)"; ((errors++))
+  fi
+
+  # Download settings and hooks
+  if curl -fsSL "$repo_url/.claude/settings.json" > "$target_dir/.claude/settings.json" 2>/dev/null; then
+    echo "  ✓ .claude/settings.json"
+  else
+    echo "  ✗ .claude/settings.json (failed)"; ((errors++))
+  fi
+
+  if curl -fsSL "$repo_url/.claude/hooks.json" > "$target_dir/.claude/hooks.json" 2>/dev/null; then
+    echo "  ✓ .claude/hooks.json"
+  else
+    echo "  ✗ .claude/hooks.json (failed)"; ((errors++))
+  fi
+
+  # Download skills
+  for skill in "${skills[@]}"; do
+    if curl -fsSL "$repo_url/.claude/skills/${skill}.md" > "$target_dir/.claude/skills/${skill}.md" 2>/dev/null; then
+      echo "  ✓ .claude/skills/${skill}.md"
+    else
+      echo "  ✗ .claude/skills/${skill}.md (failed)"; ((errors++))
+    fi
+  done
+
+  if [[ $errors -gt 0 ]]; then
+    echo ""
+    echo "⚠️  $errors file(s) failed to download. Run pds-init again to retry."
+  fi
+
+  echo ""
+  if [[ "$has_collision" == true ]]; then
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "📋 PDS files saved to: $collision_dir/"
+    echo ""
+    echo "To merge with your existing config, ask Claude:"
+    echo ""
+    echo "   Merge the PDS skills from .pds-incoming/ with my existing"
+    echo "   .claude/ config. Combine CLAUDE.md files and add any new"
+    echo "   skills. Then remove .pds-incoming/"
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  else
+    echo "✅ Done! Skills available:"
+    echo "   /ethos /commit /review /debug /design /test /worktree /bootstrap /quickref"
+  fi
+}
+
+# pds-uninstall - remove PDS from system
+function pds-uninstall() {
+  echo "🗑️  Uninstalling Portable Dev System..."
+  echo ""
+
+  # Remove ~/.pds
+  if [[ -d "$HOME/.pds" ]]; then
+    rm -rf "$HOME/.pds"
+    echo "✓ Removed ~/.pds/"
+  fi
+
+  # Restore shell rc from backup if it exists
+  local shell_rc
+  if [[ "$SHELL" == *"zsh"* ]]; then
+    shell_rc="$HOME/.zshrc"
+  else
+    shell_rc="$HOME/.bashrc"
+  fi
+
+  if [[ -f "${shell_rc}.pds-backup" ]]; then
+    cp "${shell_rc}.pds-backup" "$shell_rc"
+    echo "✓ Restored $shell_rc from backup"
+  else
+    # Manual removal of source line
+    if grep -q ".pds/shell-helpers.sh" "$shell_rc" 2>/dev/null; then
+      # Create backup before modifying
+      cp "$shell_rc" "${shell_rc}.pre-uninstall"
+      grep -v ".pds/shell-helpers.sh" "$shell_rc" | grep -v "# Portable Dev System" > "${shell_rc}.tmp"
+      mv "${shell_rc}.tmp" "$shell_rc"
+      echo "✓ Removed PDS lines from $shell_rc (backup: ${shell_rc}.pre-uninstall)"
+    fi
+  fi
+
+  # Offer to restore tmux.conf
+  if [[ -f "$HOME/.tmux.conf.backup" ]]; then
+    read -p "Restore tmux.conf from backup? (y/n) " -n 1 -r
+    echo ""
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+      mv "$HOME/.tmux.conf.backup" "$HOME/.tmux.conf"
+      echo "✓ Restored ~/.tmux.conf"
+    fi
+  fi
+
+  # Offer to restore starship.toml
+  if [[ -f "$HOME/.config/starship.toml.backup" ]]; then
+    read -p "Restore starship.toml from backup? (y/n) " -n 1 -r
+    echo ""
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+      mv "$HOME/.config/starship.toml.backup" "$HOME/.config/starship.toml"
+      echo "✓ Restored ~/.config/starship.toml"
+    fi
+  fi
+
+  echo ""
+  echo "✅ PDS uninstalled. Restart your terminal to complete."
+  echo ""
+  echo "Note: Project-level files (.claude/, CLAUDE.md) are untouched."
+  echo "Remove them manually if desired: rm -rf .claude CLAUDE.md"
+}
 
 # -----------------------------------------------------------------------------
 # Zoxide - Smart cd (must be installed: brew install zoxide)

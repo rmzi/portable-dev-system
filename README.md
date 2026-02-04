@@ -30,7 +30,7 @@ This system fixes that:
 
 ## 30-Second Setup
 
-### 1. Install tools
+### 1. Install dependencies
 
 ```bash
 # macOS
@@ -46,21 +46,65 @@ sudo pacman -S yazi zoxide fzf ripgrep fd bat starship tmux
 
 > **Note:** [yazi](https://github.com/sxyazi/yazi), [zoxide](https://github.com/ajeetdsouza/zoxide), and [starship](https://starship.rs) have install instructions for all platforms.
 
-### 2. Grab the shell helpers
+### 2. Run the installer
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash
 ```
 
-Or manually copy the functions from [shell-helpers.sh](./shell-helpers.sh) to your `~/.zshrc`.
-
-### 3. Copy skills to your project
+### 3. Add skills to your project
 
 ```bash
-cp -r .claude/ /path/to/your/project/
+cd ~/your-project
+pds-init
 ```
 
 Done. You now have superpowers.
+
+---
+
+## What the Installer Does
+
+The installer modifies these files on your system:
+
+| File | Action | Backup |
+|------|--------|--------|
+| `~/.pds/shell-helpers.sh` | Created | — |
+| `~/.zshrc` (or `.bashrc`) | Appends 2 lines | `~/.zshrc.pds-backup` |
+| `~/.tmux.conf` | Replaced | `~/.tmux.conf.backup` |
+| `~/.config/starship.toml` | Replaced | `~/.config/starship.toml.backup` |
+
+**Project-level files** (via `pds-init`):
+
+| File | Action |
+|------|--------|
+| `CLAUDE.md` | Created |
+| `.claude/settings.json` | Created |
+| `.claude/hooks.json` | Created |
+| `.claude/skills/*.md` | Created |
+
+If your project already has `CLAUDE.md` or `.claude/`, `pds-init` places PDS files in `.pds-incoming/` instead and prompts you to ask Claude to merge them.
+
+---
+
+## Uninstall / Revert
+
+### Full uninstall
+
+```bash
+pds-uninstall
+```
+
+This removes `~/.pds/`, restores your shell rc from backup, and offers to restore tmux/starship configs.
+
+### Manual revert
+
+| What | Undo command |
+|------|--------------|
+| Shell helpers | `rm -rf ~/.pds && mv ~/.zshrc.pds-backup ~/.zshrc` |
+| Tmux config | `mv ~/.tmux.conf.backup ~/.tmux.conf` |
+| Starship config | `mv ~/.config/starship.toml.backup ~/.config/starship.toml` |
+| Project skills | `rm -rf .claude CLAUDE.md` (in project directory) |
 
 ---
 
@@ -72,6 +116,7 @@ Done. You now have superpowers.
 | `tmux.conf` | Tmux configuration (prefix, splits, navigation) |
 | `ghostty.config` | Ghostty terminal config (splits, keybinds, quick terminal) |
 | `starship.toml` | Cross-shell prompt with git info |
+| `CLAUDE.md` | Project context file (always loaded by Claude Code) |
 | `.claude/skills/` | Claude Code skills for your workflow |
 | `.claude/hooks.json` | Pre-configured Claude hooks |
 | `.claude/settings.json` | Claude Code settings |
@@ -119,9 +164,29 @@ Both work great together — use Ghostty for the terminal, tmux when you need pe
 
 ## For Teams
 
-### Shared Skills = Shared Standards
+### Quick Start for Team Members
 
-Drop `.claude/` into your repo root. Every team member gets:
+```bash
+# 1. Install PDS (one-time setup)
+curl -fsSL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash
+source ~/.zshrc
+
+# 2. Clone your team's repo and you're ready
+git clone <your-repo>
+cd <your-repo>
+# Skills are already there if committed to repo
+```
+
+### Adding PDS to Your Repo
+
+```bash
+cd your-team-repo
+pds-init              # Downloads skills to .claude/
+git add .claude CLAUDE.md
+git commit -m "feat: add PDS skills for team workflow"
+```
+
+Now every team member gets:
 - Same code review checklist (`/review`)
 - Same commit conventions (`/commit`)
 - Same debugging protocol (`/debug`)
@@ -129,16 +194,9 @@ Drop `.claude/` into your repo root. Every team member gets:
 
 **No more "how do we do X here?"** — it's encoded in the skills.
 
-### Onboarding in 5 Minutes
-
-New team member? They run the setup, clone the repo, and they have:
-- All your team's conventions
-- Worktree workflow ready
-- Claude Code skills loaded
-
 ### Customize for Your Team
 
-Fork this repo and add your own skills:
+Add your own skills to `.claude/skills/`:
 
 ```
 .claude/skills/
@@ -177,7 +235,7 @@ Or manually split: `Cmd+D` (iTerm) or `Ctrl-b |` (tmux)
 |---------|--------------|
 | `wt` | Fuzzy pick a worktree → cd there |
 | `wty` | Fuzzy pick a worktree → open tmux layout (Claude + terminal + yazi) |
-| `wtyg` | Fuzzy pick a worktree → cd there (use Ghostty native splits) |
+| `wtyg` | Fuzzy pick a worktree → tmux layout (for Ghostty, session persists) |
 | `wta feature/x` | Create worktree from existing branch |
 | `wta -b feature/x` | Create worktree + new branch |
 | `wtl` | List all worktrees |
@@ -225,6 +283,14 @@ Or manually split: `Cmd+D` (iTerm) or `Ctrl-b |` (tmux)
 | `glog-fzf` | Browse commits with preview |
 | `gstash-fzf` | Fuzzy apply stash |
 | `gadd-fzf` | Fuzzy stage files |
+
+### Claude Code & PDS
+
+| Command | What it does |
+|---------|--------------|
+| `clauder` | Resume most recent Claude session for current directory |
+| `pds-init` | Install PDS skills to current project (handles existing configs) |
+| `pds-uninstall` | Remove PDS from system, restore backups |
 
 ### Claude Code Skills
 

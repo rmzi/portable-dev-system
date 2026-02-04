@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] - 2026-02-04
+
+### Added
+- **pds-init** - install Claude skills to any project from the repo
+  - Network connectivity check before downloading
+  - Collision detection: existing `.claude/` or `CLAUDE.md` triggers merge flow
+  - Places PDS files in `.pds-incoming/` with instructions to ask Claude to merge
+  - Error tracking and retry guidance for failed downloads
+- **pds-uninstall** - fully remove PDS and restore backups
+  - Restores shell rc from backup (or removes lines manually)
+  - Offers to restore tmux.conf and starship.toml
+  - Leaves project-level files untouched
+- Shell rc backup before modification (`~/.zshrc.pds-backup`)
+- Version display in installer
+- Backup summary shown after install
+
+### Changed
+- Install location: `~/.config/portable-dev-system` → `~/.pds` (shorter path)
+- Updated README with "What the Installer Does" and "Uninstall / Revert" sections
+- Improved "For Teams" section with Quick Start guide
+- `pds-init` downloads `hooks.json` (was missing in manual copy instructions)
+
 ## [0.2.0] - 2026-02-04
 
 ### Added

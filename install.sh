@@ -6,8 +6,9 @@
 set -e
 
 REPO_URL="https://raw.githubusercontent.com/rmzi/portable-dev-system/main"
+VERSION=$(curl -fsSL "$REPO_URL/VERSION" 2>/dev/null || echo "unknown")
 
-echo "🚀 Installing Portable Dev System..."
+echo "🚀 Installing Portable Dev System v$VERSION"
 echo ""
 
 # Detect shell config file
@@ -46,19 +47,28 @@ fi
 # -----------------------------------------------------------------------------
 # Shell Helpers
 # -----------------------------------------------------------------------------
-echo ""
-echo "📝 Adding shell helpers to $SHELL_RC..."
+INSTALL_DIR="$HOME/.pds"
+HELPERS_FILE="$INSTALL_DIR/shell-helpers.sh"
 
-if grep -q "Portable Dev System" "$SHELL_RC" 2>/dev/null; then
-  echo "✅ Shell helpers already installed. Skipping."
+echo ""
+echo "📝 Installing shell helpers to $INSTALL_DIR..."
+
+mkdir -p "$INSTALL_DIR"
+curl -fsSL "$REPO_URL/shell-helpers.sh" > "$HELPERS_FILE"
+echo "✅ shell-helpers.sh installed."
+
+# Add source line to shell config (if not already present)
+SOURCE_LINE="source \"$HELPERS_FILE\""
+if grep -q ".pds/shell-helpers.sh" "$SHELL_RC" 2>/dev/null; then
+  echo "✅ Source line already in $SHELL_RC. Skipping."
 else
+  # Backup shell rc first
+  cp "$SHELL_RC" "${SHELL_RC}.pds-backup"
+  echo "📦 Backed up $SHELL_RC to ${SHELL_RC}.pds-backup"
   echo "" >> "$SHELL_RC"
-  echo "# =============================================================================" >> "$SHELL_RC"
-  echo "# Portable Dev System - Shell Helpers" >> "$SHELL_RC"
-  echo "# https://github.com/rmzi/portable-dev-system" >> "$SHELL_RC"
-  echo "# =============================================================================" >> "$SHELL_RC"
-  curl -fsSL "$REPO_URL/shell-helpers.sh" >> "$SHELL_RC"
-  echo "✅ Shell helpers added."
+  echo "# Portable Dev System" >> "$SHELL_RC"
+  echo "$SOURCE_LINE" >> "$SHELL_RC"
+  echo "✅ Added source line to $SHELL_RC"
 fi
 
 # -----------------------------------------------------------------------------
@@ -108,20 +118,23 @@ fi
 echo ""
 echo "🎉 Done!"
 echo ""
+echo "Backups created (for pds-uninstall):"
+[[ -f "${SHELL_RC}.pds-backup" ]] && echo "  ${SHELL_RC}.pds-backup"
+[[ -f "$HOME/.tmux.conf.backup" ]] && echo "  ~/.tmux.conf.backup"
+[[ -f "$HOME/.config/starship.toml.backup" ]] && echo "  ~/.config/starship.toml.backup"
+echo ""
 echo "Next steps:"
 echo "  1. Restart your terminal or run: source $SHELL_RC"
-echo "  2. Copy .claude/ to your projects for Claude Code settings"
+echo "  2. In any project, run: pds-init (installs Claude skills)"
 echo "  3. Try the commands below!"
 echo ""
 echo "Commands:"
-echo "  wt       - fuzzy pick worktree and cd"
-echo "  wty      - fuzzy pick worktree → tmux (claude + terminal + yazi)"
-echo "  ts       - list/attach tmux sessions"
-echo "  twt      - tmux session for current directory"
-echo "  gco-fzf  - fuzzy checkout git branch"
-echo "  glog-fzf - fuzzy browse commits"
-echo "  gadd-fzf - fuzzy stage files"
+echo "  pds-init      - install Claude skills to current project"
+echo "  pds-uninstall - remove PDS and restore backups"
+echo "  wt            - fuzzy pick worktree and cd"
+echo "  wty           - fuzzy pick worktree → tmux layout"
+echo "  clauder       - resume Claude session for current dir"
 echo ""
-echo "Tmux prefix is Ctrl-a (not Ctrl-b)"
+echo "Tmux prefix: Ctrl-a (not Ctrl-b)"
 echo ""
-echo "Docs: https://github.com/rmzi/portable-dev-system"
+echo "Full docs: https://github.com/rmzi/portable-dev-system"
