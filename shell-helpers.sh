@@ -398,8 +398,9 @@ function pds-init() {
     echo "To merge with your existing config, ask Claude:"
     echo ""
     echo "   Merge the PDS skills from .pds-incoming/ with my existing"
-    echo "   .claude/ config. Combine CLAUDE.md files and add any new"
-    echo "   skills. Then remove .pds-incoming/"
+    echo "   .claude/ config. Add the Skills System section from"
+    echo "   .pds-incoming/CLAUDE.md to my CLAUDE.md, copy any new"
+    echo "   skills, and remove .pds-incoming/"
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   else

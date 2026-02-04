@@ -83,7 +83,19 @@ The installer modifies these files on your system:
 | `.claude/hooks.json` | Created |
 | `.claude/skills/*.md` | Created |
 
-If your project already has `CLAUDE.md` or `.claude/`, `pds-init` places PDS files in `.pds-incoming/` instead and prompts you to ask Claude to merge them.
+### Existing Claude Config (Collision Handling)
+
+If your project already has `CLAUDE.md` or `.claude/`, `pds-init` detects this and:
+
+1. Places PDS files in `.pds-incoming/` instead of overwriting
+2. Prompts you to ask Claude to merge them
+
+Example merge prompt:
+```
+Merge the PDS skills from .pds-incoming/ with my existing .claude/ config.
+Add the Skills System section from .pds-incoming/CLAUDE.md to my CLAUDE.md,
+copy any new skills, and remove .pds-incoming/
+```
 
 ---
 
