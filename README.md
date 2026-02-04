@@ -302,6 +302,8 @@ Or manually split: `Cmd+D` (iTerm) or `Ctrl-b |` (tmux)
 |---------|--------------|
 | `clauder` | Resume most recent Claude session for current directory |
 | `pds-init` | Install PDS skills to current project (handles existing configs) |
+| `pds-update` | Update project skills to latest version |
+| `pds-update -s` | Update system shell helpers (~/.pds) |
 | `pds-uninstall` | Remove PDS from system, restore backups |
 
 ### Claude Code Skills

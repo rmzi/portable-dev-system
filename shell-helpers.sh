@@ -363,6 +363,11 @@ function pds-init() {
     echo "  ✗ CLAUDE.md (failed)"; ((errors++))
   fi
 
+  # Download version marker
+  local version=$(curl -fsSL "$repo_url/VERSION" 2>/dev/null || echo "unknown")
+  echo "$version" > "$target_dir/.claude/.pds-version"
+  echo "  ✓ .claude/.pds-version ($version)"
+
   # Download settings and hooks
   if curl -fsSL "$repo_url/.claude/settings.json" > "$target_dir/.claude/settings.json" 2>/dev/null; then
     echo "  ✓ .claude/settings.json"
@@ -467,6 +472,77 @@ function pds-uninstall() {
   echo ""
   echo "Note: Project-level files (.claude/, CLAUDE.md) are untouched."
   echo "Remove them manually if desired: rm -rf .claude CLAUDE.md"
+}
+
+# pds-update - update PDS (system or project)
+# Usage: pds-update          - update project skills
+#        pds-update --system - update ~/.pds shell helpers
+function pds-update() {
+  local repo_url="https://raw.githubusercontent.com/rmzi/portable-dev-system/main"
+
+  if [[ "$1" == "--system" ]] || [[ "$1" == "-s" ]]; then
+    # System update - update ~/.pds/shell-helpers.sh
+    echo "🔄 Updating PDS system files..."
+
+    local remote_version=$(curl -fsSL "$repo_url/VERSION" 2>/dev/null || echo "unknown")
+
+    if curl -fsSL "$repo_url/shell-helpers.sh" > "$HOME/.pds/shell-helpers.sh" 2>/dev/null; then
+      echo "  ✓ ~/.pds/shell-helpers.sh"
+    else
+      echo "  ✗ Failed to update shell-helpers.sh"
+      return 1
+    fi
+
+    echo ""
+    echo "✅ System updated to v$remote_version"
+    echo "   Run: source ~/.pds/shell-helpers.sh"
+    return 0
+  fi
+
+  # Project update - update .claude/skills/
+  local skills=(bootstrap commit debug design ethos quickref review test worktree wt)
+
+  # Check if PDS is installed in this project
+  if [[ ! -f ".claude/.pds-version" ]]; then
+    echo "❌ PDS not installed in this project."
+    echo ""
+    echo "Options:"
+    echo "  pds-init          - install PDS skills to this project"
+    echo "  pds-update -s     - update system shell helpers"
+    return 1
+  fi
+
+  local current_version=$(cat .claude/.pds-version 2>/dev/null || echo "unknown")
+  local remote_version=$(curl -fsSL "$repo_url/VERSION" 2>/dev/null || echo "unknown")
+
+  echo "📦 PDS Update Check"
+  echo "   Installed: v$current_version"
+  echo "   Available: v$remote_version"
+  echo ""
+
+  if [[ "$current_version" == "$remote_version" ]]; then
+    echo "✅ Already up to date!"
+    return 0
+  fi
+
+  echo "🔄 Updating skills..."
+
+  # Update skills (only PDS skills, not project-specific ones)
+  for skill in "${skills[@]}"; do
+    if curl -fsSL "$repo_url/.claude/skills/${skill}.md" > ".claude/skills/${skill}.md" 2>/dev/null; then
+      echo "  ✓ ${skill}.md"
+    else
+      echo "  ✗ ${skill}.md (failed)"
+    fi
+  done
+
+  # Update version marker
+  echo "$remote_version" > .claude/.pds-version
+
+  echo ""
+  echo "✅ Updated to v$remote_version"
+  echo ""
+  echo "View changes: https://github.com/rmzi/portable-dev-system/blob/main/CHANGELOG.md"
 }
 
 # -----------------------------------------------------------------------------
