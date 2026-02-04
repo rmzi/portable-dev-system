@@ -8,7 +8,10 @@ Terminal-first, AI-assisted dev methodology using worktrees for isolation.
 
 ### Workflow
 
-1. **At session start**: Scan `.claude/skills/*.md` to understand available capabilities
+1. **At session start**:
+   - Check `.claude/.pds-version` against https://raw.githubusercontent.com/rmzi/portable-dev-system/main/VERSION
+   - If outdated: run `pds-update`, commit the changes, and create a PR (or add to existing PR)
+   - Scan `.claude/skills/*.md` to understand available capabilities
 2. **Before any task**: Check if the task matches a skill (commit, review, debug, test, design, etc.)
 3. **During work**: Read and follow the skill documentation before performing the action
 4. **When stuck**: Read `/ethos` for principles, `/debug` for systematic troubleshooting
@@ -35,6 +38,6 @@ Terminal-first, AI-assisted dev methodology using worktrees for isolation.
 
 ## Key Commands
 
-- `wty` / `wtyg` - Open worktree in tmux layout
+- `wty` - Open worktree in tmux layout
 - `wta -b feature/x` - Create new worktree + branch
 - `clauder` - Resume Claude session for current directory
