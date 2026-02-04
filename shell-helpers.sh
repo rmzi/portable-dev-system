@@ -38,7 +38,7 @@ function wt() {
   if [[ -n "$selection" ]]; then
     local dir=$(echo "$selection" | awk '{print $NF}')
     local branch=$(echo "$selection" | awk '{print $1}')
-    command -v branch-tone &>/dev/null && (cd "$dir" && branch-tone "$branch") &>/dev/null &
+    command -v branch-tone &>/dev/null && branch-tone "$branch" &>/dev/null &
     cd "$dir"
   fi
 }
@@ -95,23 +95,23 @@ function wty() {
     branch=$(echo "$selection" | awk '{print $1}')
   fi
 
-  command -v branch-tone &>/dev/null && (cd "$dir" && branch-tone "$branch") &>/dev/null &
+  command -v branch-tone &>/dev/null && branch-tone "$branch" &>/dev/null &
 
   local session_name="wt-${branch//\//-}"
 
   # Create session if it doesn't exist
   if ! tmux has-session -t "$session_name" 2>/dev/null; then
-    # Create new session with claude on the left (pane 0)
+    # Create new session with claude on the left
     tmux new-session -d -s "$session_name" -c "$dir" "claude"
 
-    # Split horizontally - terminal on the right (pane 1)
-    tmux split-window -h -t "${session_name}:0.0" -c "$dir"
+    # Split right pane for terminal
+    tmux split-window -h -t "$session_name" -c "$dir"
 
-    # Split pane 1 vertically - yazi at bottom right (pane 2)
-    tmux split-window -v -t "${session_name}:0.1" -c "$dir" "y"
+    # Split bottom-right pane for yazi
+    tmux split-window -v -t "$session_name" -c "$dir" "yazi"
 
-    # Select the terminal pane (top right, pane 1)
-    tmux select-pane -t "${session_name}:0.1"
+    # Select the terminal pane (top right)
+    tmux select-pane -t "$session_name" -U
   fi
 
   # Attach or switch depending on whether we're in tmux
@@ -136,7 +136,7 @@ function wta() {
   existing_wt=$(git worktree list 2>/dev/null | grep "\[$branch\]" | awk '{print $1}')
   if [[ -n "$existing_wt" ]]; then
     echo "Branch '$branch' already checked out at: $existing_wt"
-    command -v branch-tone &>/dev/null && (cd "$existing_wt" && branch-tone "$branch") &>/dev/null &
+    command -v branch-tone &>/dev/null && branch-tone "$branch" &>/dev/null &
     cd "$existing_wt"
     return 0
   fi
@@ -149,7 +149,7 @@ function wta() {
   else
     git worktree add "$dir" "$branch"
   fi && {
-    command -v branch-tone &>/dev/null && (cd "$dir" && branch-tone "$branch") &>/dev/null &
+    command -v branch-tone &>/dev/null && branch-tone "$branch" &>/dev/null &
     cd "$dir"
   }
 }
@@ -268,88 +268,8 @@ function gadd-fzf() {
   fi
 }
 
-# -----------------------------------------------------------------------------
-# Ghostty Helpers (with tmux for session persistence)
-# -----------------------------------------------------------------------------
-# wtyg - fuzzy pick a worktree and open tmux layout (with session resume)
-#        or create a new worktree: wtyg branch | wtyg -b new-branch
-# Layout: ┌─────────────┬─────────────┐
-#         │             │  terminal   │
-#         │   claude    ├─────────────┤
-#         │             │    yazi     │
-#         └─────────────┴─────────────┘
-# Session persistence: reattaching restores terminal AND Claude conversation
-function wtyg() {
-  local dir branch existing_wt
-
-  if [[ -n "$1" ]]; then
-    # Create new worktree (or use existing branch)
-    if [[ "$1" == "-b" ]]; then
-      branch="$2"
-    else
-      branch="$1"
-    fi
-
-    # Check if branch is already checked out in a worktree
-    existing_wt=$(git worktree list 2>/dev/null | grep "\[$branch\]" | awk '{print $1}')
-    if [[ -n "$existing_wt" ]]; then
-      echo "Branch '$branch' already checked out at: $existing_wt"
-      dir="$existing_wt"
-    else
-      dir="../$(basename $(pwd))-${branch//\//-}"
-
-      # Try new branch first if -b, fall back to existing
-      if [[ "$1" == "-b" ]]; then
-        git worktree add "$dir" -b "$branch" 2>/dev/null || git worktree add "$dir" "$branch" || return 1
-      else
-        git worktree add "$dir" "$branch" || return 1
-      fi
-      dir=$(cd "$dir" && pwd)  # Get absolute path
-    fi
-  else
-    # Fuzzy select existing worktree
-    local selection=$(git worktree list 2>/dev/null | \
-      awk '{
-        path=$1
-        branch=$NF
-        gsub(/\[|\]/, "", branch)
-        n=split(path, parts, "/")
-        dir=parts[n]
-        printf "%-20s  %-30s  %s\n", branch, dir, path
-      }' | \
-      fzf --height 40% --reverse --header="BRANCH               DIR                            PATH")
-
-    [[ -z "$selection" ]] && return
-    dir=$(echo "$selection" | awk '{print $NF}')
-    branch=$(echo "$selection" | awk '{print $1}')
-  fi
-
-  command -v branch-tone &>/dev/null && (cd "$dir" && branch-tone "$branch") &>/dev/null &
-
-  local session_name="wtyg-${branch//\//-}"
-
-  # Create session if it doesn't exist
-  if ! tmux has-session -t "$session_name" 2>/dev/null; then
-    # Create new session with claude on the left (pane 0)
-    tmux new-session -d -s "$session_name" -c "$dir" "claude"
-
-    # Split horizontally - terminal on the right (pane 1)
-    tmux split-window -h -t "${session_name}:0.0" -c "$dir"
-
-    # Split pane 1 vertically - yazi at bottom right (pane 2)
-    tmux split-window -v -t "${session_name}:0.1" -c "$dir" "y"
-
-    # Select the terminal pane (top right, pane 1)
-    tmux select-pane -t "${session_name}:0.1"
-  fi
-
-  # Attach or switch depending on whether we're in tmux
-  if [[ -n "$TMUX" ]]; then
-    tmux switch-client -t "$session_name"
-  else
-    tmux attach -t "$session_name"
-  fi
-}
+# wtyg - alias for wty (kept for backward compatibility)
+alias wtyg='wty'
 
 # -----------------------------------------------------------------------------
 # Claude Code
