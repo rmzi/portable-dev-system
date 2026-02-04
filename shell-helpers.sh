@@ -52,14 +52,18 @@ function wty() {
   local dir branch
 
   if [[ -n "$1" ]]; then
-    # Create new worktree
+    # Create new worktree (or use existing branch)
     if [[ "$1" == "-b" ]]; then
       branch="$2"
-      dir="../$(basename $(pwd))-${branch//\//-}"
-      git worktree add "$dir" -b "$branch" || return 1
     else
       branch="$1"
-      dir="../$(basename $(pwd))-${branch//\//-}"
+    fi
+    dir="../$(basename $(pwd))-${branch//\//-}"
+
+    # Try new branch first if -b, fall back to existing
+    if [[ "$1" == "-b" ]]; then
+      git worktree add "$dir" -b "$branch" 2>/dev/null || git worktree add "$dir" "$branch" || return 1
+    else
       git worktree add "$dir" "$branch" || return 1
     fi
     dir=$(cd "$dir" && pwd)  # Get absolute path
@@ -103,18 +107,22 @@ function wty() {
 }
 
 # wta - create a new worktree
+# Usage: wta branch (existing) or wta -b branch (new, falls back to existing)
 function wta() {
+  local branch dir
   if [[ "$1" == "-b" ]]; then
-    # New branch
-    local branch="$2"
-    local dir="../$(basename $(pwd))-${branch//\//-}"
-    git worktree add "$dir" -b "$branch" && cd "$dir"
+    branch="$2"
   else
-    # Existing branch
-    local branch="$1"
-    local dir="../$(basename $(pwd))-${branch//\//-}"
-    git worktree add "$dir" "$branch" && cd "$dir"
+    branch="$1"
   fi
+  dir="../$(basename $(pwd))-${branch//\//-}"
+
+  # Try new branch first if -b, fall back to existing
+  if [[ "$1" == "-b" ]]; then
+    git worktree add "$dir" -b "$branch" 2>/dev/null || git worktree add "$dir" "$branch"
+  else
+    git worktree add "$dir" "$branch"
+  fi && cd "$dir"
 }
 
 # wtl - list worktrees
@@ -246,14 +254,18 @@ function wtyg() {
   local dir branch
 
   if [[ -n "$1" ]]; then
-    # Create new worktree
+    # Create new worktree (or use existing branch)
     if [[ "$1" == "-b" ]]; then
       branch="$2"
-      dir="../$(basename $(pwd))-${branch//\//-}"
-      git worktree add "$dir" -b "$branch" || return 1
     else
       branch="$1"
-      dir="../$(basename $(pwd))-${branch//\//-}"
+    fi
+    dir="../$(basename $(pwd))-${branch//\//-}"
+
+    # Try new branch first if -b, fall back to existing
+    if [[ "$1" == "-b" ]]; then
+      git worktree add "$dir" -b "$branch" 2>/dev/null || git worktree add "$dir" "$branch" || return 1
+    else
       git worktree add "$dir" "$branch" || return 1
     fi
     dir=$(cd "$dir" && pwd)  # Get absolute path
