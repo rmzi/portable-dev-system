@@ -37,6 +37,8 @@ function wt() {
 
   if [[ -n "$selection" ]]; then
     local dir=$(echo "$selection" | awk '{print $NF}')
+    local branch=$(echo "$selection" | awk '{print $1}')
+    command -v branch-tone &>/dev/null && branch-tone "$branch" &>/dev/null &
     cd "$dir"
   fi
 }
@@ -85,6 +87,8 @@ function wty() {
     branch=$(echo "$selection" | awk '{print $1}')
   fi
 
+  command -v branch-tone &>/dev/null && branch-tone "$branch" &>/dev/null &
+
   local session_name="wt-${branch//\//-}"
 
   if tmux has-session -t "$session_name" 2>/dev/null; then
@@ -122,7 +126,10 @@ function wta() {
     git worktree add "$dir" -b "$branch" 2>/dev/null || git worktree add "$dir" "$branch"
   else
     git worktree add "$dir" "$branch"
-  fi && cd "$dir"
+  fi && {
+    command -v branch-tone &>/dev/null && branch-tone "$branch" &>/dev/null &
+    cd "$dir"
+  }
 }
 
 # wtl - list worktrees
@@ -286,6 +293,8 @@ function wtyg() {
     dir=$(echo "$selection" | awk '{print $NF}')
     branch=$(echo "$selection" | awk '{print $1}')
   fi
+
+  command -v branch-tone &>/dev/null && branch-tone "$branch" &>/dev/null &
 
   local session_name="wtyg-${branch//\//-}"
 
