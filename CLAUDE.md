@@ -50,3 +50,8 @@ Terminal-first, AI-assisted dev methodology using worktrees for isolation.
 - Need a new branch? Use `git worktree add` or `wta -b branch`
 - Need to work on existing branch? Use `git worktree add` or `wta branch`
 - Cloning creates disconnected copies. Worktrees share git history and stay in sync.
+
+**NEVER use /tmp for code or worktrees.** Worktrees go in the project's parent directory:
+- Correct: `../project-feature-branch/`
+- Wrong: `/tmp/project/` or `/tmp/feature-work/`
+- /tmp is only for temporary files (downloads, build artifacts, large files that shouldn't persist)
