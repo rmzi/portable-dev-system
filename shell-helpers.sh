@@ -99,9 +99,8 @@ function wty() {
 
   local session_name="wt-${branch//\//-}"
 
-  if tmux has-session -t "$session_name" 2>/dev/null; then
-    tmux attach -t "$session_name"
-  else
+  # Create session if it doesn't exist
+  if ! tmux has-session -t "$session_name" 2>/dev/null; then
     # Create new session with claude on the left
     tmux new-session -d -s "$session_name" -c "$dir" "claude"
 
@@ -113,7 +112,12 @@ function wty() {
 
     # Select the terminal pane (top right, pane 1)
     tmux select-pane -t "$session_name:0.1"
+  fi
 
+  # Attach or switch depending on whether we're in tmux
+  if [[ -n "$TMUX" ]]; then
+    tmux switch-client -t "$session_name"
+  else
     tmux attach -t "$session_name"
   fi
 }
@@ -324,10 +328,8 @@ function wtyg() {
 
   local session_name="wtyg-${branch//\//-}"
 
-  if tmux has-session -t "$session_name" 2>/dev/null; then
-    # Reattach to existing session (terminal + claude preserved)
-    tmux attach -t "$session_name"
-  else
+  # Create session if it doesn't exist
+  if ! tmux has-session -t "$session_name" 2>/dev/null; then
     # Create new session with claude on the left
     tmux new-session -d -s "$session_name" -c "$dir" "claude"
 
@@ -339,7 +341,12 @@ function wtyg() {
 
     # Select the terminal pane (top right, pane 1)
     tmux select-pane -t "$session_name:0.1"
+  fi
 
+  # Attach or switch depending on whether we're in tmux
+  if [[ -n "$TMUX" ]]; then
+    tmux switch-client -t "$session_name"
+  else
     tmux attach -t "$session_name"
   fi
 }
