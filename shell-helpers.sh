@@ -91,7 +91,7 @@ function wty() {
     tmux attach -t "$session_name"
   else
     # Create new session with claude on the left
-    tmux new-session -d -s "$session_name" -c "$dir" "claude --continue"
+    tmux new-session -d -s "$session_name" -c "$dir" "claude"
 
     # Split horizontally - terminal on the right
     tmux split-window -h -t "$session_name" -c "$dir"
@@ -293,8 +293,8 @@ function wtyg() {
     # Reattach to existing session (terminal + claude preserved)
     tmux attach -t "$session_name"
   else
-    # Create new session with claude --continue on the left
-    tmux new-session -d -s "$session_name" -c "$dir" "claude --continue"
+    # Create new session with claude on the left
+    tmux new-session -d -s "$session_name" -c "$dir" "claude"
 
     # Split horizontally - terminal on the right
     tmux split-window -h -t "$session_name" -c "$dir"
