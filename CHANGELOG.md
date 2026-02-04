@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.0] - 2026-02-04
+
+### Added
+- **Yazi keymap** now installed by default with PDS keybinds:
+  - `gi` - open lazygit
+  - `gw` - fuzzy pick worktree
+  - `gh/gd/gc` - go to home/dev/config
+- **pds-addon** command for optional addons:
+  - `pds-addon branch-tone install` - install audio feedback
+  - `pds-addon branch-tone update` - update to latest
+  - `pds-addon branch-tone remove` - uninstall
+
+### Changed
+- Installer now backs up and installs yazi keymap.toml
+
 ## [0.5.1] - 2026-02-04
 
 ### Added

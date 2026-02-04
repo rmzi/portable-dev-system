@@ -49,6 +49,7 @@ cd ~/your-project && pds-init
 | `wta -b feature/x` | Create new worktree + branch |
 | `pds-init` | Install skills to current project |
 | `pds-update` | Update skills to latest version |
+| `pds-addon branch-tone install` | Optional audio feedback |
 | `clauder` | Resume Claude session |
 
 **Skills:** `/commit` `/review` `/debug` `/test` `/design` `/worktree`

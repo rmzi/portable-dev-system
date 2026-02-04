@@ -505,6 +505,105 @@ function pds-update() {
 }
 
 # -----------------------------------------------------------------------------
+# Branch-tone Addon (optional audio feedback for branch switches)
+# -----------------------------------------------------------------------------
+# pds-addon - manage optional PDS addons
+# Usage: pds-addon branch-tone [install|update|remove]
+function pds-addon() {
+  local addon="$1"
+  local action="$2"
+
+  if [[ "$addon" != "branch-tone" ]]; then
+    echo "Available addons:"
+    echo "  branch-tone - Audio feedback when switching branches"
+    echo ""
+    echo "Usage: pds-addon <addon> [install|update|remove]"
+    return 1
+  fi
+
+  case "$action" in
+    install)
+      echo "🎵 Installing branch-tone..."
+
+      # Check for cargo
+      if ! command -v cargo &>/dev/null; then
+        echo "❌ Rust/Cargo required. Install from https://rustup.rs"
+        return 1
+      fi
+
+      # Install branch-tone
+      cargo install branch-tone
+
+      # Create hook script
+      mkdir -p "$HOME/.pds"
+      cat > "$HOME/.pds/branch-tone-hook.sh" << 'HOOK'
+#!/bin/bash
+# Branch-tone hook wrapper for Claude Code
+branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "claude")
+repo=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null || echo "unknown")
+branch-tone "$branch" --repo "$repo" --pad --chorus --steps 5 -d 800 -v 0.2
+HOOK
+      chmod +x "$HOME/.pds/branch-tone-hook.sh"
+
+      echo ""
+      echo "✅ branch-tone installed!"
+      echo ""
+      echo "To enable Claude Code stop hook, add to ~/.claude/settings.json:"
+      echo ""
+      echo '  "hooks": {'
+      echo '    "Stop": [{'
+      echo '      "hooks": [{'
+      echo '        "type": "command",'
+      echo '        "command": "'$HOME'/.pds/branch-tone-hook.sh",'
+      echo '        "async": true'
+      echo '      }]'
+      echo '    }]'
+      echo '  }'
+      echo ""
+      ;;
+
+    update)
+      echo "🔄 Updating branch-tone..."
+      if ! command -v branch-tone &>/dev/null; then
+        echo "❌ branch-tone not installed. Run: pds-addon branch-tone install"
+        return 1
+      fi
+      cargo install branch-tone --force
+      echo "✅ branch-tone updated!"
+      ;;
+
+    remove)
+      echo "🗑️  Removing branch-tone..."
+
+      # Remove binary
+      if command -v branch-tone &>/dev/null; then
+        cargo uninstall branch-tone 2>/dev/null || rm -f "$HOME/.cargo/bin/branch-tone"
+        echo "✓ Removed branch-tone binary"
+      fi
+
+      # Remove hook script
+      if [[ -f "$HOME/.pds/branch-tone-hook.sh" ]]; then
+        rm -f "$HOME/.pds/branch-tone-hook.sh"
+        echo "✓ Removed hook script"
+      fi
+
+      echo ""
+      echo "✅ branch-tone removed!"
+      echo ""
+      echo "Note: Remove the Stop hook from ~/.claude/settings.json manually if present."
+      ;;
+
+    *)
+      echo "Usage: pds-addon branch-tone [install|update|remove]"
+      echo ""
+      echo "  install - Install branch-tone and create hook script"
+      echo "  update  - Update branch-tone to latest version"
+      echo "  remove  - Uninstall branch-tone and remove hook script"
+      ;;
+  esac
+}
+
+# -----------------------------------------------------------------------------
 # Zoxide - Smart cd (must be installed: brew install zoxide)
 # -----------------------------------------------------------------------------
 if command -v zoxide &> /dev/null; then

@@ -113,6 +113,27 @@ else
 fi
 
 # -----------------------------------------------------------------------------
+# Yazi Keymap
+# -----------------------------------------------------------------------------
+echo ""
+echo "📝 Installing yazi keymap..."
+
+mkdir -p "$HOME/.config/yazi"
+if [[ -f "$HOME/.config/yazi/keymap.toml" ]]; then
+  if grep -q "Portable Dev System" "$HOME/.config/yazi/keymap.toml" 2>/dev/null; then
+    echo "✅ yazi keymap already installed. Skipping."
+  else
+    echo "⚠️  Existing yazi keymap found. Backing up to keymap.toml.backup"
+    cp "$HOME/.config/yazi/keymap.toml" "$HOME/.config/yazi/keymap.toml.backup"
+    curl -fsSL "$REPO_URL/yazi-keymap.toml" > "$HOME/.config/yazi/keymap.toml"
+    echo "✅ yazi keymap installed."
+  fi
+else
+  curl -fsSL "$REPO_URL/yazi-keymap.toml" > "$HOME/.config/yazi/keymap.toml"
+  echo "✅ yazi keymap installed."
+fi
+
+# -----------------------------------------------------------------------------
 # Done
 # -----------------------------------------------------------------------------
 echo ""
