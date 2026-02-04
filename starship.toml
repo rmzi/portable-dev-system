@@ -1,0 +1,88 @@
+# =============================================================================
+# Portable Dev System - Starship Prompt
+# =============================================================================
+# Fast prompt with folder name, git info, and useful context
+
+add_newline = false
+command_timeout = 500
+
+# -----------------------------------------------------------------------------
+# Prompt Format
+# -----------------------------------------------------------------------------
+format = """
+$directory\
+$git_branch\
+$git_status\
+$cmd_duration\
+$line_break\
+$character"""
+
+# -----------------------------------------------------------------------------
+# Directory - shows current folder name
+# -----------------------------------------------------------------------------
+[directory]
+truncation_length = 1          # Just show current folder
+truncate_to_repo = false       # Show folder name even in repos
+format = "[$path]($style) "
+style = "bold cyan"
+
+# -----------------------------------------------------------------------------
+# Git Branch
+# -----------------------------------------------------------------------------
+[git_branch]
+format = "[$branch]($style) "
+style = "bold purple"
+
+# -----------------------------------------------------------------------------
+# Git Status - show what's changed
+# -----------------------------------------------------------------------------
+[git_status]
+format = '([$all_status$ahead_behind]($style) )'
+style = "bold yellow"
+conflicted = "="
+ahead = "↑${count}"
+behind = "↓${count}"
+diverged = "↕"
+untracked = "?${count}"
+stashed = "*${count}"
+modified = "!${count}"
+staged = "+${count}"
+renamed = "»"
+deleted = "✘${count}"
+
+# -----------------------------------------------------------------------------
+# Command Duration - show if command took > 2s
+# -----------------------------------------------------------------------------
+[cmd_duration]
+min_time = 2000
+format = "[took $duration]($style) "
+style = "yellow"
+
+# -----------------------------------------------------------------------------
+# Character (prompt symbol) - red on error
+# -----------------------------------------------------------------------------
+[character]
+success_symbol = "[❯](bold green)"
+error_symbol = "[❯](bold red)"
+
+# -----------------------------------------------------------------------------
+# Disabled (for speed)
+# -----------------------------------------------------------------------------
+[aws]
+disabled = true
+[gcloud]
+disabled = true
+[kubernetes]
+disabled = true
+[docker_context]
+disabled = true
+[package]
+disabled = true
+[nodejs]
+disabled = true
+[python]
+disabled = true
+[rust]
+disabled = true
+[golang]
+disabled = true

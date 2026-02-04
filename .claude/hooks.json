@@ -1,0 +1,24 @@
+{
+  "hooks": [
+    {
+      "name": "lint-on-edit",
+      "description": "Run linter after file edits",
+      "event": "post-tool-use",
+      "matcher": {
+        "tool": ["Edit", "Write"],
+        "file_pattern": "*.{js,ts,jsx,tsx,py}"
+      },
+      "command": "echo '💡 Remember to run linter: npm run lint / ruff check'"
+    },
+    {
+      "name": "test-reminder",
+      "description": "Remind to run tests after code changes",
+      "event": "post-tool-use",
+      "matcher": {
+        "tool": ["Edit", "Write"],
+        "file_pattern": "*.{js,ts,jsx,tsx,py,go,rs}"
+      },
+      "command": "echo '🧪 Consider running tests to verify changes'"
+    }
+  ]
+}

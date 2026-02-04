@@ -156,6 +156,65 @@ alias tl='tmux list-sessions'
 alias td='tmux detach'
 
 # -----------------------------------------------------------------------------
+# Git Aliases
+# -----------------------------------------------------------------------------
+alias gst='git status'
+alias gco='git checkout'
+alias gcb='git checkout -b'
+alias gp='git push'
+alias gl='git pull'
+alias ga='git add'
+alias gc='git commit'
+alias gd='git diff'
+alias gds='git diff --staged'
+alias glog='git log --oneline -20'
+
+# -----------------------------------------------------------------------------
+# Fuzzy Git Helpers
+# -----------------------------------------------------------------------------
+# gco-fzf - fuzzy checkout branch
+function gco-fzf() {
+  local branch=$(git branch -a --format='%(refname:short)' 2>/dev/null | \
+    sed 's|origin/||' | sort -u | \
+    fzf --height 40% --reverse --header="Select branch to checkout")
+  if [[ -n "$branch" ]]; then
+    git checkout "$branch"
+  fi
+}
+
+# glog-fzf - fuzzy browse commits and show details
+function glog-fzf() {
+  local commit=$(git log --oneline -50 2>/dev/null | \
+    fzf --height 40% --reverse --preview 'git show --stat --color=always {1}' \
+        --header="Select commit to view")
+  if [[ -n "$commit" ]]; then
+    local sha=$(echo "$commit" | awk '{print $1}')
+    git show "$sha"
+  fi
+}
+
+# gstash-fzf - fuzzy apply stash
+function gstash-fzf() {
+  local stash=$(git stash list 2>/dev/null | \
+    fzf --height 40% --reverse --header="Select stash to apply")
+  if [[ -n "$stash" ]]; then
+    local index=$(echo "$stash" | cut -d: -f1)
+    git stash apply "$index"
+  fi
+}
+
+# gadd-fzf - fuzzy add files
+function gadd-fzf() {
+  local files=$(git status --short 2>/dev/null | \
+    fzf --height 40% --reverse --multi --header="Select files to stage" | \
+    awk '{print $2}')
+  if [[ -n "$files" ]]; then
+    echo "$files" | xargs git add
+    git status --short
+  fi
+}
+
+# -----------------------------------------------------------------------------
 # Zoxide - Smart cd (must be installed: brew install zoxide)
 # -----------------------------------------------------------------------------
 if command -v zoxide &> /dev/null; then
