@@ -1,3 +1,6 @@
+---
+description: Structured code review checklist
+---
 # /review — Structured Code Review
 
 Systematic code review that catches issues and builds shared understanding.

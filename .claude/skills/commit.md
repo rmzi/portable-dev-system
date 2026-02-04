@@ -1,3 +1,6 @@
+---
+description: Create semantic git commits with proper format and context
+---
 # /commit — Semantic Commit Workflow
 
 Commits are documentation. They tell the story of why code changed.

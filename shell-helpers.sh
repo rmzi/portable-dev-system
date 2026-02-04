@@ -320,7 +320,7 @@ alias clauder='claude --continue'
 # Handles collisions by placing files in .pds-incoming/ for manual merge
 function pds-init() {
   local repo_url="https://raw.githubusercontent.com/rmzi/portable-dev-system/main"
-  local skills=(bootstrap commit debug design ethos quickref review test worktree wt)
+  local skills=(bootstrap commit debug design ethos quickref review test worktree)
   local has_collision=false
   local collision_dir=".pds-incoming"
   local errors=0
@@ -500,7 +500,7 @@ function pds-update() {
   fi
 
   # Project update - update .claude/skills/
-  local skills=(bootstrap commit debug design ethos quickref review test worktree wt)
+  local skills=(bootstrap commit debug design ethos quickref review test worktree)
 
   # Check if PDS is installed in this project
   if [[ ! -f ".claude/.pds-version" ]]; then

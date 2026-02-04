@@ -1,3 +1,6 @@
+---
+description: Core development principles for grounding before significant work
+---
 # /ethos — Core Development Principles
 
 When invoked, remind of these principles. Use as grounding before significant work.
@@ -46,3 +49,33 @@ Scripts encode knowledge. CI runs what developers run. Automate the repeated.
 - Write programs that handle text streams
 - Small is beautiful
 - Clarity over cleverness
+
+## MECE — Structure for Clarity
+
+**Mutually Exclusive, Collectively Exhaustive**
+
+A fundamental organizing principle. Apply everywhere:
+
+- **Mutually Exclusive**: No overlap. Each item belongs in exactly one place.
+- **Collectively Exhaustive**: No gaps. All cases are covered.
+
+### Apply to Everything
+
+| Domain | MECE means |
+|--------|-----------|
+| **Skills** | Each skill has one clear purpose, no overlap |
+| **Functions** | Each function does one thing, responsibilities don't overlap |
+| **Services** | Clear boundaries, no duplicate functionality |
+| **Error handling** | Each error type handled in one place |
+| **API design** | Endpoints don't duplicate, all use cases covered |
+| **Architecture** | Components have clear, non-overlapping responsibilities |
+| **Documentation** | Each topic in one place |
+
+### Anti-patterns
+
+- Two functions that partially do the same thing
+- A service that handles "everything related to X and also some Y"
+- Documentation split across multiple places with overlap
+- Error handling scattered with duplicate catch blocks
+
+> "A place for everything, and everything in its place."

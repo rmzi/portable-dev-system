@@ -113,7 +113,6 @@
 | `/debug` | Troubleshooting issues |
 | `/test` | Writing or running tests |
 | `/design` | Architecture decisions |
-| `/worktree` | Branch isolation workflow |
-| `/wt` | Worktree command reference |
+| `/worktree` | Branch isolation, worktree commands |
 | `/bootstrap` | New project setup |
 | `/quickref` | Command cheatsheet |

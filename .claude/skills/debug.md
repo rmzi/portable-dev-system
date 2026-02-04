@@ -1,3 +1,6 @@
+---
+description: Systematic debugging using scientific hypothesis testing
+---
 # /debug — Systematic Debugging
 
 Debugging is hypothesis testing. Be scientific.

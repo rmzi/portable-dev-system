@@ -1,3 +1,6 @@
+---
+description: Initialize new project structure with consistent conventions
+---
 # /bootstrap — New Project Setup
 
 Consistent project initialization across codebases.

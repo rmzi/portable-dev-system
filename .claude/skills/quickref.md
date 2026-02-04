@@ -1,3 +1,6 @@
+---
+description: Quick reference for common commands and patterns
+---
 # /quickref — Quick Reference Card
 
 Fast lookup for common commands and patterns.

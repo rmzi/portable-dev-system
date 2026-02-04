@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0] - 2026-02-04
+
+### Added
+- **pds-update** - update PDS to latest version
+  - `pds-update` updates project skills (`.claude/skills/*.md`)
+  - `pds-update -s` updates system shell helpers (`~/.pds`)
+  - Version tracking via `.claude/.pds-version`
+- **MECE principle** added to `/ethos` skill
+- **Mandatory skill consultation** section in CLAUDE.md template
+- **docs/** directory with focused documentation:
+  - `install.md` - installation, updating, uninstalling
+  - `commands.md` - full command reference
+  - `teams.md` - team setup guide
+  - `philosophy.md` - principles
+
+### Changed
+- **README restructured** - short and focused, links to docs/ for details
+- **wty/wtyg** start fresh Claude sessions (use `clauder` to resume)
+- **wta/wty/wtyg -b** falls back to existing branch if it already exists
+- Improved collision handling merge prompt
+
+### Fixed
+- Branch already exists error when using `-b` flag
+
 ## [0.3.0] - 2026-02-04
 
 ### Added

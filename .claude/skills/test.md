@@ -1,3 +1,6 @@
+---
+description: Test strategy selection and coverage analysis
+---
 # /test — Test Strategy Selection
 
 Tests are a specification that happens to be executable.
