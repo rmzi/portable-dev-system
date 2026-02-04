@@ -51,7 +51,7 @@ function wt() {
 #         │             │    yazi     │
 #         └─────────────┴─────────────┘
 function wty() {
-  local dir branch
+  local dir branch existing_wt
 
   if [[ -n "$1" ]]; then
     # Create new worktree (or use existing branch)
@@ -60,15 +60,23 @@ function wty() {
     else
       branch="$1"
     fi
-    dir="../$(basename $(pwd))-${branch//\//-}"
 
-    # Try new branch first if -b, fall back to existing
-    if [[ "$1" == "-b" ]]; then
-      git worktree add "$dir" -b "$branch" 2>/dev/null || git worktree add "$dir" "$branch" || return 1
+    # Check if branch is already checked out in a worktree
+    existing_wt=$(git worktree list 2>/dev/null | grep "\[$branch\]" | awk '{print $1}')
+    if [[ -n "$existing_wt" ]]; then
+      echo "Branch '$branch' already checked out at: $existing_wt"
+      dir="$existing_wt"
     else
-      git worktree add "$dir" "$branch" || return 1
+      dir="../$(basename $(pwd))-${branch//\//-}"
+
+      # Try new branch first if -b, fall back to existing
+      if [[ "$1" == "-b" ]]; then
+        git worktree add "$dir" -b "$branch" 2>/dev/null || git worktree add "$dir" "$branch" || return 1
+      else
+        git worktree add "$dir" "$branch" || return 1
+      fi
+      dir=$(cd "$dir" && pwd)  # Get absolute path
     fi
-    dir=$(cd "$dir" && pwd)  # Get absolute path
   else
     # Fuzzy select existing worktree
     local selection=$(git worktree list 2>/dev/null | \
@@ -110,15 +118,25 @@ function wty() {
   fi
 }
 
-# wta - create a new worktree
+# wta - create a new worktree or go to existing one
 # Usage: wta branch (existing) or wta -b branch (new, falls back to existing)
 function wta() {
-  local branch dir
+  local branch dir existing_wt
   if [[ "$1" == "-b" ]]; then
     branch="$2"
   else
     branch="$1"
   fi
+
+  # Check if branch is already checked out in a worktree
+  existing_wt=$(git worktree list 2>/dev/null | grep "\[$branch\]" | awk '{print $1}')
+  if [[ -n "$existing_wt" ]]; then
+    echo "Branch '$branch' already checked out at: $existing_wt"
+    command -v branch-tone &>/dev/null && branch-tone "$branch" &>/dev/null &
+    cd "$existing_wt"
+    return 0
+  fi
+
   dir="../$(basename $(pwd))-${branch//\//-}"
 
   # Try new branch first if -b, fall back to existing
@@ -258,7 +276,7 @@ function gadd-fzf() {
 #         └─────────────┴─────────────┘
 # Session persistence: reattaching restores terminal AND Claude conversation
 function wtyg() {
-  local dir branch
+  local dir branch existing_wt
 
   if [[ -n "$1" ]]; then
     # Create new worktree (or use existing branch)
@@ -267,15 +285,23 @@ function wtyg() {
     else
       branch="$1"
     fi
-    dir="../$(basename $(pwd))-${branch//\//-}"
 
-    # Try new branch first if -b, fall back to existing
-    if [[ "$1" == "-b" ]]; then
-      git worktree add "$dir" -b "$branch" 2>/dev/null || git worktree add "$dir" "$branch" || return 1
+    # Check if branch is already checked out in a worktree
+    existing_wt=$(git worktree list 2>/dev/null | grep "\[$branch\]" | awk '{print $1}')
+    if [[ -n "$existing_wt" ]]; then
+      echo "Branch '$branch' already checked out at: $existing_wt"
+      dir="$existing_wt"
     else
-      git worktree add "$dir" "$branch" || return 1
+      dir="../$(basename $(pwd))-${branch//\//-}"
+
+      # Try new branch first if -b, fall back to existing
+      if [[ "$1" == "-b" ]]; then
+        git worktree add "$dir" -b "$branch" 2>/dev/null || git worktree add "$dir" "$branch" || return 1
+      else
+        git worktree add "$dir" "$branch" || return 1
+      fi
+      dir=$(cd "$dir" && pwd)  # Get absolute path
     fi
-    dir=$(cd "$dir" && pwd)  # Get absolute path
   else
     # Fuzzy select existing worktree
     local selection=$(git worktree list 2>/dev/null | \
