@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.2] - 2026-02-04
+
+### Fixed
+- **Permissions bypass vulnerabilities** (reported by Cursor Bugbot):
+  - Force push via `+` refspec (`git push origin +main`) now blocked
+  - Protected branch push via refspec (`git push origin HEAD:main`) now blocked
+  - Branch deletion via colon refspec (`git push origin :main`) now blocked
+  - Credential paths via `$HOME` now blocked (was only blocking `~`)
+  - AWS `--profile=prod` syntax now blocked (was only blocking `--profile prod`)
+  - Added `sftp` to remote access deny list
+  - Added write protection for credential files
+
 ## [0.7.1] - 2026-02-04
 
 ### Added
