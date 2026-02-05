@@ -122,7 +122,9 @@ function wty() {
 
   command -v branch-tone &>/dev/null && (cd "$dir" && branch-tone "$branch") &>/dev/null &
 
-  local session_name="wt-${branch//\//-}"
+  # Include repo name in session to avoid collisions across projects
+  local repo_name=$(cd "$dir" && basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null || basename "$dir")
+  local session_name="${repo_name}-${branch//\//-}"
 
   # Create session if it doesn't exist
   if ! tmux has-session -t "$session_name" 2>/dev/null; then
@@ -267,7 +269,9 @@ function tsk() {
 
 # twt - create/attach tmux session for current worktree
 function twt() {
-  local session_name=$(basename $(pwd))
+  local repo_name=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null || basename "$(pwd)")
+  local branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "work")
+  local session_name="${repo_name}-${branch//\//-}"
   if tmux has-session -t "$session_name" 2>/dev/null; then
     tmux attach -t "$session_name"
   else
@@ -278,6 +282,18 @@ function twt() {
 # Quick aliases
 alias tl='tmux list-sessions'
 alias td='tmux detach'
+
+# tmux-reset - kill all tmux sessions (dangerous!)
+function tmux-reset() {
+  echo "⚠️  This will kill ALL tmux sessions!"
+  read -p "Are you sure? (y/n) " -n 1 -r
+  echo ""
+  if [[ $REPLY =~ ^[Yy]$ ]]; then
+    tmux kill-server 2>/dev/null && echo "✓ All sessions killed" || echo "No tmux server running"
+  else
+    echo "Cancelled"
+  fi
+}
 
 # -----------------------------------------------------------------------------
 # Git Aliases

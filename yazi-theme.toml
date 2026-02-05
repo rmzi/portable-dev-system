@@ -1,0 +1,71 @@
+# =============================================================================
+# Portable Dev System - Yazi Theme
+# Blue accent for file manager context
+# =============================================================================
+
+# Status bar - subtle blue accent
+[status]
+separator_open = ""
+separator_close = ""
+separator_style = { fg = "#5f87af" }
+
+[status.mode_normal]
+bg = "#5f87af"
+fg = "#1c1c1c"
+bold = true
+
+[status.mode_select]
+bg = "#87afd7"
+fg = "#1c1c1c"
+bold = true
+
+[status.mode_unset]
+bg = "#4e4e4e"
+fg = "#bcbcbc"
+bold = true
+
+# Progress bar
+[status.progress_label]
+fg = "#5f87af"
+bold = true
+
+[status.progress_normal]
+fg = "#5f87af"
+
+[status.progress_error]
+fg = "#af5f5f"
+
+# Permissions colors
+[status.permissions_t]
+fg = "#5f87af"
+
+[status.permissions_r]
+fg = "#87af87"
+
+[status.permissions_w]
+fg = "#d7af87"
+
+[status.permissions_x]
+fg = "#af87af"
+
+[status.permissions_s]
+fg = "#4e4e4e"
+
+# Tab bar - blue accent
+[tab]
+active = { fg = "#1c1c1c", bg = "#5f87af", bold = true }
+inactive = { fg = "#bcbcbc", bg = "#303030" }
+
+# Selection marker
+[select]
+marker = { fg = "#5f87af", bold = true }
+
+# File highlighting - subtle blue for selected
+[filetype]
+rules = [
+  { name = "*", is = "selected", bg = "#303040" },
+]
+
+# Border styling
+[border]
+style = { fg = "#5f87af" }
