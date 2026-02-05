@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.2] - 2026-02-05
+
+### Added
+- **README documentation** for the permissions model with philosophy and customization guidance
+
+### Changed
+- User-level settings now installed to `~/.claude/settings.json` (previously project-only)
+
 ## [0.7.1] - 2026-02-04
 
 ### Added
