@@ -182,10 +182,20 @@ function wta() {
 # wtl - list worktrees
 alias wtl='git worktree list'
 
-# wtr - remove a worktree (fuzzy select)
+# wtr - remove a worktree (fuzzy select) and kill its tmux session
 function wtr() {
-  local dir=$(git worktree list 2>/dev/null | fzf --height 40% --reverse | awk '{print $1}')
-  if [[ -n "$dir" ]]; then
+  local selection=$(git worktree list 2>/dev/null | fzf --height 40% --reverse)
+  if [[ -n "$selection" ]]; then
+    local dir=$(echo "$selection" | awk '{print $1}')
+    local branch=$(echo "$selection" | awk '{print $3}' | tr -d '[]')
+
+    # Kill associated tmux session if it exists (sessions are named wt-<branch>)
+    local session_name="wt-${branch//\//-}"
+    if tmux has-session -t "$session_name" 2>/dev/null; then
+      echo "Killing tmux session: $session_name"
+      tmux kill-session -t "$session_name"
+    fi
+
     git worktree remove "$dir"
   fi
 }
