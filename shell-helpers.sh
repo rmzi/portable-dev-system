@@ -41,6 +41,7 @@ function wt() {
     command -v branch-tone &>/dev/null && (cd "$dir" && branch-tone "$branch") &>/dev/null &
 
     local session_name="wt-${branch//\//-}"
+    session_name="${session_name//./_}"  # Escape dots for tmux
 
     # Create session if it doesn't exist
     if ! tmux has-session -t "$session_name" 2>/dev/null; then
@@ -53,8 +54,8 @@ function wt() {
       # Split bottom-right pane for yazi (70% of right column)
       tmux split-window -v -p 70 -t "$session_name" -c "$dir" "yazi"
 
-      # Select the terminal pane (top right)
-      tmux select-pane -t "$session_name" -U
+      # Select the terminal pane (top right) - use :0 to explicitly target window 0
+      tmux select-pane -t "${session_name}:0" -U
     fi
 
     # Attach or switch depending on whether we're in tmux
@@ -125,6 +126,7 @@ function wty() {
   # Include repo name in session to avoid collisions across projects
   local repo_name=$(cd "$dir" && basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null || basename "$dir")
   local session_name="${repo_name}-${branch//\//-}"
+  session_name="${session_name//./_}"  # Escape dots for tmux
 
   # Create session if it doesn't exist
   if ! tmux has-session -t "$session_name" 2>/dev/null; then
@@ -137,8 +139,8 @@ function wty() {
     # Split bottom-right pane for yazi (70% of right column)
     tmux split-window -v -p 70 -t "$session_name" -c "$dir" "yazi"
 
-    # Select the terminal pane (top right)
-    tmux select-pane -t "$session_name" -U
+    # Select the terminal pane (top right) - use :0 to explicitly target window 0
+    tmux select-pane -t "${session_name}:0" -U
   fi
 
   # Attach or switch depending on whether we're in tmux
@@ -193,6 +195,7 @@ function wtr() {
 
     # Kill associated tmux session if it exists (sessions are named wt-<branch>)
     local session_name="wt-${branch//\//-}"
+    session_name="${session_name//./_}"  # Escape dots for tmux
     if tmux has-session -t "$session_name" 2>/dev/null; then
       echo "Killing tmux session: $session_name"
       tmux kill-session -t "$session_name"
@@ -228,6 +231,10 @@ function wts() {
 
   if [[ -n "$selection" ]]; then
     local session_name=$(echo "$selection" | awk '{print $1}')
+    local branch=$(echo "$selection" | awk '{print $3}')
+
+    # Audio and visual feedback for session switch
+    command -v branch-tone &>/dev/null && branch-tone "$branch" &>/dev/null &
 
     if [[ -n "$TMUX" ]]; then
       tmux switch-client -t "$session_name"
@@ -272,6 +279,7 @@ function twt() {
   local repo_name=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null || basename "$(pwd)")
   local branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "work")
   local session_name="${repo_name}-${branch//\//-}"
+  session_name="${session_name//./_}"  # Escape dots for tmux
   if tmux has-session -t "$session_name" 2>/dev/null; then
     tmux attach -t "$session_name"
   else
@@ -636,7 +644,7 @@ function pds-addon() {
       # Install branch-tone
       cargo install branch-tone
 
-      # Create hook script
+      # Create hook scripts
       mkdir -p "$HOME/.pds"
       cat > "$HOME/.pds/branch-tone-hook.sh" << 'HOOK'
 #!/bin/bash
@@ -697,7 +705,7 @@ HOOK
       # Remove hook script
       if [[ -f "$HOME/.pds/branch-tone-hook.sh" ]]; then
         rm -f "$HOME/.pds/branch-tone-hook.sh"
-        echo "✓ Removed hook script"
+        echo "✓ Removed branch-tone hook script"
       fi
 
       # Remove Stop hook from Claude settings
