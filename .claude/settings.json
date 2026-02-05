@@ -2,25 +2,42 @@
   "permissions": {
     "allow": [
       "Read",
-      "Grep",
+      "Write",
+      "Edit",
       "Glob",
-      "Bash(git status)",
-      "Bash(git diff*)",
-      "Bash(git log*)",
-      "Bash(git worktree*)",
-      "Bash(git branch*)",
-      "Bash(git show*)",
-      "Bash(npm test*)",
-      "Bash(npm run test*)",
-      "Bash(npm run lint*)",
-      "Bash(pytest*)",
-      "Bash(make test*)",
-      "Bash(cargo test*)",
-      "Bash(cargo check*)",
-      "Bash(go test*)",
-      "Bash(go vet*)"
+      "Grep",
+      "WebFetch",
+      "WebSearch",
+      "Task",
+      "Bash(*)",
+      "mcp__*"
     ],
     "deny": [
+      "Bash(*~/.aws*)",
+      "Bash(*~/.ssh*)",
+      "Bash(*~/.gnupg*)",
+      "Bash(*~/.config/gcloud*)",
+      "Bash(*~/.databrickscfg*)",
+      "Bash(*~/.netrc*)",
+      "Bash(* --profile prod*)",
+      "Bash(*PROD*)",
+      "Bash(*prod.*)",
+      "Bash(ssh *)",
+      "Bash(scp *)",
+
+      "Bash(git push origin main)",
+      "Bash(git push origin main *)",
+      "Bash(git push origin master)",
+      "Bash(git push origin master *)",
+      "Bash(git push origin dev)",
+      "Bash(git push origin dev *)",
+      "Bash(git push origin develop)",
+      "Bash(git push origin develop *)",
+      "Bash(git push -f*)",
+      "Bash(git push --force*)",
+      "Bash(git push * --force*)",
+      "Bash(git push --delete*)",
+
       "Read(**/.env)",
       "Read(**/.env.*)",
       "Read(**/secrets/**)",
@@ -28,11 +45,7 @@
       "Read(**/*credential*)",
       "Write(**/.env*)",
       "Write(**/secrets/**)",
-      "Write(**/*.pem)",
-      "Bash(curl *)",
-      "Bash(wget *)",
-      "Bash(rm -rf *)",
-      "Bash(sudo *)"
+      "Write(**/*.pem)"
     ]
   }
 }

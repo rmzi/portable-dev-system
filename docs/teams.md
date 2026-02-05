@@ -78,6 +78,60 @@ Time: ~5 minutes.
 
 ---
 
+## Permissions Model
+
+PDS includes a velocity-focused `.claude/settings.json` that balances speed with safety.
+
+### What's Auto-Allowed
+- All read operations
+- All file writes/edits within the repo
+- All bash commands (with exceptions below)
+- All MCP tools
+- Web fetches and searches
+
+### What's Blocked
+
+**Credential paths** (never touched):
+- `~/.aws`, `~/.ssh`, `~/.gnupg`
+- `~/.config/gcloud`, `~/.databrickscfg`, `~/.netrc`
+
+**Git guardrails**:
+- Push to `main`, `master`, `dev`, `develop`
+- Force push (`-f`, `--force`)
+- Branch deletion via push
+
+**Prod patterns**:
+- Commands with `PROD`, `prod.`, `--profile prod`
+- `ssh` and `scp` to remote hosts
+
+**Sensitive files**:
+- `.env`, `.env.*`, `secrets/`, `*.pem`, `*credential*`
+
+### Customizing
+
+Add to your repo's `.claude/settings.json`:
+
+```json
+{
+  "permissions": {
+    "deny": [
+      "mcp__your_prod_tool__*",
+      "Bash(*your-prod-db*)"
+    ]
+  }
+}
+```
+
+### Philosophy
+
+Everything in git is recoverable. Local dev data is rebuildable. CI/CD validates branches. So:
+- **Dev = velocity** — let Claude move fast
+- **Prod = guardrails** — block credential paths and prod patterns
+
+This gives you `--dangerously-skip-permissions` velocity without the risk of touching prod.
+
+---
+
 ## Keeping Skills Updated
 
 When you update skills in your repo:

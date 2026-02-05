@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.1] - 2026-02-04
+
+### Added
+- **Permissive permissions model** - velocity-focused settings.json:
+  - Auto-allow: all tools, bash, MCP, web fetches
+  - Block: credential paths (~/.aws, ~/.ssh, etc.)
+  - Block: git push to main/master/dev/develop
+  - Block: force push, ssh/scp to remote hosts
+  - Block: prod-related patterns (PROD, prod.*, --profile prod)
+- **`wtr` kills tmux session** - removing a worktree also kills its associated tmux session
+- **Permissions documentation** in docs/teams.md
+
 ## [0.7.0] - 2026-02-04
 
 ### Added
