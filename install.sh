@@ -134,6 +134,27 @@ else
 fi
 
 # -----------------------------------------------------------------------------
+# Claude Code Settings
+# -----------------------------------------------------------------------------
+echo ""
+echo "📝 Installing Claude Code settings..."
+
+mkdir -p "$HOME/.claude"
+if [[ -f "$HOME/.claude/settings.json" ]]; then
+  if grep -q "mcp__" "$HOME/.claude/settings.json" 2>/dev/null; then
+    echo "✅ Claude settings already installed. Skipping."
+  else
+    echo "⚠️  Existing Claude settings found. Backing up to settings.json.backup"
+    cp "$HOME/.claude/settings.json" "$HOME/.claude/settings.json.backup"
+    curl -fsSL "$REPO_URL/.claude/settings.json" > "$HOME/.claude/settings.json"
+    echo "✅ Claude settings installed."
+  fi
+else
+  curl -fsSL "$REPO_URL/.claude/settings.json" > "$HOME/.claude/settings.json"
+  echo "✅ Claude settings installed."
+fi
+
+# -----------------------------------------------------------------------------
 # Done
 # -----------------------------------------------------------------------------
 echo ""
@@ -143,6 +164,7 @@ echo "Backups created (for pds-uninstall):"
 [[ -f "${SHELL_RC}.pds-backup" ]] && echo "  ${SHELL_RC}.pds-backup"
 [[ -f "$HOME/.tmux.conf.backup" ]] && echo "  ~/.tmux.conf.backup"
 [[ -f "$HOME/.config/starship.toml.backup" ]] && echo "  ~/.config/starship.toml.backup"
+[[ -f "$HOME/.claude/settings.json.backup" ]] && echo "  ~/.claude/settings.json.backup"
 echo ""
 echo "Next steps:"
 echo "  1. Restart your terminal or run: source $SHELL_RC"

@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
   - Block: git push to main/master/dev/develop
   - Block: force push, ssh/scp to remote hosts
   - Block: prod-related patterns (PROD, prod.*, --profile prod)
+- **User-level Claude settings** - `install.sh` now installs `~/.claude/settings.json` as default for all projects
 - **`wtr` kills tmux session** - removing a worktree also kills its associated tmux session
 - **Permissions documentation** in docs/teams.md
 
