@@ -627,6 +627,12 @@ function pds-addon() {
         return 1
       fi
 
+      # Check for jq
+      if ! command -v jq &>/dev/null; then
+        echo "❌ jq required. Install with: brew install jq"
+        return 1
+      fi
+
       # Install branch-tone
       cargo install branch-tone
 
@@ -641,20 +647,31 @@ branch-tone "$branch" --repo "$repo" --pad --chorus --steps 5 -d 800 -v 0.2
 HOOK
       chmod +x "$HOME/.pds/branch-tone-hook.sh"
 
+      # Add Stop hook to Claude settings
+      local settings_file="$HOME/.claude/settings.json"
+      local hook_cmd="$HOME/.pds/branch-tone-hook.sh"
+      local hook_entry='{"hooks":[{"type":"command","command":"'"$hook_cmd"'","async":true}]}'
+
+      if [[ -f "$settings_file" ]]; then
+        # Check if Stop hook already exists
+        if jq -e '.hooks.Stop' "$settings_file" &>/dev/null; then
+          echo "⚠️  Stop hook already exists in settings.json - skipping"
+        else
+          # Add hooks.Stop to existing settings
+          local tmp_file=$(mktemp)
+          jq --argjson hook "[$hook_entry]" '.hooks = (.hooks // {}) + {Stop: $hook}' "$settings_file" > "$tmp_file" && \
+            mv "$tmp_file" "$settings_file"
+          echo "✓ Added Stop hook to ~/.claude/settings.json"
+        fi
+      else
+        echo "⚠️  ~/.claude/settings.json not found - skipping hook setup"
+        echo "   Run pds-install first, then re-run this addon install"
+      fi
+
       echo ""
       echo "✅ branch-tone installed!"
       echo ""
-      echo "To enable Claude Code stop hook, add to ~/.claude/settings.json:"
-      echo ""
-      echo '  "hooks": {'
-      echo '    "Stop": [{'
-      echo '      "hooks": [{'
-      echo '        "type": "command",'
-      echo '        "command": "'$HOME'/.pds/branch-tone-hook.sh",'
-      echo '        "async": true'
-      echo '      }]'
-      echo '    }]'
-      echo '  }'
+      echo "Restart Claude Code for the hook to take effect."
       echo ""
       ;;
 
@@ -683,10 +700,20 @@ HOOK
         echo "✓ Removed hook script"
       fi
 
+      # Remove Stop hook from Claude settings
+      local settings_file="$HOME/.claude/settings.json"
+      if [[ -f "$settings_file" ]] && command -v jq &>/dev/null; then
+        if jq -e '.hooks.Stop' "$settings_file" &>/dev/null; then
+          local tmp_file=$(mktemp)
+          jq 'del(.hooks.Stop) | if .hooks == {} then del(.hooks) else . end' "$settings_file" > "$tmp_file" && \
+            mv "$tmp_file" "$settings_file"
+          echo "✓ Removed Stop hook from settings.json"
+        fi
+      fi
+
       echo ""
       echo "✅ branch-tone removed!"
       echo ""
-      echo "Note: Remove the Stop hook from ~/.claude/settings.json manually if present."
       ;;
 
     *)
