@@ -103,3 +103,45 @@ mkdir -p ~/.config/ghostty && cp ghostty.config ~/.config/ghostty/config
 **When to use Ghostty vs tmux:**
 - **Ghostty**: Local dev, quick sessions, lighter weight
 - **tmux**: Remote SSH, persistent sessions, detach/reattach
+
+### Yazi Theme
+
+For consistent file manager styling with blue accents:
+
+```bash
+mkdir -p ~/.config/yazi && cp yazi-theme.toml ~/.config/yazi/theme.toml
+```
+
+### Claude Status Line
+
+For the red-accented Claude status line:
+
+```bash
+cp claude-statusline.sh ~/.pds/
+chmod +x ~/.pds/claude-statusline.sh
+```
+
+Then update your `~/.claude/settings.json`:
+
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "~/.pds/claude-statusline.sh"
+  }
+}
+```
+
+---
+
+## Visual Context Colors
+
+PDS uses subtle RGB accents to distinguish contexts at a glance:
+
+| Context | Color | Where |
+|---------|-------|-------|
+| Terminal/tmux | Green | Status bar accent |
+| Yazi | Blue | Mode indicator, borders |
+| Claude | Red | Status line marker |
+
+Branch names are hashed to create subtle color variations within each family, so different branches have slightly different hues.
