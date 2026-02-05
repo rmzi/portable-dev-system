@@ -86,6 +86,22 @@ Every team member gets the same:
 
 ---
 
+## Permissions Model
+
+PDS includes a velocity-focused `.claude/settings.json` — like `--dangerously-skip-permissions` but with guardrails.
+
+**Auto-allowed:** all tools, bash, MCP, web fetches
+
+**Blocked:**
+- Credential paths (`~/.aws`, `~/.ssh`, `~/.gnupg`)
+- Git push to `main`/`master`/`dev`/`develop`
+- Force push, `ssh`, `scp`
+- Prod patterns (`PROD`, `prod.`, `--profile prod`)
+
+[Full permissions docs →](docs/teams.md#permissions-model)
+
+---
+
 ## Contributing
 
 PRs welcome. Add skills, improve docs, share what works.
