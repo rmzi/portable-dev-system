@@ -45,11 +45,11 @@ cd ~/your-project && pds-init
 
 | Command | What it does |
 |---------|--------------|
-| `wty` | Open worktree in tmux layout (Claude + terminal + yazi) |
+| `wt` / `wty` | Open worktree in tmux layout (Claude + terminal + yazi) |
+| `wts` | Global session picker - jump to any tmux session |
 | `wta -b feature/x` | Create new worktree + branch |
 | `pds-init` | Install skills to current project |
 | `pds-update` | Update skills to latest version |
-| `pds-addon branch-tone install` | Optional audio feedback |
 | `clauder` | Resume Claude session |
 
 **Skills:** `/commit` `/review` `/debug` `/test` `/design` `/worktree`

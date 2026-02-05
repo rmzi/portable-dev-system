@@ -136,7 +136,7 @@ Then update your `~/.claude/settings.json`:
 
 ## Visual Context Colors
 
-PDS uses subtle RGB accents to distinguish contexts at a glance:
+The included config files use subtle RGB accents to distinguish contexts at a glance:
 
 | Context | Color | Where |
 |---------|-------|-------|
@@ -144,4 +144,4 @@ PDS uses subtle RGB accents to distinguish contexts at a glance:
 | Yazi | Blue | Mode indicator, borders |
 | Claude | Red | Status line marker |
 
-Branch names are hashed to create subtle color variations within each family, so different branches have slightly different hues.
+These are optional configs - use your own theme if you prefer.

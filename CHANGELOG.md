@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0] - 2026-02-05
 
+**Stable release.** Terminal-first, AI-assisted development with worktrees and skills.
+
+### Highlights
+- Tmux layouts for isolated worktree sessions (Claude + terminal + yazi)
+- Skills system for consistent team workflows
+- Velocity-focused permissions with security guardrails
+- Optional audio feedback via branch-tone addon
+
 ### Added
 - Branch-tone audio feedback on session switch via `wts`
 
@@ -12,7 +20,7 @@ All notable changes to this project will be documented in this file.
 - Pane selection uses explicit `:0` window targeting for reliability
 
 ### Removed
-- Dynamic terminal theming (branch-theme) - users manage their own themes
+- Dynamic terminal theming - users manage their own themes
 
 ## [0.7.3] - 2026-02-05
 
