@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0] - 2026-02-05
+
+### Added
+- Branch-tone audio feedback on session switch via `wts`
+
+### Fixed
+- Tmux session names with dots now properly escaped
+- Pane selection uses explicit `:0` window targeting for reliability
+
+### Removed
+- Dynamic terminal theming (branch-theme) - users manage their own themes
+
 ## [0.7.3] - 2026-02-05
 
 ### Added
