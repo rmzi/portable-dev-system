@@ -496,6 +496,16 @@ function pds-uninstall() {
     fi
   fi
 
+  # Offer to restore Claude settings
+  if [[ -f "$HOME/.claude/settings.json.backup" ]]; then
+    read -p "Restore Claude settings from backup? (y/n) " -n 1 -r
+    echo ""
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+      mv "$HOME/.claude/settings.json.backup" "$HOME/.claude/settings.json"
+      echo "✓ Restored ~/.claude/settings.json"
+    fi
+  fi
+
   echo ""
   echo "✅ PDS uninstalled. Restart your terminal to complete."
   echo ""
