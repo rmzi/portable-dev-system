@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2026-02-10
+
+### Added
+- **PermissionRequest prompt hook** — subagent permission requests auto-resolved via built-in LLM-as-judge hook in `settings.json` (no external API key needed)
+- **`/permission-router` skill** — documents the prompt hook policy and configuration
+- **Contained worktrees** — `wt` now creates worktrees inside `project/.worktrees/` instead of sibling directories, reducing clutter in `~/dev/`
+- **`wtc --all` end-of-day cleanup** — scan all repos, surface outstanding work, interactive resolution menu, batch remove merged worktrees
+- **`/eod` skill** — documents the end-of-day cleanup workflow and configuration
+- **Sibling worktree migration** — `wtc` and `wtc --all` detect old `../project-branch/` format and offer `git worktree move` migration
+- **Auto `.gitignore`** — `.worktrees/` automatically added to `.gitignore` on first worktree creation and during `pds-init`
+- **Configurable scan dirs** — `~/.pds/eod.conf` with `SCAN_DIRS` for cross-repo discovery
+
+### Removed
+- **`clauder` alias** — `claude --continue` is easy enough to type directly
+
+### Changed
+- **Worktree path convention** — from `../project-branch/` (sibling) to `project/.worktrees/branch/` (contained)
+- **tmux session naming** — derives repo name from main worktree via `git worktree list` instead of `git rev-parse --show-toplevel` (fixes naming inside `.worktrees/`)
+- **`wtc` refactored** — cleanup logic extracted into `__pds_repo_cleanup` for reuse by `wtc --all`
+
 ## [1.0.1] - 2026-02-09
 
 ### Added

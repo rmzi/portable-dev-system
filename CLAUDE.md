@@ -31,7 +31,9 @@ Terminal-first, AI-assisted dev methodology using worktrees for isolation.
 | `/test` | Writing or running tests |
 | `/design` | Architecture decisions, new features |
 | `/worktree` | Branch isolation, parallel work |
+| `/eod` | End-of-day cleanup across all repos |
 | `/bump` | Version bump and changelog update |
+| `/permission-router` | Permission hook policy, subagent routing |
 | `/quickref` | Command reference |
 
 ---
@@ -41,8 +43,6 @@ Terminal-first, AI-assisted dev methodology using worktrees for isolation.
 - `wt` - Pick worktree, open in tmux layout
 - `wt -b feature/x` - Create new worktree + branch
 - `wts` - Global session picker (from anywhere)
-- `clauder` - Resume Claude session for current directory
-
 ---
 
 ## Rules
@@ -52,7 +52,8 @@ Terminal-first, AI-assisted dev methodology using worktrees for isolation.
 - Need to work on existing branch? Use `git worktree add` or `wt branch`
 - Cloning creates disconnected copies. Worktrees share git history and stay in sync.
 
-**NEVER use /tmp for code or worktrees.** Worktrees go in the project's parent directory:
-- Correct: `../project-feature-branch/`
+**NEVER use /tmp for code or worktrees.** Worktrees go inside the repo at `.worktrees/`:
+- Correct: `.worktrees/feature-branch/` (inside the main repo)
 - Wrong: `/tmp/project/` or `/tmp/feature-work/`
+- Wrong: `../project-feature-branch/` (old sibling format — migrate with `wtc`)
 - /tmp is only for temporary files (downloads, build artifacts, large files that shouldn't persist)
