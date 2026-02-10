@@ -31,6 +31,7 @@ Terminal-first, AI-assisted dev methodology using worktrees for isolation.
 | `/test` | Writing or running tests |
 | `/design` | Architecture decisions, new features |
 | `/worktree` | Branch isolation, parallel work |
+| `/merge` | Merging subtask worktrees back to coordinator |
 | `/bump` | Version bump and changelog update |
 | `/quickref` | Command reference |
 
