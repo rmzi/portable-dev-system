@@ -20,7 +20,7 @@ Bump the project version and update the changelog in one atomic operation.
 2. **Determine new version** based on bump type
 3. **Update VERSION** file
 4. **Update CHANGELOG.md** with new section:
-   - Add `## [X.Y.Z] - YYYY-MM-DD` header
+   - Add `## [X.Y.Z] - YYYY-MM-DDTHH:MM:SS±HH:MM` header (use current local time)
    - Summarize changes since last version
    - Use `### Added`, `### Changed`, `### Fixed`, `### Removed` subsections
 5. **Commit** with message: `chore: bump version to X.Y.Z`
@@ -28,7 +28,7 @@ Bump the project version and update the changelog in one atomic operation.
 ## Changelog Format
 
 ```markdown
-## [0.7.2] - 2026-02-04
+## [0.7.2] - 2026-02-04T14:32:07-05:00
 
 ### Fixed
 - Description of bug fix
@@ -55,7 +55,10 @@ Bump the project version and update the changelog in one atomic operation.
    - Be user-facing (what changed for them, not internal details)
    - Link to issues/PRs when relevant
 
-3. **One commit** - Version bump and changelog go in the same commit
+3. **Full ISO 8601 timestamps** - Use `YYYY-MM-DDTHH:MM:SS±HH:MM` format (not just the date).
+   Get the current time via `date +%Y-%m-%dT%H:%M:%S%z` (inserting a colon in the offset, e.g., `-05:00` not `-0500`).
+
+4. **One commit** - Version bump and changelog go in the same commit
 
 ## Example
 
@@ -66,6 +69,6 @@ Claude:
 - Reads VERSION: 0.7.1
 - Calculates new version: 0.7.2
 - Updates VERSION to 0.7.2
-- Adds ## [0.7.2] section to CHANGELOG.md
+- Adds ## [0.7.2] - 2026-02-04T14:32:07-05:00 section to CHANGELOG.md
 - Commits: "chore: bump version to 0.7.2"
 ```
