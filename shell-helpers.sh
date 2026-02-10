@@ -711,21 +711,33 @@ branch-tone "$branch" --repo "$repo" --pad --chorus --steps 5 -d 800 -v 0.2
 HOOK
       chmod +x "$HOME/.pds/branch-tone-hook.sh"
 
-      # Add Stop hook to Claude settings
+      # Add Stop and PermissionRequest hooks to Claude settings
       local settings_file="$HOME/.claude/settings.json"
       local hook_cmd="$HOME/.pds/branch-tone-hook.sh"
       local hook_entry='{"hooks":[{"type":"command","command":"'"$hook_cmd"'","async":true}]}'
 
       if [[ -f "$settings_file" ]]; then
-        # Check if Stop hook already exists
-        if jq -e '.hooks.Stop' "$settings_file" &>/dev/null; then
-          echo "⚠️  Stop hook already exists in settings.json - skipping"
+        local tmp_file=$(mktemp)
+        local added=()
+
+        # Add hooks that don't already exist
+        cp "$settings_file" "$tmp_file"
+        for event in Stop PermissionRequest; do
+          if jq -e ".hooks.$event" "$tmp_file" &>/dev/null; then
+            echo "⚠️  $event hook already exists in settings.json - skipping"
+          else
+            jq --arg event "$event" --argjson hook "[$hook_entry]" \
+              '.hooks = (.hooks // {}) + {($event): $hook}' "$tmp_file" > "${tmp_file}.new" && \
+              mv "${tmp_file}.new" "$tmp_file"
+            added+=("$event")
+          fi
+        done
+
+        if [[ ${#added[@]} -gt 0 ]]; then
+          mv "$tmp_file" "$settings_file"
+          echo "✓ Added hooks to ~/.claude/settings.json: ${added[*]}"
         else
-          # Add hooks.Stop to existing settings
-          local tmp_file=$(mktemp)
-          jq --argjson hook "[$hook_entry]" '.hooks = (.hooks // {}) + {Stop: $hook}' "$settings_file" > "$tmp_file" && \
-            mv "$tmp_file" "$settings_file"
-          echo "✓ Added Stop hook to ~/.claude/settings.json"
+          rm -f "$tmp_file"
         fi
       else
         echo "⚠️  ~/.claude/settings.json not found - skipping hook setup"
@@ -764,14 +776,24 @@ HOOK
         echo "✓ Removed branch-tone hook script"
       fi
 
-      # Remove Stop hook from Claude settings
+      # Remove branch-tone hooks from Claude settings
       local settings_file="$HOME/.claude/settings.json"
       if [[ -f "$settings_file" ]] && command -v jq &>/dev/null; then
-        if jq -e '.hooks.Stop' "$settings_file" &>/dev/null; then
-          local tmp_file=$(mktemp)
-          jq 'del(.hooks.Stop) | if .hooks == {} then del(.hooks) else . end' "$settings_file" > "$tmp_file" && \
-            mv "$tmp_file" "$settings_file"
-          echo "✓ Removed Stop hook from settings.json"
+        local tmp_file=$(mktemp)
+        cp "$settings_file" "$tmp_file"
+        local removed=false
+        for event in Stop PermissionRequest; do
+          if jq -e ".hooks.$event" "$tmp_file" &>/dev/null; then
+            jq "del(.hooks.$event) | if .hooks == {} then del(.hooks) else . end" "$tmp_file" > "${tmp_file}.new" && \
+              mv "${tmp_file}.new" "$tmp_file"
+            removed=true
+          fi
+        done
+        if [[ "$removed" == true ]]; then
+          mv "$tmp_file" "$settings_file"
+          echo "✓ Removed branch-tone hooks from settings.json"
+        else
+          rm -f "$tmp_file"
         fi
       fi
 
