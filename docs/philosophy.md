@@ -30,10 +30,10 @@
 
 ```bash
 # Working on feature
-wta -b feature/auth
+wt -b feature/auth
 
 # Urgent bug? New terminal:
-wta -b hotfix/critical
+wt -b hotfix/critical
 
 # Two completely isolated environments
 # No stashing. No branch switching. No lost context.

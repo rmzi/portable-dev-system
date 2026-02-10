@@ -23,12 +23,12 @@ Worktrees solve this by giving each stream of work its own directory.
 
 | Command | What it does |
 |---------|--------------|
-| `wt` | Fuzzy pick worktree → cd there |
-| `wty` | Fuzzy pick worktree → tmux layout (Claude + terminal + yazi) |
-| `wta <branch>` | Create worktree from existing branch |
-| `wta -b <branch>` | Create worktree with new branch (falls back if exists) |
-| `wtl` | List all worktrees |
-| `wtr` | Fuzzy pick worktree to remove |
+| `wt` | Fuzzy pick worktree → tmux layout (Claude + terminal + yazi + lazygit) |
+| `wt branch` | Open tmux layout for existing branch |
+| `wt -b branch` | Create new branch + open tmux layout |
+| `wtr` | Remove current worktree + kill its session |
+| `wts` | Global session picker — jump to any tmux session |
+| `wtc` | Clean up stale worktrees + orphaned tmux sessions |
 
 ### Raw git commands
 
@@ -59,7 +59,7 @@ Pattern: `{project}-{branch-with-slashes-as-dashes}`
 
 ```bash
 # Start feature work
-wta -b feature/user-profiles
+wt -b feature/user-profiles
 # Now in ../myproject-feature-user-profiles
 
 # Open Claude Code
@@ -69,7 +69,7 @@ claude
 
 # Urgent bug comes in - new terminal:
 cd ~/dev/myproject
-wta -b hotfix/critical-fix
+wt -b hotfix/critical-fix
 
 # Fix bug, PR, merge, clean up
 wtr  # Select hotfix worktree to remove
@@ -90,7 +90,7 @@ git worktree remove ../project-pr-123
 
 ### Explore without fear
 ```bash
-wta -b spike/crazy-idea
+wt -b spike/crazy-idea
 # Break things freely
 # If good: merge
 # If bad: wtr && git branch -D spike/crazy-idea
@@ -98,8 +98,8 @@ wta -b spike/crazy-idea
 
 ### Parallel feature development
 ```bash
-wta -b feature/api
-wta -b feature/ui
+wt -b feature/api
+wt -b feature/ui
 # Work on API in one terminal, UI in another
 ```
 

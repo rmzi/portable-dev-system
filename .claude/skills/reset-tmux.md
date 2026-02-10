@@ -25,7 +25,15 @@ Recreate your worktree sessions:
 ```bash
 # Navigate to your worktree and open fresh session
 cd ~/dev/project
-wty main
+wt main
+```
+
+## Gentle Cleanup (preferred)
+
+Use `wtc` to clean up without nuking everything:
+
+```bash
+wtc  # Prunes stale worktrees + kills orphaned tmux sessions
 ```
 
 ## Caution

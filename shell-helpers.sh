@@ -22,61 +22,18 @@ function y() {
 # Worktree Helpers
 # -----------------------------------------------------------------------------
 
-# wt - fuzzy pick a worktree and open tmux layout (same as wty for selection)
-function wt() {
-  local selection=$(git worktree list 2>/dev/null | \
-    awk '{
-      path=$1
-      branch=$NF
-      gsub(/\[|\]/, "", branch)
-      n=split(path, parts, "/")
-      dir=parts[n]
-      printf "%-20s  %-30s  %s\n", branch, dir, path
-    }' | \
-    fzf --height 40% --reverse --header="BRANCH               DIR                            PATH")
-
-  if [[ -n "$selection" ]]; then
-    local dir=$(echo "$selection" | awk '{print $NF}')
-    local branch=$(echo "$selection" | awk '{print $1}')
-    command -v branch-tone &>/dev/null && (cd "$dir" && branch-tone "$branch") &>/dev/null &
-
-    local session_name="wt-${branch//\//-}"
-    session_name="${session_name//./_}"  # Escape dots for tmux
-
-    # Create session if it doesn't exist
-    if ! tmux has-session -t "$session_name" 2>/dev/null; then
-      # Create new session with claude on the left
-      tmux new-session -d -s "$session_name" -c "$dir" "claude"
-
-      # Split right pane for terminal
-      tmux split-window -h -t "$session_name" -c "$dir"
-
-      # Split bottom-right pane for yazi (70% of right column)
-      tmux split-window -v -p 70 -t "$session_name" -c "$dir" "yazi"
-
-      # Select the terminal pane (top right) - use :0 to explicitly target window 0
-      tmux select-pane -t "${session_name}:0" -U
-    fi
-
-    # Attach or switch depending on whether we're in tmux
-    if [[ -n "$TMUX" ]]; then
-      tmux switch-client -t "$session_name"
-    else
-      tmux attach -t "$session_name"
-    fi
-  fi
-}
-
-# wty - open tmux layout for a worktree (can also create new worktrees)
-#       Usage: wty           - fuzzy select existing worktree
-#              wty branch    - use existing branch
-#              wty -b branch - create new branch
+# wt - open tmux layout for a worktree (can also create new worktrees)
+#      Usage: wt           - fuzzy select existing worktree
+#             wt branch    - use existing branch
+#             wt -b branch - create new branch
 # Layout: ┌─────────────┬─────────────┐
 #         │             │  terminal   │  (~30%)
-#         │   claude    ├─────────────┤
+#         │   claude    ├─────────────┤  70%
 #         │   (50%)     │    yazi     │  (~70%)
-#         └─────────────┴─────────────┘
-function wty() {
+#         ├─────────────┴─────────────┤
+#         │          lazygit          │  30%
+#         └───────────────────────────┘
+function wt() {
   local dir branch existing_wt
 
   if [[ -n "$1" ]]; then
@@ -139,8 +96,11 @@ function wty() {
     # Split bottom-right pane for yazi (70% of right column)
     tmux split-window -v -p 70 -t "$session_name" -c "$dir" "yazi"
 
-    # Select the terminal pane (top right) - use :0 to explicitly target window 0
-    tmux select-pane -t "${session_name}:0" -U
+    # Full-width bottom pane for lazygit (30% of total height)
+    tmux split-window -fv -p 30 -t "${session_name}:1" -c "$dir" "lazygit"
+
+    # Select the terminal pane (top right)
+    tmux select-pane -t "${session_name}:1" -U
   fi
 
   # Attach or switch depending on whether we're in tmux
@@ -151,58 +111,34 @@ function wty() {
   fi
 }
 
-# wta - create a new worktree or go to existing one
-# Usage: wta branch (existing) or wta -b branch (new, falls back to existing)
-function wta() {
-  local branch dir existing_wt
-  if [[ "$1" == "-b" ]]; then
-    branch="$2"
-  else
-    branch="$1"
-  fi
-
-  # Check if branch is already checked out in a worktree
-  existing_wt=$(git worktree list 2>/dev/null | grep "\[$branch\]" | awk '{print $1}')
-  if [[ -n "$existing_wt" ]]; then
-    echo "Branch '$branch' already checked out at: $existing_wt"
-    command -v branch-tone &>/dev/null && (cd "$existing_wt" && branch-tone "$branch") &>/dev/null &
-    cd "$existing_wt"
-    return 0
-  fi
-
-  dir="../$(basename $(pwd))-${branch//\//-}"
-
-  # Try new branch first if -b, fall back to existing
-  if [[ "$1" == "-b" ]]; then
-    git worktree add -b "$branch" "$dir" 2>/dev/null || git worktree add "$dir" "$branch"
-  else
-    git worktree add "$dir" "$branch"
-  fi && {
-    command -v branch-tone &>/dev/null && (cd "$dir" && branch-tone "$branch") &>/dev/null &
-    cd "$dir"
-  }
-}
-
-# wtl - list worktrees
-alias wtl='git worktree list'
-
-# wtr - remove a worktree (fuzzy select) and kill its tmux session
+# wtr - remove the current worktree and kill its tmux session
 function wtr() {
-  local selection=$(git worktree list 2>/dev/null | fzf --height 40% --reverse)
-  if [[ -n "$selection" ]]; then
-    local dir=$(echo "$selection" | awk '{print $1}')
-    local branch=$(echo "$selection" | awk '{print $3}' | tr -d '[]')
+  local dir=$(pwd)
+  local main_wt=$(git worktree list 2>/dev/null | head -1 | awk '{print $1}')
 
-    # Kill associated tmux session if it exists (sessions are named wt-<branch>)
-    local session_name="wt-${branch//\//-}"
-    session_name="${session_name//./_}"  # Escape dots for tmux
-    if tmux has-session -t "$session_name" 2>/dev/null; then
-      echo "Killing tmux session: $session_name"
-      tmux kill-session -t "$session_name"
-    fi
-
-    git worktree remove "$dir"
+  # Make sure we're in a worktree (not the main one)
+  if [[ "$dir" == "$main_wt" ]]; then
+    echo "Can't remove the main worktree. Use this from a secondary worktree."
+    return 1
   fi
+
+  local branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+  local repo_name=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null)
+  local session_name="${repo_name}-${branch//\//-}"
+  session_name="${session_name//./_}"  # Escape dots for tmux
+
+  echo "Removing worktree: $dir (branch: $branch)"
+
+  # cd to main worktree first
+  cd "$main_wt"
+
+  # Kill associated tmux session
+  if tmux has-session -t "$session_name" 2>/dev/null; then
+    echo "Killing tmux session: $session_name"
+    tmux kill-session -t "$session_name"
+  fi
+
+  git worktree remove "$dir"
 }
 
 # wts - global session picker: see all tmux sessions from anywhere, jump to one
@@ -244,52 +180,71 @@ function wts() {
   fi
 }
 
-# -----------------------------------------------------------------------------
-# Tmux Session Helpers
-# -----------------------------------------------------------------------------
-# ts - list or attach to tmux sessions
-function ts() {
-  if [[ -z "$1" ]]; then
-    # No arg: list sessions or show help
-    if tmux list-sessions 2>/dev/null; then
-      echo ""
-      echo "Attach: ts <name> | New: ts -n <name>"
-    else
-      echo "No sessions. Create one: ts -n <name>"
-    fi
-  elif [[ "$1" == "-n" ]]; then
-    # New session
-    tmux new-session -s "$2"
+# wtc - clean up stale worktrees and orphaned tmux sessions
+function wtc() {
+  local cleaned=0
+  local main_wt=$(git worktree list 2>/dev/null | head -1 | awk '{print $1}')
+
+  if [[ -z "$main_wt" ]]; then
+    echo "Not in a git repository."
+    return 1
+  fi
+
+  echo "🔍 Scanning for stale worktrees and orphaned sessions..."
+  echo ""
+
+  # 1. Prune worktrees whose directories no longer exist
+  local prunable=$(git worktree list --porcelain 2>/dev/null | grep "^worktree " | awk '{print $2}' | while read wt_path; do
+    [[ ! -d "$wt_path" ]] && echo "$wt_path"
+  done)
+
+  if [[ -n "$prunable" ]]; then
+    echo "Stale worktrees (directory missing):"
+    echo "$prunable" | while read p; do echo "  $p"; done
+    echo ""
+    git worktree prune
+    echo "✓ Pruned stale worktrees"
+    ((cleaned++))
+  fi
+
+  # 2. Find orphaned tmux sessions (session exists but worktree directory is gone)
+  local repo_name=$(basename "$main_wt")
+  local sessions=$(tmux list-sessions -F "#{session_name}" 2>/dev/null | grep "^${repo_name}-")
+
+  if [[ -n "$sessions" ]]; then
+    local worktree_branches=$(git worktree list 2>/dev/null | awk '{print $NF}' | tr -d '[]')
+
+    while IFS= read -r session; do
+      # Extract branch from session name (repo-name-branch-name → branch-name)
+      local branch_part="${session#${repo_name}-}"
+
+      # Check if any worktree branch matches this session
+      local found=false
+      while IFS= read -r wt_branch; do
+        local normalized="${wt_branch//\//-}"
+        normalized="${normalized//./_}"
+        if [[ "$branch_part" == "$normalized" ]]; then
+          found=true
+          break
+        fi
+      done <<< "$worktree_branches"
+
+      if [[ "$found" == false ]]; then
+        echo "Orphaned session (no matching worktree): $session"
+        tmux kill-session -t "$session" 2>/dev/null
+        echo "✓ Killed session: $session"
+        ((cleaned++))
+      fi
+    done <<< "$sessions"
+  fi
+
+  if [[ $cleaned -eq 0 ]]; then
+    echo "✅ Nothing to clean up."
   else
-    # Attach to existing
-    tmux attach -t "$1" 2>/dev/null || tmux new-session -s "$1"
+    echo ""
+    echo "✅ Cleanup complete."
   fi
 }
-
-# tsk - kill a tmux session (fuzzy select)
-function tsk() {
-  local session=$(tmux list-sessions -F "#{session_name}" 2>/dev/null | fzf --height 40% --reverse)
-  if [[ -n "$session" ]]; then
-    tmux kill-session -t "$session"
-  fi
-}
-
-# twt - create/attach tmux session for current worktree
-function twt() {
-  local repo_name=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null || basename "$(pwd)")
-  local branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "work")
-  local session_name="${repo_name}-${branch//\//-}"
-  session_name="${session_name//./_}"  # Escape dots for tmux
-  if tmux has-session -t "$session_name" 2>/dev/null; then
-    tmux attach -t "$session_name"
-  else
-    tmux new-session -s "$session_name"
-  fi
-}
-
-# Quick aliases
-alias tl='tmux list-sessions'
-alias td='tmux detach'
 
 # tmux-reset - kill all tmux sessions (dangerous!)
 function tmux-reset() {
