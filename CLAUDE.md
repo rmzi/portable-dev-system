@@ -53,6 +53,8 @@ Terminal-first, AI-assisted dev methodology using worktrees for isolation.
 - Need to work on existing branch? Use `git worktree add` or `wt branch`
 - Cloning creates disconnected copies. Worktrees share git history and stay in sync.
 
+**Send denied commands to the terminal.** When a command is blocked by permissions (force push, etc.) or otherwise requires manual action, don't just print it — send it to the user's terminal pane via `tmux send-keys -t 2 'command' ''` (no Enter, so the user can review before executing).
+
 **NEVER use /tmp for code or worktrees.** Worktrees go inside the repo at `.worktrees/`:
 - Correct: `.worktrees/feature-branch/` (inside the main repo)
 - Wrong: `/tmp/project/` or `/tmp/feature-work/`

@@ -10,6 +10,7 @@
 | `wtr` | Remove current worktree + kill its session |
 | `wts` | Global session picker — jump to any tmux session |
 | `wtc` | Clean up stale worktrees + orphaned tmux sessions |
+| `wtc --all` | End-of-day cleanup across all repos |
 
 ### Terminal Layout
 
@@ -88,7 +89,6 @@
 | `pds-update` | Update project skills to latest version |
 | `pds-update -s` | Update system shell helpers (~/.pds) |
 | `pds-uninstall` | Remove PDS, restore backups |
-| `clauder` | Resume most recent Claude session |
 
 ---
 
@@ -105,5 +105,5 @@ See [Skills Catalog](skills.md) for full descriptions.
 | `/test` | Test strategy |
 | `/design` | Architecture |
 | `/worktree` | Branch isolation |
-| `/bootstrap` | New project |
+| `/eod` | End-of-day cleanup |
 | `/quickref` | Cheatsheet |
