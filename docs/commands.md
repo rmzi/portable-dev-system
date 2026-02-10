@@ -4,40 +4,30 @@
 
 | Command | What it does |
 |---------|--------------|
-| `wt` | Fuzzy pick a worktree → cd there |
-| `wty` | Fuzzy pick a worktree → open tmux layout |
-| `wta feature/x` | Create worktree from existing branch |
-| `wta -b feature/x` | Create worktree + new branch |
-| `wtl` | List all worktrees |
-| `wtr` | Fuzzy pick a worktree to remove |
+| `wt` | Fuzzy pick a worktree → open tmux layout |
+| `wt branch` | Open tmux layout for existing branch |
+| `wt -b branch` | Create new branch + open tmux layout |
+| `wtr` | Remove current worktree + kill its session |
+| `wts` | Global session picker — jump to any tmux session |
+| `wtc` | Clean up stale worktrees + orphaned tmux sessions |
 
 ### Terminal Layout
 
-`wty` creates this tmux layout:
+`wt` creates this tmux layout:
 
 ```
 ┌──────────────────────────┬──────────────────┐
 │                          │    terminal      │
 │      Claude Code         ├──────────────────┤
 │                          │      yazi        │
-└──────────────────────────┴──────────────────┘
+├──────────────────────────┴──────────────────┤
+│                  lazygit                     │
+└──────────────────────────────────────────────┘
 ```
 
----
-
-## Tmux Sessions
-
-| Command | What it does |
-|---------|--------------|
-| `ts` | List tmux sessions |
-| `ts <name>` | Attach to session (or create if doesn't exist) |
-| `ts -n <name>` | Create new session |
-| `tsk` | Fuzzy pick a session to kill |
-| `twt` | Create/attach session named after current directory |
-| `tl` | List sessions (alias) |
-| `td` | Detach from current session |
-
 **Tmux prefix:** `Ctrl-a` (not `Ctrl-b`)
+
+**Tip:** If a pane dies (e.g. accidentally closed), the pane stays visible. Navigate to it and press `Ctrl-a R` to respawn it.
 
 ---
 

@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.1] - 2026-02-09
+
+### Added
+- **Lazygit pane** in tmux layout — full-width bottom pane (30% of total height)
+- **remain-on-exit** — accidentally closed panes stay visible instead of breaking the layout
+- **`Ctrl-a R` keybinding** — respawn a dead pane with its original command
+- **`wtc` command** — clean up stale worktrees and orphaned tmux sessions
+
+### Changed
+- **Consolidated `wt` and `wty`** into single `wt` command (`wt`, `wt branch`, `wt -b branch`)
+- **`wtr` is now directory-aware** — removes the current worktree instead of fuzzy picking
+
+### Removed
+- **`wty`** — merged into `wt`
+- **`wta`** — `wt` and `wt -b` cover the same functionality with tmux
+- **`wtl`** — `wt` with no args shows all worktrees via fuzzy picker
+- **`ts`, `tsk`, `twt`, `tl`, `td`** — unused tmux session helpers (`wts` covers session management)
+
 ## [1.0.0] - 2026-02-05
 
 **Stable release.** Terminal-first, AI-assisted development with worktrees and skills.

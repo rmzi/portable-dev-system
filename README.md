@@ -45,9 +45,9 @@ cd ~/your-project && pds-init
 
 | Command | What it does |
 |---------|--------------|
-| `wt` / `wty` | Open worktree in tmux layout (Claude + terminal + yazi) |
+| `wt` | Open worktree in tmux layout (Claude + terminal + yazi + lazygit) |
 | `wts` | Global session picker - jump to any tmux session |
-| `wta -b feature/x` | Create new worktree + branch |
+| `wt -b feature/x` | Create new worktree + branch |
 | `pds-init` | Install skills to current project |
 | `pds-update` | Update skills to latest version |
 | `clauder` | Resume Claude session |
@@ -107,7 +107,7 @@ PDS includes a velocity-focused `.claude/settings.json` — like `--dangerously-
 PRs welcome. Add skills, improve docs, share what works.
 
 ```bash
-wta -b feature/my-improvement
+wt -b feature/my-improvement
 # Make changes
 # /commit for the format
 ```
