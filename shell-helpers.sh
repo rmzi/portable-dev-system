@@ -44,6 +44,19 @@ function wt() {
       branch="$1"
     fi
 
+    # Warn if creating a worktree from a non-default branch (nested worktree)
+    local current_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+    if [[ "$current_branch" != "main" && "$current_branch" != "dev" ]]; then
+      local main_wt_path=$(git worktree list 2>/dev/null | head -1 | awk '{print $1}')
+      if [[ "$(pwd -P)" != "$main_wt_path" ]]; then
+        echo "⚠️  Creating worktree from branch '$current_branch' (not main/dev)"
+        echo "   Parent: $(basename $(pwd))"
+        read -p "   Continue? (y/n) " -n 1 -r
+        echo ""
+        [[ ! $REPLY =~ ^[Yy]$ ]] && return 0
+      fi
+    fi
+
     # Check if branch is already checked out in a worktree
     existing_wt=$(git worktree list 2>/dev/null | grep "\[$branch\]" | awk '{print $1}')
     if [[ -n "$existing_wt" ]]; then
@@ -236,6 +249,94 @@ function wtc() {
         ((cleaned++))
       fi
     done <<< "$sessions"
+  fi
+
+  # 3. Remove worktrees whose branches have been merged to main
+  #    Also cascades to child worktrees (subagent worktrees created from within a worktree)
+  local current_wt=$(pwd -P)
+  local main_branch=$(git -C "$main_wt" symbolic-ref --short HEAD 2>/dev/null || echo "main")
+  local merged_branches=$(git -C "$main_wt" branch --merged "$main_branch" 2>/dev/null | sed 's/^[* ]*//')
+  local removable=()
+
+  # Collect all worktree paths and branches
+  local all_wt_paths=()
+  local all_wt_branches=()
+  while IFS= read -r wt_line; do
+    all_wt_paths+=("$(echo "$wt_line" | awk '{print $1}')")
+    all_wt_branches+=("$(echo "$wt_line" | awk '{print $NF}' | tr -d '[]')")
+  done < <(git worktree list 2>/dev/null)
+
+  # Find merged worktrees and their children
+  for i in "${!all_wt_paths[@]}"; do
+    local wt_path="${all_wt_paths[$i]}"
+    local wt_branch="${all_wt_branches[$i]}"
+
+    # Skip main worktree and current worktree
+    [[ "$wt_path" == "$main_wt" ]] && continue
+    [[ "$wt_path" == "$current_wt" ]] && continue
+    [[ "$wt_branch" == "$main_branch" ]] && continue
+
+    # Check if branch is merged
+    if echo "$merged_branches" | grep -qx "$wt_branch"; then
+      removable+=("$wt_path|$wt_branch|merged")
+
+      # Find child worktrees (created from within this worktree via wt -b)
+      local wt_dir_name=$(basename "$wt_path")
+      for j in "${!all_wt_paths[@]}"; do
+        local child_path="${all_wt_paths[$j]}"
+        local child_branch="${all_wt_branches[$j]}"
+        local child_dir_name=$(basename "$child_path")
+
+        # Child worktrees start with parent dir name + "-"
+        if [[ "$child_dir_name" == "${wt_dir_name}-"* && "$child_path" != "$wt_path" ]]; then
+          # Avoid duplicates
+          local already_listed=false
+          for entry in "${removable[@]}"; do
+            [[ "${entry%%|*}" == "$child_path" ]] && already_listed=true && break
+          done
+          [[ "$already_listed" == false ]] && removable+=("$child_path|$child_branch|child of $wt_branch")
+        fi
+      done
+    fi
+  done
+
+  if [[ ${#removable[@]} -gt 0 ]]; then
+    echo ""
+    echo "Merged worktrees (branch already in $main_branch):"
+    for entry in "${removable[@]}"; do
+      local wt_path=$(echo "$entry" | cut -d'|' -f1)
+      local wt_branch=$(echo "$entry" | cut -d'|' -f2)
+      local reason=$(echo "$entry" | cut -d'|' -f3)
+      echo "  $wt_branch → $wt_path ($reason)"
+    done
+    echo ""
+    read -p "Remove these worktrees and delete their branches? (y/n) " -n 1 -r
+    echo ""
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+      # Remove children first (reverse order to avoid removing parent before child)
+      for (( i=${#removable[@]}-1; i>=0; i-- )); do
+        local entry="${removable[$i]}"
+        local wt_path=$(echo "$entry" | cut -d'|' -f1)
+        local wt_branch=$(echo "$entry" | cut -d'|' -f2)
+
+        # Kill associated tmux session
+        # Session name uses the worktree's own dir as repo_name
+        local wt_dir_name=$(basename "$wt_path")
+        local normalized="${wt_branch//\//-}"
+        normalized="${normalized//./_}"
+        tmux kill-session -t "${wt_dir_name}-${normalized}" 2>/dev/null
+        # Also try with main repo name (sessions created from main wt)
+        tmux kill-session -t "${repo_name}-${normalized}" 2>/dev/null
+
+        # Remove worktree and branch
+        git worktree remove "$wt_path" --force 2>/dev/null
+        git branch -d "$wt_branch" 2>/dev/null
+        echo "✓ Removed $wt_branch ($wt_path)"
+        ((cleaned++))
+      done
+    else
+      echo "Skipped merged worktree cleanup."
+    fi
   fi
 
   if [[ $cleaned -eq 0 ]]; then
