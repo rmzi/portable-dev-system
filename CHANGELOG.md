@@ -2,11 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.1.0] - 2026-02-10T00:00:00-05:00
+## [1.2.0] - 2026-02-10T00:00:00-05:00
 
 ### Added
 - **PermissionRequest prompt hook** — subagent permission requests auto-resolved via built-in LLM-as-judge hook in `settings.json` (no external API key needed)
 - **`/permission-router` skill** — documents the prompt hook policy and configuration
+- **`pds-machine` command** — first-class command for updating system shell helpers (replaces `pds-update -s`)
+
+### Fixed
+- **branch-tone repo detection** — use `git rev-parse --git-common-dir` instead of `--show-toplevel` so worktrees of the same repo produce consistent tones and different repos on the same branch sound distinct
+
+## [1.1.0] - 2026-02-10T00:00:00-05:00
+
+### Added
 - **Contained worktrees** — `wt` now creates worktrees inside `project/.worktrees/` instead of sibling directories, reducing clutter in `~/dev/`
 - **`wtc --all` end-of-day cleanup** — scan all repos, surface outstanding work, interactive resolution menu, batch remove merged worktrees
 - **`/eod` skill** — documents the end-of-day cleanup workflow and configuration

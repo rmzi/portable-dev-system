@@ -50,9 +50,8 @@ cd ~/your-project && pds-init
 | `wt -b feature/x` | Create new worktree + branch |
 | `pds-init` | Install skills to current project |
 | `pds-update` | Update skills to latest version |
-| `clauder` | Resume Claude session |
 
-**Skills:** `/commit` `/review` `/debug` `/test` `/design` `/worktree`
+**Skills:** `/commit` `/review` `/debug` `/test` `/design` `/worktree` `/eod`
 
 ---
 
