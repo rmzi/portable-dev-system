@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.0.1] - 2026-02-09
+## [1.0.1] - 2026-02-09T00:00:00-05:00
 
 ### Added
 - **Lazygit pane** in tmux layout — full-width bottom pane (30% of total height)
@@ -20,7 +20,7 @@ All notable changes to this project will be documented in this file.
 - **`wtl`** — `wt` with no args shows all worktrees via fuzzy picker
 - **`ts`, `tsk`, `twt`, `tl`, `td`** — unused tmux session helpers (`wts` covers session management)
 
-## [1.0.0] - 2026-02-05
+## [1.0.0] - 2026-02-05T00:00:00-05:00
 
 **Stable release.** Terminal-first, AI-assisted development with worktrees and skills.
 
@@ -40,12 +40,12 @@ All notable changes to this project will be documented in this file.
 ### Removed
 - Dynamic terminal theming - users manage their own themes
 
-## [0.7.3] - 2026-02-05
+## [0.7.3] - 2026-02-05T00:00:00-05:00
 
 ### Added
 - `/bump` skill for version and changelog updates
 
-## [0.7.2] - 2026-02-04
+## [0.7.2] - 2026-02-04T00:00:00-05:00
 
 ### Fixed
 - **Permissions bypass vulnerabilities** (reported by Cursor Bugbot):
@@ -57,7 +57,7 @@ All notable changes to this project will be documented in this file.
   - Added `sftp` to remote access deny list
   - Added write protection for credential files
 
-## [0.7.1] - 2026-02-04
+## [0.7.1] - 2026-02-04T00:00:00-05:00
 
 ### Added
 - **Permissive permissions model** - velocity-focused settings.json:
@@ -70,7 +70,7 @@ All notable changes to this project will be documented in this file.
 - **`wtr` kills tmux session** - removing a worktree also kills its associated tmux session
 - **Permissions documentation** in docs/teams.md
 
-## [0.7.0] - 2026-02-04
+## [0.7.0] - 2026-02-04T00:00:00-05:00
 
 ### Added
 - **`wts` command** - global session picker, jump to any tmux session from anywhere
@@ -95,12 +95,12 @@ All notable changes to this project will be documented in this file.
 - Yazi theme format for v26.x (was using deprecated section names)
 - macOS compatibility for `wts` (removed `head -n -1`)
 
-## [0.6.1] - 2026-02-04
+## [0.6.1] - 2026-02-04T00:00:00-05:00
 
 ### Removed
 - `/bootstrap` skill - redundant with `pds-init` and README quick start
 
-## [0.6.0] - 2026-02-04
+## [0.6.0] - 2026-02-04T00:00:00-05:00
 
 ### Added
 - **Yazi keymap** now installed by default with PDS keybinds:
@@ -115,7 +115,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Installer now backs up and installs yazi keymap.toml
 
-## [0.5.1] - 2026-02-04
+## [0.5.1] - 2026-02-04T00:00:00-05:00
 
 ### Added
 - **lazygit** added to dependencies
@@ -126,7 +126,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - Branch-tone hook subshell issues in Claude Code
 
-## [0.5.0] - 2026-02-04
+## [0.5.0] - 2026-02-04T00:00:00-05:00
 
 ### Added
 - **Optional branch-tone integration** - terminal bell plays branch-specific sound
@@ -144,7 +144,7 @@ All notable changes to this project will be documented in this file.
 - **branch-tone repo detection** - works correctly in worktree directories
 - **branch-tone subshell** - runs in background without blocking
 
-## [0.4.0] - 2026-02-04
+## [0.4.0] - 2026-02-04T00:00:00-05:00
 
 ### Added
 - **pds-update** - update PDS to latest version
@@ -168,7 +168,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - Branch already exists error when using `-b` flag
 
-## [0.3.0] - 2026-02-04
+## [0.3.0] - 2026-02-04T00:00:00-05:00
 
 ### Added
 - **pds-init** - install Claude skills to any project from the repo
@@ -190,7 +190,7 @@ All notable changes to this project will be documented in this file.
 - Improved "For Teams" section with Quick Start guide
 - `pds-init` downloads `hooks.json` (was missing in manual copy instructions)
 
-## [0.2.0] - 2026-02-04
+## [0.2.0] - 2026-02-04T00:00:00-05:00
 
 ### Added
 - **wty tmux layout** - opens worktree in tmux with claude (left), terminal (top-right), yazi (bottom-right)
@@ -207,7 +207,7 @@ All notable changes to this project will be documented in this file.
 - Installer checks for `tmux` and `starship` dependencies
 - Improved installer output with command reference
 
-## [0.1.0] - 2026-01-27
+## [0.1.0] - 2026-01-27T00:00:00-05:00
 
 ### Added
 - Initial release
