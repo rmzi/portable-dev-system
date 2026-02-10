@@ -63,7 +63,17 @@ function wt() {
       echo "Branch '$branch' already checked out at: $existing_wt"
       dir="$existing_wt"
     else
-      dir="../$(basename $(pwd))-${branch//\//-}"
+      # Always resolve from main worktree so path is consistent from anywhere
+      local main_wt=$(git worktree list 2>/dev/null | head -1 | awk '{print $1}')
+      mkdir -p "${main_wt}/.worktrees"
+
+      # Auto-add .worktrees/ to .gitignore
+      local gitignore="${main_wt}/.gitignore"
+      if ! grep -qx '.worktrees/' "$gitignore" 2>/dev/null; then
+        echo '.worktrees/' >> "$gitignore"
+      fi
+
+      dir="${main_wt}/.worktrees/${branch//\//-}"
 
       # Try new branch first if -b, fall back to existing
       if [[ "$1" == "-b" ]]; then
@@ -91,10 +101,15 @@ function wt() {
     branch=$(echo "$selection" | awk '{print $1}')
   fi
 
-  command -v branch-tone &>/dev/null && (cd "$dir" && branch-tone "$branch") &>/dev/null &
+  if command -v branch-tone &>/dev/null; then
+    local __bt_repo=$(cd "$dir" && basename "$(dirname "$(cd "$(git rev-parse --git-common-dir 2>/dev/null)" && pwd)")" 2>/dev/null)
+    (branch-tone "$branch" --repo "${__bt_repo:-unknown}") &>/dev/null &
+  fi
 
   # Include repo name in session to avoid collisions across projects
-  local repo_name=$(cd "$dir" && basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null || basename "$dir")
+  # Always derive from main worktree (git rev-parse --show-toplevel returns worktree path inside .worktrees/)
+  local main_wt_for_name=$(cd "$dir" && git worktree list 2>/dev/null | head -1 | awk '{print $1}')
+  local repo_name=$(basename "$main_wt_for_name")
   local session_name="${repo_name}-${branch//\//-}"
   session_name="${session_name//./_}"  # Escape dots for tmux
 
@@ -136,7 +151,8 @@ function wtr() {
   fi
 
   local branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
-  local repo_name=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null)
+  local main_wt_for_name=$(git worktree list 2>/dev/null | head -1 | awk '{print $1}')
+  local repo_name=$(basename "$main_wt_for_name")
   local session_name="${repo_name}-${branch//\//-}"
   session_name="${session_name//./_}"  # Escape dots for tmux
 
@@ -182,8 +198,12 @@ function wts() {
     local session_name=$(echo "$selection" | awk '{print $1}')
     local branch=$(echo "$selection" | awk '{print $3}')
 
-    # Audio and visual feedback for session switch
-    command -v branch-tone &>/dev/null && branch-tone "$branch" &>/dev/null &
+    # Audio feedback for session switch
+    if command -v branch-tone &>/dev/null; then
+      local __bt_path=$(echo "$selection" | awk '{print $NF}')
+      local __bt_repo=$(cd "$__bt_path" && basename "$(dirname "$(cd "$(git rev-parse --git-common-dir 2>/dev/null)" && pwd)")" 2>/dev/null)
+      branch-tone "$branch" --repo "${__bt_repo:-unknown}" &>/dev/null &
+    fi
 
     if [[ -n "$TMUX" ]]; then
       tmux switch-client -t "$session_name"
@@ -193,21 +213,96 @@ function wts() {
   fi
 }
 
-# wtc - clean up stale worktrees and orphaned tmux sessions
-function wtc() {
-  local cleaned=0
-  local main_wt=$(git worktree list 2>/dev/null | head -1 | awk '{print $1}')
+# -----------------------------------------------------------------------------
+# Worktree Cleanup Internals
+# -----------------------------------------------------------------------------
 
-  if [[ -z "$main_wt" ]]; then
-    echo "Not in a git repository."
-    return 1
+# __pds_discover_repos - find all git repos with worktrees
+# Scans tmux sessions and configurable directories
+# Outputs: one main worktree path per line (deduplicated)
+function __pds_discover_repos() {
+  local scan_dirs="$HOME/dev"
+  local found=""
+
+  # Load config if exists
+  if [[ -f "$HOME/.pds/eod.conf" ]]; then
+    source "$HOME/.pds/eod.conf"
+    scan_dirs="${SCAN_DIRS:-$scan_dirs}"
   fi
 
-  echo "🔍 Scanning for stale worktrees and orphaned sessions..."
-  echo ""
+  # 1. Scan tmux session panes for git repos
+  while IFS= read -r path; do
+    [[ -z "$path" ]] && continue
+    local main=$(git -C "$path" worktree list 2>/dev/null | head -1 | awk '{print $1}')
+    [[ -n "$main" ]] && found="${found}${main}\n"
+  done < <(tmux list-panes -a -F "#{pane_current_path}" 2>/dev/null | sort -u)
+
+  # 2. Scan configured directories for git repos
+  for scan_dir in $scan_dirs; do
+    [[ ! -d "$scan_dir" ]] && continue
+    for d in "$scan_dir"/*/; do
+      [[ ! -d "${d}.git" && ! -f "${d}.git" ]] && continue
+      local main=$(git -C "$d" worktree list 2>/dev/null | head -1 | awk '{print $1}')
+      [[ -n "$main" ]] && found="${found}${main}\n"
+    done
+  done
+
+  echo -e "$found" | grep -v '^$' | sort -u
+}
+
+# __pds_scan_worktree - check status of a single worktree
+# Args: $1 = worktree path
+# Outputs: space-separated flags (clean|dirty|unpushed|no_upstream|open_pr|conflicts)
+function __pds_scan_worktree() {
+  local path="$1"
+  local flags=""
+
+  # Uncommitted changes (staged + unstaged)
+  if [[ -n "$(git -C "$path" status --porcelain 2>/dev/null)" ]]; then
+    flags="${flags}dirty "
+  fi
+
+  # Merge conflicts
+  if [[ -n "$(git -C "$path" ls-files -u 2>/dev/null)" ]]; then
+    flags="${flags}conflicts "
+  fi
+
+  # Unpushed commits
+  if git -C "$path" rev-parse --abbrev-ref '@{upstream}' &>/dev/null; then
+    if [[ -n "$(git -C "$path" log '@{upstream}..HEAD' --oneline 2>/dev/null)" ]]; then
+      flags="${flags}unpushed "
+    fi
+  else
+    flags="${flags}no_upstream "
+  fi
+
+  # Open PRs (if gh is available)
+  if command -v gh &>/dev/null; then
+    local branch=$(git -C "$path" rev-parse --abbrev-ref HEAD 2>/dev/null)
+    local pr_json=$(gh pr list --head "$branch" --state open --json number,title 2>/dev/null)
+    if [[ -n "$pr_json" && "$pr_json" != "[]" ]]; then
+      flags="${flags}open_pr "
+    fi
+  fi
+
+  if [[ -z "$flags" ]]; then
+    echo "clean"
+  else
+    echo "$flags"
+  fi
+}
+
+# __pds_repo_cleanup - clean up worktrees for a single repo
+# Args: $1 = main worktree path, $2 = "batch" (skip prompts, only remove clean/merged)
+# Returns: number of items cleaned
+function __pds_repo_cleanup() {
+  local main_wt="$1"
+  local mode="${2:-interactive}"
+  local cleaned=0
+  local repo_name=$(basename "$main_wt")
 
   # 1. Prune worktrees whose directories no longer exist
-  local prunable=$(git worktree list --porcelain 2>/dev/null | grep "^worktree " | awk '{print $2}' | while read wt_path; do
+  local prunable=$(git -C "$main_wt" worktree list --porcelain 2>/dev/null | grep "^worktree " | awk '{print $2}' | while read wt_path; do
     [[ ! -d "$wt_path" ]] && echo "$wt_path"
   done)
 
@@ -215,23 +310,20 @@ function wtc() {
     echo "Stale worktrees (directory missing):"
     echo "$prunable" | while read p; do echo "  $p"; done
     echo ""
-    git worktree prune
+    git -C "$main_wt" worktree prune
     echo "✓ Pruned stale worktrees"
     ((cleaned++))
   fi
 
   # 2. Find orphaned tmux sessions (session exists but worktree directory is gone)
-  local repo_name=$(basename "$main_wt")
   local sessions=$(tmux list-sessions -F "#{session_name}" 2>/dev/null | grep "^${repo_name}-")
 
   if [[ -n "$sessions" ]]; then
-    local worktree_branches=$(git worktree list 2>/dev/null | awk '{print $NF}' | tr -d '[]')
+    local worktree_branches=$(git -C "$main_wt" worktree list 2>/dev/null | awk '{print $NF}' | tr -d '[]')
 
     while IFS= read -r session; do
-      # Extract branch from session name (repo-name-branch-name → branch-name)
       local branch_part="${session#${repo_name}-}"
 
-      # Check if any worktree branch matches this session
       local found=false
       while IFS= read -r wt_branch; do
         local normalized="${wt_branch//\//-}"
@@ -252,44 +344,36 @@ function wtc() {
   fi
 
   # 3. Remove worktrees whose branches have been merged to main
-  #    Also cascades to child worktrees (subagent worktrees created from within a worktree)
   local current_wt=$(pwd -P)
   local main_branch=$(git -C "$main_wt" symbolic-ref --short HEAD 2>/dev/null || echo "main")
   local merged_branches=$(git -C "$main_wt" branch --merged "$main_branch" 2>/dev/null | sed 's/^[* ]*//')
   local removable=()
 
-  # Collect all worktree paths and branches
   local all_wt_paths=()
   local all_wt_branches=()
   while IFS= read -r wt_line; do
     all_wt_paths+=("$(echo "$wt_line" | awk '{print $1}')")
     all_wt_branches+=("$(echo "$wt_line" | awk '{print $NF}' | tr -d '[]')")
-  done < <(git worktree list 2>/dev/null)
+  done < <(git -C "$main_wt" worktree list 2>/dev/null)
 
-  # Find merged worktrees and their children
   for i in "${!all_wt_paths[@]}"; do
     local wt_path="${all_wt_paths[$i]}"
     local wt_branch="${all_wt_branches[$i]}"
 
-    # Skip main worktree and current worktree
     [[ "$wt_path" == "$main_wt" ]] && continue
     [[ "$wt_path" == "$current_wt" ]] && continue
     [[ "$wt_branch" == "$main_branch" ]] && continue
 
-    # Check if branch is merged
     if echo "$merged_branches" | grep -qx "$wt_branch"; then
       removable+=("$wt_path|$wt_branch|merged")
 
-      # Find child worktrees (created from within this worktree via wt -b)
       local wt_dir_name=$(basename "$wt_path")
       for j in "${!all_wt_paths[@]}"; do
         local child_path="${all_wt_paths[$j]}"
         local child_branch="${all_wt_branches[$j]}"
         local child_dir_name=$(basename "$child_path")
 
-        # Child worktrees start with parent dir name + "-"
         if [[ "$child_dir_name" == "${wt_dir_name}-"* && "$child_path" != "$wt_path" ]]; then
-          # Avoid duplicates
           local already_listed=false
           for entry in "${removable[@]}"; do
             [[ "${entry%%|*}" == "$child_path" ]] && already_listed=true && break
@@ -309,28 +393,29 @@ function wtc() {
       local reason=$(echo "$entry" | cut -d'|' -f3)
       echo "  $wt_branch → $wt_path ($reason)"
     done
-    echo ""
-    read -p "Remove these worktrees and delete their branches? (y/n) " -n 1 -r
-    echo ""
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-      # Remove children first (reverse order to avoid removing parent before child)
+
+    local do_remove=false
+    if [[ "$mode" == "batch" ]]; then
+      do_remove=true
+    else
+      echo ""
+      read -p "Remove these worktrees and delete their branches? (y/n) " -n 1 -r
+      echo ""
+      [[ $REPLY =~ ^[Yy]$ ]] && do_remove=true
+    fi
+
+    if [[ "$do_remove" == true ]]; then
       for (( i=${#removable[@]}-1; i>=0; i-- )); do
         local entry="${removable[$i]}"
         local wt_path=$(echo "$entry" | cut -d'|' -f1)
         local wt_branch=$(echo "$entry" | cut -d'|' -f2)
 
-        # Kill associated tmux session
-        # Session name uses the worktree's own dir as repo_name
-        local wt_dir_name=$(basename "$wt_path")
         local normalized="${wt_branch//\//-}"
         normalized="${normalized//./_}"
-        tmux kill-session -t "${wt_dir_name}-${normalized}" 2>/dev/null
-        # Also try with main repo name (sessions created from main wt)
         tmux kill-session -t "${repo_name}-${normalized}" 2>/dev/null
 
-        # Remove worktree and branch
-        git worktree remove "$wt_path" --force 2>/dev/null
-        git branch -d "$wt_branch" 2>/dev/null
+        git -C "$main_wt" worktree remove "$wt_path" --force 2>/dev/null
+        git -C "$main_wt" branch -d "$wt_branch" 2>/dev/null
         echo "✓ Removed $wt_branch ($wt_path)"
         ((cleaned++))
       done
@@ -339,11 +424,377 @@ function wtc() {
     fi
   fi
 
+  return $cleaned
+}
+
+# __pds_migrate_siblings - detect and migrate old sibling-format worktrees into .worktrees/
+# Args: $1 = main worktree path
+function __pds_migrate_siblings() {
+  local main_wt="$1"
+  local repo_name=$(basename "$main_wt")
+  local parent_dir=$(dirname "$main_wt")
+  local migratable=()
+
+  # Find sibling dirs that are worktrees of this repo
+  while IFS= read -r wt_line; do
+    local wt_path=$(echo "$wt_line" | awk '{print $1}')
+    local wt_branch=$(echo "$wt_line" | awk '{print $NF}' | tr -d '[]')
+
+    [[ "$wt_path" == "$main_wt" ]] && continue
+
+    # Check if it's a sibling (lives in parent dir, not in .worktrees/)
+    local wt_parent=$(dirname "$wt_path")
+    if [[ "$wt_parent" == "$parent_dir" ]]; then
+      migratable+=("$wt_path|$wt_branch")
+    fi
+  done < <(git -C "$main_wt" worktree list 2>/dev/null)
+
+  if [[ ${#migratable[@]} -eq 0 ]]; then
+    return 0
+  fi
+
+  echo ""
+  echo "Old-format sibling worktrees found:"
+  for entry in "${migratable[@]}"; do
+    local wt_path=$(echo "$entry" | cut -d'|' -f1)
+    local wt_branch=$(echo "$entry" | cut -d'|' -f2)
+    echo "  $(basename "$wt_path") → branch: $wt_branch"
+  done
+  echo ""
+  read -p "Migrate to .worktrees/ inside the repo? (y/n) " -n 1 -r
+  echo ""
+
+  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "Skipped migration."
+    return 0
+  fi
+
+  mkdir -p "${main_wt}/.worktrees"
+
+  # Auto-add .worktrees/ to .gitignore
+  local gitignore="${main_wt}/.gitignore"
+  if ! grep -qx '.worktrees/' "$gitignore" 2>/dev/null; then
+    echo '.worktrees/' >> "$gitignore"
+  fi
+
+  local migrated=0
+  for entry in "${migratable[@]}"; do
+    local wt_path=$(echo "$entry" | cut -d'|' -f1)
+    local wt_branch=$(echo "$entry" | cut -d'|' -f2)
+    local new_path="${main_wt}/.worktrees/${wt_branch//\//-}"
+
+    if git -C "$main_wt" worktree move "$wt_path" "$new_path" 2>/dev/null; then
+      echo "✓ Migrated $wt_branch → .worktrees/${wt_branch//\//-}"
+
+      # Update tmux session path if active
+      local repo_name=$(basename "$main_wt")
+      local normalized="${wt_branch//\//-}"
+      normalized="${normalized//./_}"
+      local session_name="${repo_name}-${normalized}"
+      if tmux has-session -t "$session_name" 2>/dev/null; then
+        # Update all panes in the session to the new path
+        local panes=$(tmux list-panes -t "$session_name" -F "#{pane_id}" 2>/dev/null)
+        while IFS= read -r pane_id; do
+          tmux send-keys -t "$pane_id" "cd '$new_path'" Enter 2>/dev/null
+        done <<< "$panes"
+        echo "  ↳ Updated tmux session: $session_name"
+      fi
+
+      ((migrated++))
+    else
+      echo "✗ Failed to migrate $wt_branch"
+    fi
+  done
+
+  echo ""
+  echo "✓ Migrated $migrated worktree(s)"
+}
+
+# wtc - clean up stale worktrees and orphaned tmux sessions
+#       Usage: wtc        - clean current repo
+#              wtc --all  - end-of-day cleanup across all repos
+function wtc() {
+  if [[ "$1" == "--all" ]]; then
+    __pds_wtc_all
+    return $?
+  fi
+
+  local main_wt=$(git worktree list 2>/dev/null | head -1 | awk '{print $1}')
+
+  if [[ -z "$main_wt" ]]; then
+    echo "Not in a git repository."
+    return 1
+  fi
+
+  echo "🔍 Scanning for stale worktrees and orphaned sessions..."
+  echo ""
+
+  # Migrate old sibling worktrees if found
+  __pds_migrate_siblings "$main_wt"
+
+  __pds_repo_cleanup "$main_wt"
+  local cleaned=$?
+
   if [[ $cleaned -eq 0 ]]; then
     echo "✅ Nothing to clean up."
   else
     echo ""
     echo "✅ Cleanup complete."
+  fi
+}
+
+# __pds_wtc_all - end-of-day cleanup across all repos
+function __pds_wtc_all() {
+  echo ""
+  echo "=== PDS End of Day ==="
+  echo ""
+  echo "Scanning repos..."
+
+  local repos=()
+  while IFS= read -r repo; do
+    [[ -n "$repo" ]] && repos+=("$repo")
+  done < <(__pds_discover_repos)
+
+  if [[ ${#repos[@]} -eq 0 ]]; then
+    echo "  No repos with worktrees found."
+    echo ""
+    echo "Configure scan directories in ~/.pds/eod.conf:"
+    echo '  SCAN_DIRS="$HOME/dev $HOME/work"'
+    return 0
+  fi
+
+  # Phase 1: Scan and summarize
+  local total_wt=0
+  local ready_to_remove=0
+  local needs_resolution=0
+  local repo_summaries=()
+
+  for main_wt in "${repos[@]}"; do
+    local repo_name=$(basename "$main_wt")
+    local repo_summary="REPO: $repo_name ($main_wt)"
+    local repo_wt_lines=""
+
+    while IFS= read -r wt_line; do
+      local wt_path=$(echo "$wt_line" | awk '{print $1}')
+      local wt_branch=$(echo "$wt_line" | awk '{print $NF}' | tr -d '[]')
+
+      [[ "$wt_path" == "$main_wt" ]] && continue
+      ((total_wt++))
+
+      local flags=$(__pds_scan_worktree "$wt_path")
+      local main_branch=$(git -C "$main_wt" symbolic-ref --short HEAD 2>/dev/null || echo "main")
+      local is_merged=$(git -C "$main_wt" branch --merged "$main_branch" 2>/dev/null | sed 's/^[* ]*//' | grep -qx "$wt_branch" && echo "yes" || echo "no")
+
+      # Determine display path (prefer relative .worktrees/ form)
+      local display_path="$wt_path"
+      if [[ "$wt_path" == "${main_wt}/.worktrees/"* ]]; then
+        display_path=".worktrees/$(basename "$wt_path")"
+      else
+        display_path="$(basename "$wt_path")"
+      fi
+
+      local status_str=""
+      if [[ "$flags" == "clean" && "$is_merged" == "yes" ]]; then
+        status_str="CLEAN (merged) — ready to remove"
+        ((ready_to_remove++))
+      elif [[ "$flags" == "clean" ]]; then
+        status_str="clean (unmerged)"
+      else
+        local detail_parts=()
+        [[ "$flags" == *dirty* ]] && detail_parts+=("uncommitted changes")
+        [[ "$flags" == *unpushed* ]] && detail_parts+=("unpushed commits")
+        [[ "$flags" == *no_upstream* ]] && detail_parts+=("no upstream")
+        [[ "$flags" == *open_pr* ]] && detail_parts+=("open PR")
+        [[ "$flags" == *conflicts* ]] && detail_parts+=("merge conflicts")
+        local IFS=', '
+        status_str="${detail_parts[*]}"
+        ((needs_resolution++))
+      fi
+
+      repo_wt_lines="${repo_wt_lines}  ${display_path}  ${status_str}\n"
+    done < <(git -C "$main_wt" worktree list 2>/dev/null)
+
+    # Also check for old sibling worktrees
+    local parent_dir=$(dirname "$main_wt")
+    while IFS= read -r wt_line; do
+      local wt_path=$(echo "$wt_line" | awk '{print $1}')
+      [[ "$wt_path" == "$main_wt" ]] && continue
+      local wt_parent=$(dirname "$wt_path")
+      if [[ "$wt_parent" == "$parent_dir" ]]; then
+        local wt_branch=$(echo "$wt_line" | awk '{print $NF}' | tr -d '[]')
+        repo_wt_lines="${repo_wt_lines}  $(basename "$wt_path")  ⚠ old sibling format (migrate with wtc)\n"
+      fi
+    done < <(git -C "$main_wt" worktree list 2>/dev/null)
+
+    if [[ -n "$repo_wt_lines" ]]; then
+      repo_summaries+=("${repo_summary}\n${repo_wt_lines}")
+    fi
+  done
+
+  echo "  ${#repos[@]} repos found ($total_wt worktrees)"
+  echo ""
+
+  # Display summaries
+  for summary in "${repo_summaries[@]}"; do
+    echo -e "$summary"
+  done
+
+  if [[ $total_wt -eq 0 ]]; then
+    echo "No secondary worktrees found."
+    return 0
+  fi
+
+  echo "Summary:"
+  echo "  $ready_to_remove ready to remove | $needs_resolution need resolution"
+  echo ""
+
+  # Phase 2: Resolution for dirty worktrees
+  if [[ $needs_resolution -gt 0 ]]; then
+    echo "[Entering resolution phase...]"
+    echo ""
+
+    local skipped=()
+
+    for main_wt in "${repos[@]}"; do
+      local repo_name=$(basename "$main_wt")
+
+      while IFS= read -r wt_line; do
+        local wt_path=$(echo "$wt_line" | awk '{print $1}')
+        local wt_branch=$(echo "$wt_line" | awk '{print $NF}' | tr -d '[]')
+
+        [[ "$wt_path" == "$main_wt" ]] && continue
+
+        local flags=$(__pds_scan_worktree "$wt_path")
+        [[ "$flags" == "clean" ]] && continue
+
+        # Show resolution menu
+        local display_path="$wt_path"
+        if [[ "$wt_path" == "${main_wt}/.worktrees/"* ]]; then
+          display_path=".worktrees/$(basename "$wt_path")"
+        fi
+
+        while true; do
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "RESOLVE: $repo_name / $display_path (branch: $wt_branch)"
+
+          if [[ "$flags" == *dirty* ]]; then
+            echo "  Uncommitted files:"
+            git -C "$wt_path" status --porcelain 2>/dev/null | while read line; do
+              echo "    $line"
+            done
+          fi
+          [[ "$flags" == *unpushed* ]] && echo "  Unpushed commits to upstream"
+          [[ "$flags" == *no_upstream* ]] && echo "  No upstream branch set"
+          [[ "$flags" == *open_pr* ]] && echo "  Open pull request"
+          [[ "$flags" == *conflicts* ]] && echo "  Unresolved merge conflicts"
+          echo ""
+          echo "  [c] Commit and push    [s] Stash changes"
+          echo "  [o] Open in tmux       [d] Discard (destructive)"
+          echo "  [k] Skip (keep)        [q] Quit"
+          echo ""
+          read -p "  Choice: " -n 1 -r
+          echo ""
+
+          case "$REPLY" in
+            c)
+              echo "  Committing..."
+              git -C "$wt_path" add -A
+              git -C "$wt_path" commit -m "wip: end-of-day save"
+              if git -C "$wt_path" rev-parse --abbrev-ref '@{upstream}' &>/dev/null; then
+                git -C "$wt_path" push
+              else
+                git -C "$wt_path" push -u origin "$wt_branch" 2>/dev/null || \
+                  echo "  ⚠ Push failed — no remote or branch not pushed. Push manually."
+              fi
+              echo "  ✓ Committed and pushed"
+              break
+              ;;
+            s)
+              git -C "$wt_path" stash push -m "eod: $(date +%Y-%m-%d)"
+              echo "  ✓ Stashed changes"
+              break
+              ;;
+            o)
+              echo "  Opening tmux session... (cleanup pauses until you detach)"
+              local normalized="${wt_branch//\//-}"
+              normalized="${normalized//./_}"
+              local session_name="${repo_name}-${normalized}"
+              if ! tmux has-session -t "$session_name" 2>/dev/null; then
+                tmux new-session -d -s "$session_name" -c "$wt_path"
+              fi
+              if [[ -n "$TMUX" ]]; then
+                tmux switch-client -t "$session_name"
+              else
+                tmux attach -t "$session_name"
+              fi
+              # Re-scan after returning
+              flags=$(__pds_scan_worktree "$wt_path")
+              [[ "$flags" == "clean" ]] && echo "  ✓ Resolved" && break
+              echo "  Still has outstanding work, showing menu again..."
+              ;;
+            d)
+              echo ""
+              read -p "  ⚠ This will DISCARD all uncommitted changes. Are you sure? (yes/no) " confirm
+              if [[ "$confirm" == "yes" ]]; then
+                git -C "$wt_path" checkout -- . 2>/dev/null
+                git -C "$wt_path" clean -fd 2>/dev/null
+                echo "  ✓ Changes discarded"
+                break
+              else
+                echo "  Cancelled."
+              fi
+              ;;
+            k)
+              skipped+=("$repo_name/$display_path ($wt_branch)")
+              echo "  Skipped."
+              break
+              ;;
+            q)
+              echo ""
+              echo "Cleanup aborted."
+              return 0
+              ;;
+            *)
+              echo "  Invalid choice. Try again."
+              ;;
+          esac
+        done
+        echo ""
+      done < <(git -C "$main_wt" worktree list 2>/dev/null)
+    done
+
+    if [[ ${#skipped[@]} -gt 0 ]]; then
+      echo ""
+      echo "⚠ Skipped (still have outstanding work):"
+      for s in "${skipped[@]}"; do
+        echo "  $s"
+      done
+      echo ""
+    fi
+  fi
+
+  # Phase 3: Batch cleanup of clean/merged worktrees + migration
+  echo "[Cleaning up merged worktrees...]"
+  echo ""
+
+  local total_cleaned=0
+  for main_wt in "${repos[@]}"; do
+    local repo_name=$(basename "$main_wt")
+
+    # Migrate old siblings first
+    __pds_migrate_siblings "$main_wt"
+
+    # Clean up merged worktrees (batch mode — no prompts)
+    __pds_repo_cleanup "$main_wt" "batch"
+    local repo_cleaned=$?
+    ((total_cleaned += repo_cleaned))
+  done
+
+  echo ""
+  if [[ $total_cleaned -eq 0 ]]; then
+    echo "✅ End of day complete. No merged worktrees to remove."
+  else
+    echo "✅ End of day complete. Cleaned $total_cleaned item(s)."
   fi
 }
 
@@ -421,15 +872,13 @@ function gadd-fzf() {
 # -----------------------------------------------------------------------------
 # Claude Code
 # -----------------------------------------------------------------------------
-# clauder = claude --continue (auto-resume most recent session)
-alias clauder='claude --continue'
 
 # pds-init - install PDS skills to current project
 # Downloads .claude/ config from the repo
 # Handles collisions by placing files in .pds-incoming/ for manual merge
 function pds-init() {
   local repo_url="https://raw.githubusercontent.com/rmzi/portable-dev-system/main"
-  local skills=(commit debug design ethos quickref review test worktree)
+  local skills=(bump commit debug design eod ethos quickref reset-tmux review test worktree)
   local has_collision=false
   local collision_dir=".pds-incoming"
   local errors=0
@@ -502,6 +951,15 @@ function pds-init() {
   if [[ $errors -gt 0 ]]; then
     echo ""
     echo "⚠️  $errors file(s) failed to download. Run pds-init again to retry."
+  fi
+
+  # Add .worktrees/ to .gitignore for worktree containment
+  if [[ "$has_collision" != true ]]; then
+    local gitignore=".gitignore"
+    if ! grep -qx '.worktrees/' "$gitignore" 2>/dev/null; then
+      echo '.worktrees/' >> "$gitignore"
+      echo "  ✓ Added .worktrees/ to .gitignore"
+    fi
   fi
 
   echo ""
@@ -596,30 +1054,34 @@ function pds-uninstall() {
 # pds-update - update PDS (system or project)
 # Usage: pds-update          - update project skills
 #        pds-update --system - update ~/.pds shell helpers
+function pds-machine() {
+  local repo_url="https://raw.githubusercontent.com/rmzi/portable-dev-system/main"
+  echo "🔄 Updating PDS system files..."
+
+  local remote_version=$(curl -fsSL "$repo_url/VERSION" 2>/dev/null || echo "unknown")
+
+  if curl -fsSL "$repo_url/shell-helpers.sh" > "$HOME/.pds/shell-helpers.sh" 2>/dev/null; then
+    echo "  ✓ ~/.pds/shell-helpers.sh"
+  else
+    echo "  ✗ Failed to update shell-helpers.sh"
+    return 1
+  fi
+
+  echo ""
+  echo "✅ System updated to v$remote_version"
+  echo "   Run: source ~/.pds/shell-helpers.sh"
+}
+
 function pds-update() {
   local repo_url="https://raw.githubusercontent.com/rmzi/portable-dev-system/main"
 
   if [[ "$1" == "--system" ]] || [[ "$1" == "-s" ]]; then
-    # System update - update ~/.pds/shell-helpers.sh
-    echo "🔄 Updating PDS system files..."
-
-    local remote_version=$(curl -fsSL "$repo_url/VERSION" 2>/dev/null || echo "unknown")
-
-    if curl -fsSL "$repo_url/shell-helpers.sh" > "$HOME/.pds/shell-helpers.sh" 2>/dev/null; then
-      echo "  ✓ ~/.pds/shell-helpers.sh"
-    else
-      echo "  ✗ Failed to update shell-helpers.sh"
-      return 1
-    fi
-
-    echo ""
-    echo "✅ System updated to v$remote_version"
-    echo "   Run: source ~/.pds/shell-helpers.sh"
-    return 0
+    pds-machine
+    return $?
   fi
 
   # Project update - update .claude/skills/
-  local skills=(commit debug design ethos quickref review test worktree)
+  local skills=(bump commit debug design eod ethos quickref reset-tmux review test worktree)
 
   # Check if PDS is installed in this project
   if [[ ! -f ".claude/.pds-version" ]]; then
@@ -627,7 +1089,7 @@ function pds-update() {
     echo ""
     echo "Options:"
     echo "  pds-init          - install PDS skills to this project"
-    echo "  pds-update -s     - update system shell helpers"
+    echo "  pds-machine       - update system shell helpers"
     return 1
   fi
 
@@ -706,7 +1168,9 @@ function pds-addon() {
 #!/bin/bash
 # Branch-tone hook wrapper for Claude Code
 branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "claude")
-repo=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null || echo "unknown")
+# Use --git-common-dir to get the true repo name (--show-toplevel returns worktree path)
+git_common=$(cd "$(git rev-parse --git-common-dir 2>/dev/null)" 2>/dev/null && pwd)
+repo=$(basename "$(dirname "$git_common")" 2>/dev/null || echo "unknown")
 branch-tone "$branch" --repo "$repo" --pad --chorus --steps 5 -d 800 -v 0.2
 HOOK
       chmod +x "$HOME/.pds/branch-tone-hook.sh"
