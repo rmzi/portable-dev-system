@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.1] - 2026-02-11
+
+### Added
+- **Window title for Mission Control** — tmux sets the terminal window title to `repo / branch`, making each session identifiable in macOS Mission Control and app switchers
+
 ## [1.2.0] - 2026-02-10T00:00:00-05:00
 
 ### Added
