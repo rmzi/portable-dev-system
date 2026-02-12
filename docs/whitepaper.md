@@ -1,6 +1,6 @@
 # Agentic SDLC: A Technical Whitepaper
 
-**Version 1.2 | February 2026**
+**Version 2.0 | February 2026**
 
 ---
 
@@ -46,25 +46,25 @@ The critical output is explicit acceptance criteria—unambiguous and mechanical
 
 The orchestrator decomposes the plan into discrete work units for parallel execution. Each unit becomes a task assigned to a worker agent.
 
-The orchestrator creates isolated environments using git worktrees—complete, independent working directories sharing the underlying git object store. Each worker operates on its own branch, in its own directory, with no merge conflicts during execution.
+The orchestrator uses TaskCreate to build a task DAG, defining dependencies between work units. It then spawns worker agents via the Task tool, each receiving its own git worktree—complete, independent working directories sharing the underlying git object store. Each worker operates on its own branch, in its own directory, with no merge conflicts during execution.
 
-The orchestrator records session metadata: which agents work on which worktrees, which branches they correspond to, expected deliverables. This enables monitoring and recovery.
+The orchestrator records session metadata: which agents work on which worktrees, which branches they correspond to, expected deliverables, and task dependencies. This enables monitoring, recovery, and coordination.
 
 ### Phase 3: Parallel Execution
 
 Workers execute independently. They access the codebase within their worktree, read documentation, and write code.
 
-**Workers do not communicate with each other.** This is intentional. Inter-agent communication introduces coordination overhead and deadlocks. Workers assume their task is self-contained. If coordination is needed, the task was decomposed incorrectly.
+**Workers favor independent execution for simplicity but can communicate via SendMessage when tasks require coordination.** The orchestrator manages dependencies through task DAGs (defined via TaskCreate/TaskUpdate), ensuring workers can coordinate when needed while keeping most work independent to minimize overhead.
 
 Each worker produces a result artifact: code changes, summary, issues encountered. Workers commit to their branches but do not merge.
 
 ### Phase 4: Validation
 
-A validator agent examines all worker output. The validator operates in its own worktree, merging worker branches and running comprehensive tests.
+A validator agent examines all worker output by monitoring TaskUpdate status changes. The validator operates in its own worktree, merging worker branches and running comprehensive tests.
 
-Responsibilities: writing tests based on acceptance criteria, running the existing test suite, performing static analysis, checking for defects. The validator does not fix issues—it produces a structured report identifying failures, localizing them, and suggesting remediation.
+Responsibilities: writing tests based on acceptance criteria, running the existing test suite, performing static analysis, checking for defects. The validator does not fix issues—it produces a structured report (via TaskUpdate) identifying failures, localizing them, and suggesting remediation.
 
-If validation fails, the report flows to the orchestrator, which dispatches targeted fix requests. This cycle continues until validation passes or human intervention is required.
+If validation fails, the report flows to the orchestrator, which updates the task DAG and dispatches targeted fix requests. This cycle continues until validation passes or human intervention is required.
 
 ### Phase 5: Consolidation and Human Review
 
@@ -114,47 +114,39 @@ This ecosystem reduces the barrier to agent integration significantly.
 
 Agents must operate within well-defined boundaries. Unrestricted access to production systems is unacceptable risk.
 
-**Docker Sandbox Architecture** (Docker Desktop 4.58+):
+**Claude Code Permission Model**:
 
-Modern container isolation uses MicroVM architecture—hypervisor-level isolation, not just namespaces:
+Rather than heavyweight container isolation, PDS uses Claude Code's native permission system combined with git worktree filesystem isolation:
 
-- **Private Docker daemon** per sandbox (no shared socket)
-- **Network filtering proxy** at `host.docker.internal:3128` with allowlist-based access
-- **Filesystem isolation** limited to workspace directory
-- **Resource limits**: 1 CPU, 2GB RAM per container (configurable)
-- **No host credential access** by default
+- **Permission hooks** route agent actions through policy evaluation (see `/permission-router` skill)
+- **Worktree isolation** limits each worker to its own `.worktrees/<task-id>/` directory
+- **The human gate** ensures all changes flow through PR review before reaching production
+- **Message routing** enables orchestrator oversight of all inter-agent communication
+- **Token budgets** prevent unbounded costs and runaway agents
 
-This provides defense-in-depth: even if an agent escapes the container, the MicroVM boundary contains the blast radius.
+This approach favors lightweight isolation over heavyweight containers. The blast radius of a misbehaving worker is limited to its worktree branch. No changes reach production without human approval.
 
 **Permission Tiers**:
 
 | Agent Type | Network | Filesystem | Credentials |
 |------------|---------|------------|-------------|
-| Worker | None | Own worktree only | None |
+| Worker | Limited | Own worktree only | None |
 | Validator | Test databases | Own worktree + read others | Test DB credentials |
 | Orchestrator | External APIs (Jira, Slack) | All worktrees | API tokens (no prod) |
 
-### Execution Environments
+### Native Agent Teams
 
-Agents can execute locally or in the cloud. The `ExecutionEnvironment` abstraction allows the same agent specification to run in either context:
+Agents execute as native Claude Code teams—no containers, no file synchronization, no heavyweight orchestration.
 
-```rust
-pub trait ExecutionEnvironment: Send + Sync {
-    async fn setup(&self, task_id: &str, branch: &str) -> Result<()>;
-    async fn run_agent(&self, spec: &AgentSpec) -> Result<TaskResult>;
-    async fn get_files(&self, path: &str) -> Result<Vec<u8>>;
-    async fn put_files(&self, path: &str, content: &[u8]) -> Result<()>;
-    async fn cleanup(&self) -> Result<()>;
-}
-```
+**TeamCreate** establishes a team with a shared task list. The orchestrator uses this to coordinate multiple agents working on related tasks.
 
-**Local (Docker Sandbox)**: Uses Docker Compose with MicroVM isolation. The worktree is mounted directly—no file sync overhead. Best for active development and fast iteration.
+**TaskCreate** defines work units with dependencies, forming task DAGs. Workers can depend on each other's completion, enabling sophisticated workflows while maintaining clarity about execution order.
 
-**Cloud (E2B)**: Uses E2B's cloud sandbox service. Files are synced to/from remote sandboxes. Best for overnight execution, CI integration, and scaling beyond local resources.
+**Task tool** spawns worker agents. Each worker receives its own git worktree (via `git worktree add`), providing filesystem isolation without containerization overhead. Workers operate in `.worktrees/<task-id>/` directories.
 
-Both implementations provide identical isolation guarantees and MCP server access. The choice is operational, not architectural.
+**SendMessage** enables direct and broadcast communication. Workers can ask questions, share findings, or coordinate when decomposition requires it. The orchestrator receives all messages and can route or respond as needed.
 
-<!-- Execution environments details are covered in the sections above. -->
+This approach eliminates Docker/container overhead while maintaining isolation through git worktrees and Claude Code's permission system. Agents run natively with full access to local tools (language servers, build tools, formatters) without the complexity of mounting volumes or synchronizing files.
 
 ### Data Source Registry
 
@@ -195,12 +187,14 @@ The lexicon should be queryable during planning and execution. When agents encou
 
 ### Terminal Environment
 
-The primary orchestration interface is the terminal. Graphical IDEs assume one project, one set of files, one debug session. Agentic workflows involve multiple worktrees and rapid context switching.
+The terminal provides a powerful interface for multi-worktree workflows. Graphical IDEs assume one project, one set of files, one debug session. Agentic workflows involve multiple worktrees and rapid context switching.
 
-**Core tools**:
+**Core tools** (optional but recommended):
 - **tmux**: Terminal multiplexing, persistent sessions
 - **yazi** or similar: Terminal file manager for worktree navigation
 - **neovim + telescope**: Editor with multi-worktree support
+
+Claude Code handles agent lifecycle natively through TeamCreate/TaskCreate/Task tools. tmux and terminal tools enhance the workflow but are not required for agent orchestration.
 
 ### Version Control
 
@@ -336,7 +330,7 @@ These questions from v1.0 have been resolved through research and implementation
 
 | Question | Resolution |
 |----------|------------|
-| **Inter-agent communication** | Not needed. Orchestrator coordinates all work. File-based handoff via worktree if absolutely necessary. If workers need to communicate, decompose differently. |
+| **Inter-agent communication** | Supported via SendMessage (direct, broadcast). Orchestrator coordinates through TaskCreate/TaskUpdate task DAGs. Independent execution preferred for simplicity; direct communication available when tasks require it. |
 | **Lexicon structure** | Git-backed markdown (version controlled, diffable) + semantic search layer (vector DB). Combines auditability with queryability. |
 | **Failure recovery** | Frequent commits + orchestrator checkpoints to manifest file. Worktree itself preserves partial work. |
 | **Metrics** | Primary: tokens per task, validation cycles before pass, human intervention rate. Secondary: PRs merged, time to deployment. |
@@ -360,22 +354,20 @@ This is a starting point. The model evolves with implementation experience and i
 
 | Category | Tool | Purpose |
 |----------|------|---------|
-| Terminal | tmux | Session management |
-| Terminal | yazi | File navigation |
-| Terminal | neovim + telescope | Multi-worktree editing |
+| Terminal | tmux | Session management (optional) |
+| Terminal | yazi | File navigation (optional) |
+| Terminal | neovim + telescope | Multi-worktree editing (optional) |
 | Version Control | git worktree | Core functionality |
 | Version Control | lazygit | Terminal UI |
 | Dependencies | uv | Python (fast) |
 | Dependencies | pnpm | Node.js (efficient) |
 | Agent Runtime | Claude | Underlying model |
 | Agent Runtime | MCP servers | Tool integrations |
-| Agent Coordination | Subtask | Parallel worktree execution |
-| Agent Coordination | Ralph Wiggum | Persistent autonomous loops |
-| Infrastructure | Docker Sandbox | Local isolation |
+| Agent Coordination | TeamCreate | Team setup and task list |
+| Agent Coordination | TaskCreate/TaskUpdate | Task DAG management |
+| Agent Coordination | SendMessage | Inter-agent communication |
+| Agent Coordination | Task (worker) | Worker agent spawning |
 | Infrastructure | Kubernetes | Cloud orchestration |
-| Execution | LocalDockerEnvironment | Local agent execution |
-| Execution | E2bEnvironment | Cloud agent execution (future) |
-| Configuration | data-sources.yaml | MCP and credential registry |
 
 ---
 
@@ -397,8 +389,8 @@ This is a starting point. The model evolves with implementation experience and i
 
 **Human Gate**: Principle that no agent work reaches production without human approval.
 
-**Docker Sandbox**: MicroVM-based isolation environment for agent execution.
+**SendMessage**: Tool for direct and broadcast communication between agents in a team.
 
-**Subtask**: Tool for spawning parallel subagents in isolated git worktrees with minimal context.
+**TaskCreate**: Tool for defining work units with dependencies, forming task DAGs.
 
-**Ralph Wiggum**: Technique for persistent autonomous agent loops where progress lives in files, not context. Named after the Simpsons character. See [Agent Tooling](./agent-tooling.md).
+**TeamCreate**: Tool for establishing an agent team with shared task list and coordination.

@@ -1,6 +1,6 @@
 # The Agentic SDLC: A Proposal
 
-**Version 1.2 | February 2026**
+**Version 2.0 | February 2026**
 
 ---
 
@@ -28,7 +28,7 @@ Current development workflows, even with AI assistance, hit fundamental limits:
 
 ## The Model
 
-The Agentic SDLC consists of six phases. Human involvement concentrates at phase boundaries, not within them. Agents execute in isolated environments—locally via Docker during development, or in cloud sandboxes (E2B) for overnight and production workloads.
+The Agentic SDLC consists of six phases. Human involvement concentrates at phase boundaries, not within them. Agents execute as native Claude Code teams—spawned via TeamCreate, coordinated through task DAGs, communicating via SendMessage, each isolated in their own git worktree.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -40,7 +40,7 @@ The Agentic SDLC consists of six phases. Human involvement concentrates at phase
 │  ┌──────┴──────┐                                                │
 │  ↓      ↓      ↓                                                │
 │  3. EXECUTION         Workers execute in parallel               │
-│  ↓      ↓      ↓      (no inter-agent communication)            │
+│  ↓      ↓      ↓      (SendMessage available when needed)       │
 │  └──────┬──────┘                                                │
 │         ↓                                                       │
 │  4. VALIDATION        Validator merges, tests, reports          │
@@ -63,7 +63,7 @@ No agent-produced change reaches production without explicit human approval. Age
 Agents operate in sandboxed environments with minimal permissions. Network access is restricted. Filesystem access is limited to the task's worktree. Credentials are scoped to role. A misbehaving agent's blast radius is contained.
 
 **Parallel by Design**
-Work is decomposed into independent units that execute concurrently. Workers do not communicate with each other—if they need to, the task was decomposed incorrectly. The orchestrator handles all coordination.
+Work is decomposed into independent units that execute concurrently. Workers favor independent execution for simplicity but can communicate via SendMessage when tasks require coordination. The orchestrator manages dependencies through task DAGs.
 
 **Knowledge Compounds**
 Every task contributes to a persistent knowledge base. Agents query this knowledge when planning and executing. The system learns from experience, avoiding repeated mistakes and building on proven patterns.
@@ -77,7 +77,7 @@ Every task contributes to a persistent knowledge base. Agents query this knowled
 | **Foundation** | Terminal fluency, git worktrees, environment setup | Engineers can navigate multi-worktree workflows |
 | **Supervised Single-Agent** | One agent, active human oversight | Intuition for effective prompts and failure modes |
 | **Multi-Agent Local** | Parallel workers on local machine | Task decomposition skills, resource management |
-| **Cloud Infrastructure** | Agents run in isolated pods, overnight execution | Scalable autonomous development with governance |
+| **Cloud Infrastructure** | Agents run as native teams, overnight execution | Scalable autonomous development with governance |
 
 ---
 
@@ -94,9 +94,8 @@ Every task contributes to a persistent knowledge base. Agents query this knowled
 ## Next Steps
 
 1. **Read the whitepaper** for technical depth on isolation, tooling, and governance.
-2. **Review the tooling guide** for [Subtask and Ralph Wiggum integration](./agent-tooling.md).
-3. **Pilot with a small team** using the phased adoption path.
-4. **Iterate on the model** based on real experience—this is a starting point, not a final answer.
+2. **Pilot with a small team** using the phased adoption path.
+3. **Iterate on the model** based on real experience—this is a starting point, not a final answer.
 
 The infrastructure for this future exists today. The question is whether we'll build the processes and discipline to use it responsibly.
 
