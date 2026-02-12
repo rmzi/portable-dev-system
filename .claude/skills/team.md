@@ -3,7 +3,7 @@ description: Agent team roster showing roles, capabilities, and constraints
 ---
 # /team — Agent Team Reference
 
-Agent roster, permissions, and coordination model for PDS multi-agent orchestration.
+Agent roster, permissions, and coordination model. See `/swarm` for the 6-phase workflow.
 
 ## Agent Roster
 
@@ -22,7 +22,7 @@ Agent roster, permissions, and coordination model for PDS multi-agent orchestrat
 
 | Mode | Agents | Behavior |
 |------|--------|----------|
-| **delegate** | orchestrator | Coordination only — cannot implement directly, must delegate to agents |
+| **delegate** | orchestrator | Coordination only — must delegate to agents |
 | **acceptEdits** | worker, validator, documenter | Auto-accept file edits, full implementation access |
 | **plan** | researcher, reviewer, scout, auditor | Read-only exploration, no file modifications |
 
@@ -38,47 +38,20 @@ Agent roster, permissions, and coordination model for PDS multi-agent orchestrat
       (each in own worktree, running claude -p)
 ```
 
-**File-based coordination:**
-
-- Orchestrator writes `.agent/task.md` to each worktree before spawning
-- Agents read their task, update `.agent/status.md`, write results to `.agent/output.md`
-- Orchestrator monitors by reading `.agent/status.md` and `.agent/output.md` files
+Orchestrator writes `.agent/task.md` before spawning. Agents update `.agent/status.md` and write results to `.agent/output.md`.
 
 ## File Protocol
 
 ```
 agent-worktree/.agent/
-  task.md      # Orchestrator writes before spawning agent
+  task.md      # Orchestrator writes before spawning
   status.md    # Agent writes: pending | in_progress | done | blocked
   output.md    # Agent writes: results, reports, findings
 ```
 
-## 6-Phase Agentic SDLC
-
-```
-Plan → Decompose → Dispatch → Validate → Consolidate → Knowledge
- │         │          │           │            │            │
- │    researcher   workers    validator      docs        scout
- │    + human      + tasks    + reviewer    + PR
- human gate                                human gate
-```
-
-1. **Plan** — Refine requirements into acceptance criteria (human gate)
-2. **Decompose** — Split into tasks, create worktrees, write `.agent/task.md`
-3. **Dispatch** — Spawn agents in their worktrees
-4. **Validate** — Merge, test, review, fix
-5. **Consolidate** — PR + docs (human gate)
-6. **Knowledge** — Meta-improvements, lessons
-
 ## Core Principles
 
-- **Progress in files, not context.** Commits and task updates are durable. Context windows are not.
-- **Human gate.** Get human approval at phase boundaries (planning, before PR).
+- **Progress in files, not context.** Commits and task updates are durable.
+- **Human gate.** Get approval at phase boundaries (planning, before PR).
 - **Worktree isolation.** Each worker gets their own worktree. No shared state.
 - **Fail fast.** Fix specific issues rather than retrying blindly.
-
-## See Also
-
-- `/swarm` — Launch and run an agent team
-- `/worktree` — Branch isolation for parallel work
-- `/review` — Code review checklist

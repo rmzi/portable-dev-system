@@ -33,40 +33,28 @@ Systematic code review that catches issues and builds shared understanding.
 - [ ] Names reveal intent
 - [ ] Complex logic has explanatory comments
 - [ ] No dead code or commented-out blocks
-- [ ] Functions are appropriately sized
 
 ### 5. Testing (Is it verified?)
 - [ ] Tests cover the change
 - [ ] Tests cover failure modes
-- [ ] Tests are readable as specification
 
 ### 6. Integration (Does it fit?)
 - [ ] Follows existing patterns in codebase
 - [ ] No breaking changes to public interfaces
-- [ ] Dependencies are appropriate
 
 ## Review Response Format
 
 ```
-## Summary
-One sentence on what this change does.
-
-## Assessment
-✓ Looks good / ⚠ Needs changes / ✗ Significant issues
-
+## Summary: [one sentence]
+## Assessment: ✓ Looks good / ⚠ Needs changes / ✗ Significant issues
 ## Findings
-
 ### [Category]: [Brief description]
-Location: file:line
-Issue: What's wrong
-Suggestion: How to fix
-
+Location: file:line | Issue: [what] | Suggestion: [how]
 ## Questions
-- Things that need clarification
+- [Things needing clarification]
 ```
 
 ## Review Etiquette
 
 - Ask questions, don't demand. Explain the "why."
 - Distinguish nitpicks from blockers. Acknowledge good work.
-- As author: assume good intent, explain context, discuss disagreements.
