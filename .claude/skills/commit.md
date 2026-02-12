@@ -1,5 +1,6 @@
 ---
 description: Create semantic git commits with proper format and context
+disable-model-invocation: true
 ---
 # /commit — Semantic Commit Workflow
 

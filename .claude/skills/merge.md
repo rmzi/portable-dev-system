@@ -1,5 +1,6 @@
 ---
 description: Merge subtask worktrees back into a coordinator branch
+disable-model-invocation: true
 ---
 # /merge — Subtask Worktree Coordination
 

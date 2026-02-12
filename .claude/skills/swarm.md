@@ -1,5 +1,6 @@
 ---
 description: Multi-agent team workflow with file-based coordination across worktrees
+disable-model-invocation: true
 ---
 # /swarm — Multi-Agent Team Workflow
 
