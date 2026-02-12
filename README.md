@@ -51,10 +51,13 @@ cp CLAUDE.md ~/your-project/CLAUDE.md
 | `/test` | Test strategy and patterns |
 | `/design` | Architecture decision records |
 | `/worktree` | Git worktree workflow |
+| `/merge` | Merging subtask worktrees back |
+| `/eod` | End-of-day cleanup across repos |
 | `/swarm` | Multi-agent team workflow |
 | `/team` | Agent roster and coordination |
 | `/trim` | Context efficiency maintenance |
 | `/bump` | Version and changelog |
+| `/permission-router` | Permission hook policy |
 | `/quickref` | Command cheatsheet |
 
 [Full skills catalog →](docs/skills.md)

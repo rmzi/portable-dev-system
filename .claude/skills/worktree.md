@@ -8,23 +8,28 @@ Each stream of work gets its own directory. No stashing, no branch switching, no
 ## Commands
 
 ```bash
-git worktree list                           # List worktrees
-git worktree add ../dir branch              # Create from existing branch
-git worktree add ../dir -b new-branch       # Create with new branch
-git worktree remove ../dir                  # Remove worktree
-git worktree prune                          # Clean stale references
+git worktree list                                    # List worktrees
+git worktree add .worktrees/dir branch               # Create from existing branch
+git worktree add .worktrees/dir -b new-branch        # Create with new branch
+git worktree remove .worktrees/dir                   # Remove worktree
+git worktree move ../old-sibling .worktrees/new-dir  # Migrate old format
+git worktree prune                                   # Clean stale references
 ```
 
 ## Naming Convention
 
+Worktrees live inside the repo at `.worktrees/`:
+
 ```
-project/                    # main worktree (main/master)
-project-feature-auth/       # feature work
-project-hotfix-login/       # urgent fix
-project-pr-123/             # reviewing a PR
+project/                              # main worktree (main/master)
+project/.worktrees/feature-auth/      # feature work
+project/.worktrees/hotfix-login/      # urgent fix
+project/.worktrees/pr-123/            # reviewing a PR
 ```
 
-Pattern: `{project}-{branch-with-slashes-as-dashes}`
+Pattern: `project/.worktrees/{branch-with-slashes-as-dashes}`
+
+`.worktrees/` is auto-added to `.gitignore` on first use.
 
 Worktrees go in the project's parent directory (`../`), never in `/tmp`.
 
@@ -32,15 +37,18 @@ Worktrees go in the project's parent directory (`../`), never in `/tmp`.
 
 ```bash
 # Start feature work
-git worktree add ../myproject-feature-profiles -b feature/user-profiles
-cd ../myproject-feature-profiles
+wt -b feature/user-profiles
+# Now in myproject/.worktrees/feature-user-profiles/
 
 # Urgent bug — new worktree, no context lost
 git worktree add ../myproject-hotfix-critical -b hotfix/critical-fix
 cd ../myproject-hotfix-critical
 
 # Fix bug, PR, merge, clean up
-git worktree remove ../myproject-hotfix-critical
+wtr  # Remove current worktree
+
+# End of day - clean all repos
+wtc --all
 ```
 
 ## Patterns
@@ -48,9 +56,9 @@ git worktree remove ../myproject-hotfix-critical
 ### Review a PR without losing context
 ```bash
 git fetch origin pull/123/head:pr-123
-git worktree add ../project-pr-123 pr-123
+wt pr-123
 # Review, test, done
-git worktree remove ../project-pr-123
+wtr  # Remove from inside the worktree
 ```
 
 ### Explore without fear

@@ -40,7 +40,40 @@ PDS is now **"Software for Claude"** — a pure Claude Code configuration packag
 - `docs/commands.md`, `docs/install.md` — moved to Zaku
 - `.claude/hooks.json` — hooks moved into `settings.json` (dead file, Claude Code doesn't read standalone hooks)
 
-## [1.0.1] - 2026-02-09
+## [1.2.1] - 2026-02-11
+
+### Added
+- **Window title for Mission Control** — tmux sets the terminal window title to `repo / branch`, making each session identifiable in macOS Mission Control and app switchers
+
+## [1.2.0] - 2026-02-10T00:00:00-05:00
+
+### Added
+- **PermissionRequest prompt hook** — subagent permission requests auto-resolved via built-in LLM-as-judge hook in `settings.json` (no external API key needed)
+- **`/permission-router` skill** — documents the prompt hook policy and configuration
+- **`pds-machine` command** — first-class command for updating system shell helpers (replaces `pds-update -s`)
+
+### Fixed
+- **branch-tone repo detection** — use `git rev-parse --git-common-dir` instead of `--show-toplevel` so worktrees of the same repo produce consistent tones and different repos on the same branch sound distinct
+
+## [1.1.0] - 2026-02-10T00:00:00-05:00
+
+### Added
+- **Contained worktrees** — `wt` now creates worktrees inside `project/.worktrees/` instead of sibling directories, reducing clutter in `~/dev/`
+- **`wtc --all` end-of-day cleanup** — scan all repos, surface outstanding work, interactive resolution menu, batch remove merged worktrees
+- **`/eod` skill** — documents the end-of-day cleanup workflow and configuration
+- **Sibling worktree migration** — `wtc` and `wtc --all` detect old `../project-branch/` format and offer `git worktree move` migration
+- **Auto `.gitignore`** — `.worktrees/` automatically added to `.gitignore` on first worktree creation and during `pds-init`
+- **Configurable scan dirs** — `~/.pds/eod.conf` with `SCAN_DIRS` for cross-repo discovery
+
+### Removed
+- **`clauder` alias** — `claude --continue` is easy enough to type directly
+
+### Changed
+- **Worktree path convention** — from `../project-branch/` (sibling) to `project/.worktrees/branch/` (contained)
+- **tmux session naming** — derives repo name from main worktree via `git worktree list` instead of `git rev-parse --show-toplevel` (fixes naming inside `.worktrees/`)
+- **`wtc` refactored** — cleanup logic extracted into `__pds_repo_cleanup` for reuse by `wtc --all`
+
+## [1.0.1] - 2026-02-09T00:00:00-05:00
 
 ### Added
 - **Lazygit pane** in tmux layout — full-width bottom pane (30% of total height)
@@ -58,7 +91,7 @@ PDS is now **"Software for Claude"** — a pure Claude Code configuration packag
 - **`wtl`** — `wt` with no args shows all worktrees via fuzzy picker
 - **`ts`, `tsk`, `twt`, `tl`, `td`** — unused tmux session helpers (`wts` covers session management)
 
-## [1.0.0] - 2026-02-05
+## [1.0.0] - 2026-02-05T00:00:00-05:00
 
 **Stable release.** Terminal-first, AI-assisted development with worktrees and skills.
 
@@ -78,12 +111,12 @@ PDS is now **"Software for Claude"** — a pure Claude Code configuration packag
 ### Removed
 - Dynamic terminal theming - users manage their own themes
 
-## [0.7.3] - 2026-02-05
+## [0.7.3] - 2026-02-05T00:00:00-05:00
 
 ### Added
 - `/bump` skill for version and changelog updates
 
-## [0.7.2] - 2026-02-04
+## [0.7.2] - 2026-02-04T00:00:00-05:00
 
 ### Fixed
 - **Permissions bypass vulnerabilities** (reported by Cursor Bugbot):
@@ -95,7 +128,7 @@ PDS is now **"Software for Claude"** — a pure Claude Code configuration packag
   - Added `sftp` to remote access deny list
   - Added write protection for credential files
 
-## [0.7.1] - 2026-02-04
+## [0.7.1] - 2026-02-04T00:00:00-05:00
 
 ### Added
 - **Permissive permissions model** - velocity-focused settings.json:
@@ -108,7 +141,7 @@ PDS is now **"Software for Claude"** — a pure Claude Code configuration packag
 - **`wtr` kills tmux session** - removing a worktree also kills its associated tmux session
 - **Permissions documentation** in docs/teams.md
 
-## [0.7.0] - 2026-02-04
+## [0.7.0] - 2026-02-04T00:00:00-05:00
 
 ### Added
 - **`wts` command** - global session picker, jump to any tmux session from anywhere
@@ -133,12 +166,12 @@ PDS is now **"Software for Claude"** — a pure Claude Code configuration packag
 - Yazi theme format for v26.x (was using deprecated section names)
 - macOS compatibility for `wts` (removed `head -n -1`)
 
-## [0.6.1] - 2026-02-04
+## [0.6.1] - 2026-02-04T00:00:00-05:00
 
 ### Removed
 - `/bootstrap` skill - redundant with `pds-init` and README quick start
 
-## [0.6.0] - 2026-02-04
+## [0.6.0] - 2026-02-04T00:00:00-05:00
 
 ### Added
 - **Yazi keymap** now installed by default with PDS keybinds:
@@ -153,7 +186,7 @@ PDS is now **"Software for Claude"** — a pure Claude Code configuration packag
 ### Changed
 - Installer now backs up and installs yazi keymap.toml
 
-## [0.5.1] - 2026-02-04
+## [0.5.1] - 2026-02-04T00:00:00-05:00
 
 ### Added
 - **lazygit** added to dependencies
@@ -164,7 +197,7 @@ PDS is now **"Software for Claude"** — a pure Claude Code configuration packag
 ### Fixed
 - Branch-tone hook subshell issues in Claude Code
 
-## [0.5.0] - 2026-02-04
+## [0.5.0] - 2026-02-04T00:00:00-05:00
 
 ### Added
 - **Optional branch-tone integration** - terminal bell plays branch-specific sound
@@ -182,7 +215,7 @@ PDS is now **"Software for Claude"** — a pure Claude Code configuration packag
 - **branch-tone repo detection** - works correctly in worktree directories
 - **branch-tone subshell** - runs in background without blocking
 
-## [0.4.0] - 2026-02-04
+## [0.4.0] - 2026-02-04T00:00:00-05:00
 
 ### Added
 - **pds-update** - update PDS to latest version
@@ -206,7 +239,7 @@ PDS is now **"Software for Claude"** — a pure Claude Code configuration packag
 ### Fixed
 - Branch already exists error when using `-b` flag
 
-## [0.3.0] - 2026-02-04
+## [0.3.0] - 2026-02-04T00:00:00-05:00
 
 ### Added
 - **pds-init** - install Claude skills to any project from the repo
@@ -228,7 +261,7 @@ PDS is now **"Software for Claude"** — a pure Claude Code configuration packag
 - Improved "For Teams" section with Quick Start guide
 - `pds-init` downloads `hooks.json` (was missing in manual copy instructions)
 
-## [0.2.0] - 2026-02-04
+## [0.2.0] - 2026-02-04T00:00:00-05:00
 
 ### Added
 - **wty tmux layout** - opens worktree in tmux with claude (left), terminal (top-right), yazi (bottom-right)
@@ -245,7 +278,7 @@ PDS is now **"Software for Claude"** — a pure Claude Code configuration packag
 - Installer checks for `tmux` and `starship` dependencies
 - Improved installer output with command reference
 
-## [0.1.0] - 2026-01-27
+## [0.1.0] - 2026-01-27T00:00:00-05:00
 
 ### Added
 - Initial release

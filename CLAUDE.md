@@ -31,11 +31,15 @@ AI-assisted development methodology. Skills for consistency. Agents for scale.
 | `/test` | Writing or running tests |
 | `/design` | Architecture decisions, new features |
 | `/worktree` | Branch isolation, parallel work |
+| `/merge` | Merging subtask worktrees back to coordinator |
+| `/eod` | End-of-day cleanup across all repos |
 | `/bump` | Version bump and changelog update |
+| `/permission-router` | Permission hook policy, subagent routing |
 | `/quickref` | Command reference |
 | `/team` | Agent roster, roles, capabilities |
 | `/swarm` | Launch agent team for parallel work |
 | `/trim` | Context efficiency maintenance |
+
 
 ---
 
@@ -45,6 +49,10 @@ AI-assisted development methodology. Skills for consistency. Agents for scale.
 - Need a new branch? Use `git worktree add`
 - Cloning creates disconnected copies. Worktrees share git history and stay in sync.
 
-**NEVER use /tmp for code or worktrees.** Worktrees go in the project's parent directory:
-- Correct: `../project-feature-branch/`
+**Send denied commands to the terminal.** When a command is blocked by permissions (force push, etc.) or otherwise requires manual action, don't just print it — send it to the user's terminal pane via `tmux send-keys -t 2 'command' ''` (no Enter, so the user can review before executing).
+
+**NEVER use /tmp for code or worktrees.** Worktrees go inside the repo at `.worktrees/`:
+- Correct: `.worktrees/feature-branch/` (inside the main repo)
 - Wrong: `/tmp/project/` or `/tmp/feature-work/`
+- Wrong: `../project-feature-branch/` (old sibling format — migrate with `wtc`)
+- /tmp is only for temporary files (downloads, build artifacts, large files that shouldn't persist)
