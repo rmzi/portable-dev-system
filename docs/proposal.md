@@ -1,6 +1,6 @@
 # The Agentic SDLC: A Proposal
 
-**Version 1.2 | January 2025**
+**Version 1.2 | February 2026**
 
 ---
 
@@ -28,7 +28,7 @@ Current development workflows, even with AI assistance, hit fundamental limits:
 
 ## The Model
 
-The Agentic SDLC consists of six phases. Human involvement concentrates at phase boundaries, not within them. Agents execute in isolated environments—locally via Docker during development, or in cloud sandboxes (E2B) for overnight and production workloads. See [Execution Environments](./execution-environments.md) for details.
+The Agentic SDLC consists of six phases. Human involvement concentrates at phase boundaries, not within them. Agents execute in isolated environments—locally via Docker during development, or in cloud sandboxes (E2B) for overnight and production workloads.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐

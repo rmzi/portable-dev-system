@@ -1,6 +1,6 @@
 # Agentic SDLC: A Technical Whitepaper
 
-**Version 1.2 | January 2025**
+**Version 1.2 | February 2026**
 
 ---
 
@@ -91,7 +91,7 @@ Agents query the lexicon during future planning and execution, avoiding repeated
 A worktree is an additional working directory associated with a repository. Unlike a clone, it shares the object store (commits, blobs, trees) with the main repository. Creation is nearly instantaneous with minimal disk overhead.
 
 ```bash
-git worktree add ../task-123-worker-1 -b task-123/worker-1
+git worktree add .worktrees/task-123-worker-1 -b task-123/worker-1
 ```
 
 Each worktree has its own index and HEAD. Operations in one worktree do not affect others. A key constraint: each branch can only be checked out in one worktree at a time.
@@ -154,7 +154,7 @@ pub trait ExecutionEnvironment: Send + Sync {
 
 Both implementations provide identical isolation guarantees and MCP server access. The choice is operational, not architectural.
 
-See [Execution Environments](./execution-environments.md) for implementation details and cost analysis.
+<!-- Execution environments details are covered in the sections above. -->
 
 ### Data Source Registry
 

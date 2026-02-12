@@ -145,7 +145,7 @@ Since progress lives in git, tracking is straightforward:
 
 ```bash
 # Watch commits across all worker worktrees
-watch -n 5 'for wt in worktrees/*/; do
+watch -n 5 'for wt in .worktrees/*/; do
   echo "=== $wt ==="
   git -C "$wt" log --oneline -3
 done'

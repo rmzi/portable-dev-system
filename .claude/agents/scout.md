@@ -52,6 +52,6 @@ Analyze `.claude/` artifacts — skills, agents, settings — to identify opport
 - [Patterns or insights worth noting]
 ```
 
-## File Protocol
+## File Protocol (Swarm Mode Only)
 
 Read `.agent/task.md`. Write status to `.agent/status.md` (`pending | in_progress | done | blocked`). Write report to `.agent/output.md`.

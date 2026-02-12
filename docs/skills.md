@@ -13,6 +13,8 @@ Skills encode team knowledge and workflows. Claude reads and follows them automa
 | `/test` | Test strategy and patterns | Writing or running tests |
 | `/design` | Architecture decision records | New features, significant changes |
 | `/worktree` | Git worktree workflow | Branch isolation, parallel work |
+| `/merge` | Merging subtask worktrees back | After subtask branches are ready to consolidate |
+| `/permission-router` | Permission hook routing policy | Subagent permission requests, hook configuration |
 | `/quickref` | PDS skills, agents, conventions | Quick reference |
 | `/swarm` | Multi-agent team workflow with file-based coordination | Launching multi-agent parallel work |
 | `/team` | Agent roster and coordination | Agent roles, permissions, file protocol |
@@ -55,6 +57,12 @@ Agent roster reference: 8 agents (orchestrator, researcher, worker, validator, r
 
 ### /trim
 Context efficiency maintenance. Measures and reduces the token footprint of skills and agent definitions. Use when context is bloated.
+
+### /merge
+Merging subtask worktrees back to the coordinator branch. Handles branch consolidation after parallel worker execution, including conflict resolution and clean history.
+
+### /permission-router
+Permission hook routing policy for subagent tool requests. Configures Claude Code's built-in prompt hook to auto-resolve permission requests from subagents based on allow/deny rules.
 
 ### /bump
 Version bump and changelog update workflow. Follows semantic versioning and Keep a Changelog format.
