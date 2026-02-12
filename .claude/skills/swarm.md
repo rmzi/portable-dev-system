@@ -1,5 +1,6 @@
 ---
 description: Multi-agent team workflow with file-based coordination across worktrees
+disable-model-invocation: true
 ---
 # /swarm — Multi-Agent Team Workflow
 
@@ -20,9 +21,9 @@ Gather requirements, spawn researcher for context, create decomposition plan, ge
 Create worktrees and write task files:
 
 ```bash
-git worktree add ../project-task-1-auth -b task-1/auth
-mkdir -p ../project-task-1-auth/.agent
-cat > ../project-task-1-auth/.agent/task.md << 'EOF'
+git worktree add .worktrees/task-1-auth -b task-1/auth
+mkdir -p .worktrees/task-1-auth/.agent
+cat > .worktrees/task-1-auth/.agent/task.md << 'EOF'
 ## Task: Implement auth module
 ### Acceptance Criteria
 - [ ] JWT-based login endpoint
@@ -39,7 +40,7 @@ Spawn agents in their worktrees. Each agent reads `.agent/task.md` and works aut
 
 ```bash
 claude -p "$(cat .claude/agents/worker.md) Read .agent/task.md and complete the task." \
-  --directory ../project-task-1-auth
+  --directory .worktrees/task-1-auth
 ```
 
 ### Phase 4: Validate
@@ -55,7 +56,7 @@ Spawn scout for PDS meta-improvements. Capture lessons learned.
 
 ```bash
 # Check all agents at once
-for dir in ../*/.agent; do
+for dir in .worktrees/*/.agent; do
   echo "=== $(dirname $dir) ==="
   cat "$dir/status.md" 2>/dev/null || echo "no status"
 done

@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.0] - 2026-02-12T03:15:43-05:00
+
+### Added
+- Terminal feedback loop: `tmux capture-pane` rule for reading terminal state after sending denied commands
+- Rewrite `/quickref` as PDS-native skill reference (was Zaku cheatsheet)
+
+### Changed
+- Remove `/eod` skill (depends on Zaku `wtc` helper)
+- Rewrite `/worktree` skill with raw git commands, add Cleanup section
+- Standardize all worktree paths to `.worktrees/` convention across skills and agents
+- Update `/swarm` description from "Tmux-native" to "file-based coordination"
+- Revert skill scan instruction to `Scan .claude/skills/` (inclusive of subdirectory layouts)
+
+### Removed
+- All references to Zaku shell aliases (`wt`, `wtr`, `wtc`) from `.claude/`
+- All `../project-*` sibling-format worktree paths from `.claude/`
+
 ## [2.0.0] - 2026-02-11
 
 PDS is now **"Software for Claude"** — a pure Claude Code configuration package. Tool-layer files (shell helpers, tmux, terminal configs) have moved to [Zaku](https://github.com/rmzi/zaku).

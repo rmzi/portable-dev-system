@@ -56,6 +56,6 @@ One sentence on what this change does.
 - [Things done well]
 ```
 
-## File Protocol
+## File Protocol (Swarm Mode Only)
 
 Read `.agent/task.md`. Write status to `.agent/status.md` (`pending | in_progress | done | blocked`). Write review to `.agent/output.md`.

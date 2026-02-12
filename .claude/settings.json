@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   },
@@ -90,13 +91,9 @@
             "async": true
           }
         ],
-        "matcher": {
-          "toolName": "Edit|Write"
-        }
+        "matcher": "Edit|Write"
       }
-    ]
-  },
-  "hooks": {
+    ],
     "PermissionRequest": [
       {
         "hooks": [

@@ -1,5 +1,6 @@
 ---
 description: Merge subtask worktrees back into a coordinator branch
+disable-model-invocation: true
 ---
 # /merge — Subtask Worktree Coordination
 
@@ -60,7 +61,7 @@ The simple case: one subtask merging back into the coordinator.
    ```
 6. **Clean up** the subtask worktree
    ```bash
-   git worktree remove ../project-subtask-branch
+   git worktree remove .worktrees/subtask-branch
    git branch -d subtask-branch
    ```
 
@@ -76,12 +77,12 @@ The coordinator creates a base branch. Subtasks branch off from it as worktrees:
 
 ```bash
 # Coordinator creates the base
-wt -b feature/big-feature
+git worktree add .worktrees/feature-big-feature -b feature/big-feature
 
 # Subtasks branch off the coordinator
-git worktree add ../project-subtask-1 -b feature/big-feature/subtask-1 feature/big-feature
-git worktree add ../project-subtask-2 -b feature/big-feature/subtask-2 feature/big-feature
-git worktree add ../project-subtask-3 -b feature/big-feature/subtask-3 feature/big-feature
+git worktree add .worktrees/subtask-1 -b feature/big-feature/subtask-1 feature/big-feature
+git worktree add .worktrees/subtask-2 -b feature/big-feature/subtask-2 feature/big-feature
+git worktree add .worktrees/subtask-3 -b feature/big-feature/subtask-3 feature/big-feature
 ```
 
 ### Workflow
@@ -221,7 +222,7 @@ git log --oneline coordinator-branch..subtask-branch
 git diff coordinator-branch...subtask-branch -- <file>
 
 # Clean up after merge
-git worktree remove ../project-subtask-branch
+git worktree remove .worktrees/subtask-branch
 git branch -d subtask-branch
 ```
 
@@ -247,9 +248,9 @@ After all subtasks are merged:
 
 ```bash
 # Remove each subtask worktree
-git worktree remove ../project-subtask-1
-git worktree remove ../project-subtask-2
-git worktree remove ../project-subtask-3
+git worktree remove .worktrees/subtask-1
+git worktree remove .worktrees/subtask-2
+git worktree remove .worktrees/subtask-3
 
 # Delete the subtask branches
 git branch -d feature/big-feature/subtask-1
@@ -258,7 +259,4 @@ git branch -d feature/big-feature/subtask-3
 
 # Prune any stale worktree references
 git worktree prune
-
-# Or use PDS helper
-wtc
 ```

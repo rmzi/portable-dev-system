@@ -1,3 +1,6 @@
+---
+description: Permission hook routing policy for subagent tool requests
+---
 # Permission Router
 
 Auto-resolve subagent permission requests via Claude Code's built-in LLM-as-judge prompt hook. No external API key needed — uses the existing session auth.

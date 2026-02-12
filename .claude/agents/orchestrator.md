@@ -36,7 +36,7 @@ Coordination point for specialized agents. Manage the 6-phase Agentic SDLC: plan
 
 ## Dispatch Workflow
 
-1. Create worktree: `git worktree add ../project-task-1-desc -b task-1/desc`
+1. Create worktree: `git worktree add .worktrees/task-1-desc -b task-1/desc`
 2. Write task: write `.agent/task.md` into the worktree
 3. Spawn agent: `claude -p "$(cat .claude/agents/worker.md) Read .agent/task.md and complete the task." --directory /abs/path`
 4. Monitor: read `.agent/status.md` from agent worktrees

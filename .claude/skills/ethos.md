@@ -3,6 +3,10 @@ description: Core development principles for grounding before significant work
 ---
 # /ethos — Core Development Principles
 
+> ╔══════════════════════════════════╗
+> ║  Understand · Build · Validate  ║
+> ╚══════════════════════════════════╝
+
 When invoked, remind of these principles. Use as grounding before significant work.
 
 ## The Seven Principles

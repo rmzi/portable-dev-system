@@ -49,6 +49,6 @@ Explore codebases and produce structured context reports for the orchestrator to
 - [Risk]: [mitigation]
 ```
 
-## File Protocol
+## File Protocol (Swarm Mode Only)
 
 Read `.agent/task.md`. Write status to `.agent/status.md` (`pending | in_progress | done | blocked`). Write results to `.agent/output.md`. Commit when complete.

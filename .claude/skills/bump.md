@@ -1,5 +1,6 @@
 ---
 description: Bump version and update changelog
+disable-model-invocation: true
 ---
 # /bump — Version Bump Workflow
 

@@ -55,6 +55,6 @@ gh issue create \
 
 Labels: `tech-debt` | `code-quality` | `testing` | `performance` | `security` | `cleanup`
 
-## File Protocol
+## File Protocol (Swarm Mode Only)
 
 Read `.agent/task.md`. Write status to `.agent/status.md` (`pending | in_progress | done | blocked`). Write audit report to `.agent/output.md`.
