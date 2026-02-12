@@ -1,115 +1,124 @@
 # Portable Development System
 
-[![Shell](https://img.shields.io/badge/shell-zsh%20%7C%20bash-blue)](https://www.zsh.org/)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-compatible-blueviolet)](https://claude.ai/claude-code)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
-**Terminal-first, AI-assisted development.** Worktrees for isolation. Skills for consistency.
+**Software for Claude.** Skills encode best practices. Agents provide structure. Configuration enables velocity.
 
-> "Simplicity is prerequisite for reliability." — Edsger Dijkstra
+> Install PDS into any project. Claude reads it, follows it, improves it.
 
 ---
 
-## The Problem
+## What PDS Is
 
-- IDEs are bloated
-- Context switching kills flow
-- `git stash` is where work goes to die
-- Every project has different conventions
+PDS is a Claude Code configuration package — skills, agents, settings, and hooks that make Claude effective at software development.
 
-## The Fix
+- **Skills** — Encoded workflows: commit conventions, code review checklists, debugging protocols, test strategies
+- **Agents** — 8 specialized roles: orchestrator, researcher, worker, validator, reviewer, documenter, scout, auditor
+- **Settings** — Velocity-focused permissions with security guardrails
+- **Hooks** — Automated quality gates on tool usage
 
-- **Terminal + Claude Code** as your primary interface
-- **Worktrees** for true branch isolation
-- **Skills** that encode your team's best practices
-- **One setup** across all projects
+PDS is **editor-agnostic**. It works with any tool that runs Claude Code — terminal, Cursor, VS Code, or [Zaku](https://github.com/rmzi/zaku).
 
 ---
 
 ## Quick Start
 
 ```bash
-# 1. Install dependencies
-brew install yazi zoxide fzf ripgrep fd bat starship tmux lazygit
+# Install PDS skills into your project
+cd ~/your-project
+pds-init
+```
 
-# 2. Run installer
-curl -fsSL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash
+Or manually:
 
-# 3. Add skills to your project
-cd ~/your-project && pds-init
+```bash
+# Copy .claude/ directory from this repo into your project
+cp -r .claude/ ~/your-project/.claude/
+cp CLAUDE.md ~/your-project/CLAUDE.md
 ```
 
 ---
 
-## Key Commands
+## Skills
 
-| Command | What it does |
-|---------|--------------|
-| `wt` | Open worktree in tmux layout (Claude + terminal + yazi + lazygit) |
-| `wts` | Global session picker - jump to any tmux session |
-| `wt -b feature/x` | Create new worktree + branch |
-| `pds-init` | Install skills to current project |
-| `pds-update` | Update skills to latest version |
+| Skill | Purpose |
+|-------|---------|
+| `/ethos` | Development principles, MECE |
+| `/commit` | Semantic commit format |
+| `/review` | Code review checklist |
+| `/debug` | Systematic troubleshooting |
+| `/test` | Test strategy and patterns |
+| `/design` | Architecture decision records |
+| `/worktree` | Git worktree workflow |
+| `/merge` | Merging subtask worktrees back |
+| `/eod` | End-of-day cleanup across repos |
+| `/swarm` | Multi-agent team workflow |
+| `/team` | Agent roster and coordination |
+| `/trim` | Context efficiency maintenance |
+| `/bump` | Version and changelog |
+| `/permission-router` | Permission hook policy |
+| `/quickref` | Command cheatsheet |
 
-**Skills:** `/commit` `/review` `/debug` `/test` `/design` `/worktree` `/eod`
+[Full skills catalog →](docs/skills.md)
 
 ---
 
-## Docs
+## Agents
 
-| Topic | Link |
-|-------|------|
-| Skills catalog | [docs/skills.md](docs/skills.md) |
-| Command reference | [docs/commands.md](docs/commands.md) |
-| Installation details | [docs/install.md](docs/install.md) |
-| Team setup | [docs/teams.md](docs/teams.md) |
-| Philosophy | [docs/philosophy.md](docs/philosophy.md) |
+| Agent | Role | Model | Mode |
+|-------|------|-------|------|
+| orchestrator | Coordination — plans, decomposes, dispatches | opus | delegate |
+| researcher | Deep codebase exploration | sonnet | plan |
+| worker | Implementation in isolated worktrees | sonnet | acceptEdits |
+| validator | Merge, test, verify acceptance criteria | sonnet | acceptEdits |
+| reviewer | Code review — quality, security | sonnet | plan |
+| documenter | Documentation updates | sonnet | acceptEdits |
+| scout | PDS meta-improvements | haiku | plan |
+| auditor | Codebase quality → GitHub issues | sonnet | plan |
+
+[Full agent docs →](docs/teams.md)
+
+---
+
+## Permissions
+
+Auto-allowed: all tools, bash, MCP, web fetches
+
+Blocked:
+- Credential paths (`~/.aws`, `~/.ssh`, `~/.gnupg`)
+- Git push to `main`/`master`/`dev`/`develop`
+- Force push, `ssh`, `scp`
+- Prod patterns (`PROD`, `prod.`, `--profile prod`)
 
 ---
 
 ## For Teams
 
 ```bash
-# Add to your repo
-pds-init && git add .claude CLAUDE.md && git commit -m "Add PDS skills"
+pds-init && git add .claude CLAUDE.md && git commit -m "feat: add PDS"
 ```
 
-Every team member gets the same:
-- Code review checklist (`/review`)
-- Commit conventions (`/commit`)
-- Debugging protocol (`/debug`)
-
-**No more "how do we do X here?"** — it's in the skills.
-
-[Full team setup →](docs/teams.md)
+Every team member gets the same skills, agents, and conventions.
 
 ---
 
-## Permissions Model
+## Documentation
 
-PDS includes a velocity-focused `.claude/settings.json` — like `--dangerously-skip-permissions` but with guardrails.
-
-**Auto-allowed:** all tools, bash, MCP, web fetches
-
-**Blocked:**
-- Credential paths (`~/.aws`, `~/.ssh`, `~/.gnupg`)
-- Git push to `main`/`master`/`dev`/`develop`
-- Force push, `ssh`, `scp`
-- Prod patterns (`PROD`, `prod.`, `--profile prod`)
-
-[Full permissions docs →](docs/teams.md#permissions-model)
+| Doc | Purpose |
+|-----|---------|
+| [Philosophy](docs/philosophy.md) | Principles and motivation |
+| [Skills Catalog](docs/skills.md) | Full skill descriptions |
+| [Team Setup](docs/teams.md) | Agent roster, permissions, team onboarding |
+| [Proposal](docs/proposal.md) | Shareable overview of the agentic SDLC |
+| [Whitepaper](docs/whitepaper.md) | Full technical depth — phases, isolation, governance |
+| [Agent Tooling](docs/agent-tooling.md) | Subtask + Ralph Wiggum execution patterns |
 
 ---
 
 ## Contributing
 
-PRs welcome. Add skills, improve docs, share what works.
-
-```bash
-wt -b feature/my-improvement
-# Make changes
-# /commit for the format
-```
+PRs welcome. The knowledge phase of the agentic SDLC contributes improvements back to PDS automatically.
 
 ---
 

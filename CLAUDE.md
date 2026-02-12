@@ -1,6 +1,6 @@
 # Portable Development System
 
-Terminal-first, AI-assisted dev methodology using worktrees for isolation.
+AI-assisted development methodology. Skills for consistency. Agents for scale.
 
 ## Skills System (MANDATORY)
 
@@ -36,21 +36,17 @@ Terminal-first, AI-assisted dev methodology using worktrees for isolation.
 | `/bump` | Version bump and changelog update |
 | `/permission-router` | Permission hook policy, subagent routing |
 | `/quickref` | Command reference |
+| `/team` | Agent roster, roles, capabilities |
+| `/swarm` | Launch agent team for parallel work |
+| `/trim` | Context efficiency maintenance |
 
----
 
-## Key Commands
-
-- `wt` - Pick worktree, open in tmux layout
-- `wt -b feature/x` - Create new worktree + branch
-- `wts` - Global session picker (from anywhere)
 ---
 
 ## Rules
 
 **NEVER clone the repository.** Always use git worktrees for isolation:
-- Need a new branch? Use `git worktree add` or `wt -b branch`
-- Need to work on existing branch? Use `git worktree add` or `wt branch`
+- Need a new branch? Use `git worktree add`
 - Cloning creates disconnected copies. Worktrees share git history and stay in sync.
 
 **Send denied commands to the terminal.** When a command is blocked by permissions (force push, etc.) or otherwise requires manual action, don't just print it — send it to the user's terminal pane via `tmux send-keys -t 2 'command' ''` (no Enter, so the user can review before executing).

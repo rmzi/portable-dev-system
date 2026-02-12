@@ -3,34 +3,9 @@ description: Git worktrees for isolated parallel development
 ---
 # /worktree — Isolated Parallel Development
 
-Worktrees provide true isolation. No stashing. No branch switching. No lost context.
-
-## Why Worktrees?
-
-Context switching is expensive:
-- Mental model of current work is lost
-- Uncommitted changes create risk
-- `git stash` is where changes go to die
-- Branch switching in large repos is slow
-
-Worktrees solve this by giving each stream of work its own directory.
-
----
+Each stream of work gets its own directory. No stashing, no branch switching, no lost context.
 
 ## Commands
-
-### Shell helpers (PDS)
-
-| Command | What it does |
-|---------|--------------|
-| `wt` | Fuzzy pick worktree → tmux layout (Claude + terminal + yazi + lazygit) |
-| `wt branch` | Open tmux layout for existing branch |
-| `wt -b branch` | Create new branch + open tmux layout |
-| `wtr` | Remove current worktree + kill its session |
-| `wts` | Global session picker — jump to any tmux session |
-| `wtc` | Clean up stale worktrees + orphaned tmux sessions |
-
-### Raw git commands
 
 ```bash
 git worktree list                                    # List worktrees
@@ -40,8 +15,6 @@ git worktree remove .worktrees/dir                   # Remove worktree
 git worktree move ../old-sibling .worktrees/new-dir  # Migrate old format
 git worktree prune                                   # Clean stale references
 ```
-
----
 
 ## Naming Convention
 
@@ -58,7 +31,7 @@ Pattern: `project/.worktrees/{branch-with-slashes-as-dashes}`
 
 `.worktrees/` is auto-added to `.gitignore` on first use.
 
----
+Worktrees go in the project's parent directory (`../`), never in `/tmp`.
 
 ## Workflow
 
@@ -67,14 +40,9 @@ Pattern: `project/.worktrees/{branch-with-slashes-as-dashes}`
 wt -b feature/user-profiles
 # Now in myproject/.worktrees/feature-user-profiles/
 
-# Open Claude Code
-claude
-
-# ... working on feature ...
-
-# Urgent bug comes in - new terminal:
-cd ~/dev/myproject
-wt -b hotfix/critical-fix
+# Urgent bug — new worktree, no context lost
+git worktree add ../myproject-hotfix-critical -b hotfix/critical-fix
+cd ../myproject-hotfix-critical
 
 # Fix bug, PR, merge, clean up
 wtr  # Remove current worktree
@@ -82,8 +50,6 @@ wtr  # Remove current worktree
 # End of day - clean all repos
 wtc --all
 ```
-
----
 
 ## Patterns
 
@@ -97,20 +63,24 @@ wtr  # Remove from inside the worktree
 
 ### Explore without fear
 ```bash
-wt -b spike/crazy-idea
-# Break things freely
-# If good: merge
-# If bad: wtr && git branch -D spike/crazy-idea
+git worktree add ../project-spike-idea -b spike/crazy-idea
+# If good: merge. If bad: remove worktree + delete branch
 ```
 
 ### Parallel feature development
 ```bash
-wt -b feature/api
-wt -b feature/ui
+git worktree add ../project-feature-api -b feature/api
+git worktree add ../project-feature-ui -b feature/ui
 # Work on API in one terminal, UI in another
 ```
 
----
+### Agent worktrees
+```bash
+# Create worktrees for multi-agent work
+git worktree add ../project-task-1-auth -b task-1/auth
+git worktree add ../project-task-2-api -b task-2/api
+# Each agent gets its own isolated environment
+```
 
 ## Rules
 
@@ -118,3 +88,4 @@ wt -b feature/ui
 2. **Shared git history** — All worktrees share .git
 3. **Independent state** — Each has its own index, HEAD, uncommitted changes
 4. **Clean up after merge** — Remove worktrees when PRs are merged
+5. **Never /tmp** — Worktrees go in `../`, not `/tmp`

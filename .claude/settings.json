@@ -1,4 +1,7 @@
 {
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
   "permissions": {
     "allow": [
       "Read",
@@ -72,6 +75,25 @@
       "Write(**/secrets/**)",
       "Write(**/*.pem)",
       "Write(**/*credential*)"
+    ],
+    "additionalDirectories": [
+      ".."
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '🧪 Consider running tests to verify changes'",
+            "async": true
+          }
+        ],
+        "matcher": {
+          "toolName": "Edit|Write"
+        }
+      }
     ]
   },
   "hooks": {

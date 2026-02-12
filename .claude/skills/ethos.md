@@ -52,22 +52,12 @@ Scripts encode knowledge. CI runs what developers run. Automate the repeated.
 
 ## MECE — Structure for Clarity
 
-**Mutually Exclusive, Collectively Exhaustive**
-
-A fundamental organizing principle. Apply everywhere:
-
-- **Mutually Exclusive**: No overlap. Each item belongs in exactly one place.
-- **Collectively Exhaustive**: No gaps. All cases are covered.
-
-### Apply to Everything
+**Mutually Exclusive** (no overlap) + **Collectively Exhaustive** (no gaps). Apply everywhere:
 
 | Domain | MECE means |
 |--------|-----------|
 | **Skills** | Each skill has one clear purpose, no overlap |
 | **Functions** | Each function does one thing, responsibilities don't overlap |
-| **Services** | Clear boundaries, no duplicate functionality |
-| **Error handling** | Each error type handled in one place |
-| **API design** | Endpoints don't duplicate, all use cases covered |
 | **Architecture** | Components have clear, non-overlapping responsibilities |
 | **Documentation** | Each topic in one place |
 

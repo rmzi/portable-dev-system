@@ -12,41 +12,6 @@
 
 ---
 
-## Why Terminal-First?
-
-- **Speed**: No GUI latency, instant feedback
-- **Composability**: Pipes, scripts, automation
-- **Portability**: Same workflow on any machine
-- **Focus**: No visual distractions
-- **AI-native**: Claude Code works best in terminal
-
----
-
-## Why Worktrees?
-
-**The problem:** You're mid-feature, urgent bug comes in. You `git stash`, fix it, come back, forget what you were doing.
-
-**The solution:** Worktrees give you parallel, isolated environments.
-
-```bash
-# Working on feature
-wt -b feature/auth
-
-# Urgent bug? New terminal:
-wt -b hotfix/critical
-
-# Two completely isolated environments
-# No stashing. No branch switching. No lost context.
-```
-
-Each worktree:
-- Own working directory
-- Own Claude Code session
-- Shares git history
-- True isolation
-
----
-
 ## Why Skills?
 
 Skills encode team knowledge:
@@ -57,9 +22,30 @@ Skills encode team knowledge:
 
 ---
 
-## Standing on Giants
+## Why Worktrees?
 
-Built on wisdom from:
+Worktrees give you parallel, isolated environments. No stashing. No branch switching. No lost context. Each worktree has its own working directory and Claude Code session, but shares git history.
+
+---
+
+## The Agentic SDLC
+
+PDS implements the six-phase agentic development model:
+
+1. **Plan** — Refine requirements into acceptance criteria
+2. **Decompose** — Split into independent tasks, create worktrees
+3. **Execute** — Workers implement in parallel (no inter-agent communication)
+4. **Validate** — Merge, test, review, fix
+5. **Consolidate** — PR + docs for human review
+6. **Knowledge** — Meta-improvements, lessons captured
+
+The human remains architect and final authority. Agents become a scalable workforce.
+
+See [Proposal](proposal.md) for the shareable overview, [Whitepaper](whitepaper.md) for full technical depth, and [Agent Tooling](agent-tooling.md) for execution patterns.
+
+---
+
+## Standing on Giants
 
 - **Thompson & Ritchie** — Unix philosophy: do one thing well
 - **Kent Beck** — TDD, XP: tests drive design

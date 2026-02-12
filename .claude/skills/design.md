@@ -41,49 +41,6 @@ What becomes easier or harder because of this decision?
 Both positive and negative outcomes.
 ```
 
-## Example ADR
-
-```markdown
-# 0003. Use PostgreSQL for Primary Database
-
-Date: 2024-01-15
-Status: accepted
-
-## Context
-
-We need a primary database for the application. The workload is:
-- Relational data with complex queries
-- ~100k users, growing 20% monthly
-- Mix of OLTP and light analytics
-- Team has experience with both MySQL and PostgreSQL
-
-Candidates considered:
-- PostgreSQL
-- MySQL
-- SQLite (for simplicity)
-
-## Decision
-
-Use PostgreSQL as the primary database.
-
-## Consequences
-
-**Positive:**
-- Rich feature set (JSONB, arrays, full-text search)
-- Strong ecosystem and tooling
-- Team familiarity reduces ramp-up
-- Handles growth trajectory well
-
-**Negative:**
-- Slightly more complex than SQLite for local dev
-- Need to manage connection pooling (PgBouncer)
-- Hosting cost higher than managed MySQL
-
-**Neutral:**
-- Standard SQL with minor dialect differences
-- Migration tooling works the same
-```
-
 ## When to Write an ADR
 
 Write an ADR when:
@@ -99,13 +56,9 @@ Don't write an ADR for:
 
 ## Decision-Making Framework
 
-### 1. Define the Problem
-What are we trying to solve? What are the constraints?
-
-### 2. Identify Options
-List 2-4 realistic alternatives. Include "do nothing" if valid.
-
-### 3. Evaluate Trade-offs
+1. **Define** — What problem? What constraints?
+2. **Options** — List 2-4 alternatives. Include "do nothing" if valid.
+3. **Evaluate** trade-offs:
 
 | Criteria | Option A | Option B | Option C |
 |----------|----------|----------|----------|
@@ -114,13 +67,8 @@ List 2-4 realistic alternatives. Include "do nothing" if valid.
 | Team familiarity | High | Low | Medium |
 | Reversibility | Easy | Hard | Medium |
 
-### 4. Decide
-Pick one. Document why. Move on.
-
-> "A good plan violently executed now is better than a perfect plan executed next week." — Patton
-
-### 5. Record
-Write the ADR. Link it in relevant code comments.
+4. **Decide** — Pick one. Document why. Move on.
+5. **Record** — Write the ADR. Link in relevant code comments.
 
 ## Anti-Patterns
 
