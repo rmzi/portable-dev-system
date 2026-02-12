@@ -32,12 +32,11 @@ AI-assisted development methodology. Skills for consistency. Agents for scale.
 | `/design` | Architecture decisions, new features |
 | `/worktree` | Branch isolation, parallel work |
 | `/merge` | Merging subtask worktrees back to coordinator |
-| `/eod` | End-of-day cleanup across all repos |
 | `/bump` | Version bump and changelog update |
 | `/permission-router` | Permission hook policy, subagent routing |
-| `/quickref` | Command reference |
 | `/team` | Agent roster, roles, capabilities |
 | `/swarm` | Launch agent team for parallel work |
+| `/quickref` | PDS skills, agents, and conventions reference |
 | `/trim` | Context efficiency maintenance |
 
 
@@ -54,5 +53,5 @@ AI-assisted development methodology. Skills for consistency. Agents for scale.
 **NEVER use /tmp for code or worktrees.** Worktrees go inside the repo at `.worktrees/`:
 - Correct: `.worktrees/feature-branch/` (inside the main repo)
 - Wrong: `/tmp/project/` or `/tmp/feature-work/`
-- Wrong: `../project-feature-branch/` (old sibling format — migrate with `wtc`)
+- Wrong: `../project-feature-branch/` (old sibling format — migrate with `git worktree move`)
 - /tmp is only for temporary files (downloads, build artifacts, large files that shouldn't persist)

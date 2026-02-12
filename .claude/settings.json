@@ -90,13 +90,9 @@
             "async": true
           }
         ],
-        "matcher": {
-          "toolName": "Edit|Write"
-        }
+        "matcher": "Edit|Write"
       }
-    ]
-  },
-  "hooks": {
+    ],
     "PermissionRequest": [
       {
         "hooks": [

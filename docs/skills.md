@@ -13,8 +13,8 @@ Skills encode team knowledge and workflows. Claude reads and follows them automa
 | `/test` | Test strategy and patterns | Writing or running tests |
 | `/design` | Architecture decision records | New features, significant changes |
 | `/worktree` | Git worktree workflow | Branch isolation, parallel work |
-| `/quickref` | Command cheatsheet | Quick reference |
-| `/swarm` | Tmux-native agent team workflow | Launching multi-agent parallel work |
+| `/quickref` | PDS skills, agents, conventions | Quick reference |
+| `/swarm` | Multi-agent team workflow with file-based coordination | Launching multi-agent parallel work |
 | `/team` | Agent roster and coordination | Agent roles, permissions, file protocol |
 | `/trim` | Context efficiency maintenance | Reducing skill/agent token footprint |
 | `/bump` | Version and changelog updates | Releasing new versions |
@@ -45,10 +45,10 @@ Architecture Decision Records (ADRs) format. Documents the "why" behind signific
 Git worktrees for isolated parallel development. Commands, naming conventions, workflow patterns. Use when working on multiple branches simultaneously.
 
 ### /quickref
-Quick reference for common commands: git, tmux, shell helpers. Handy cheatsheet.
+PDS quick reference card: skills with triggers, agents with modes, worktree commands, commit format, version bump flow. Reinforces skill awareness.
 
 ### /swarm
-Tmux-native agent team workflow. Agents run as `claude -p` in their own tmux panes with file-based coordination (`.agent/task.md`, `status.md`, `output.md`). Use when a task benefits from parallel work by multiple agents.
+Multi-agent team workflow with file-based coordination across worktrees. Agents run as `claude -p` with file-based coordination (`.agent/task.md`, `status.md`, `output.md`). Use when a task benefits from parallel work by multiple agents.
 
 ### /team
 Agent roster reference: 8 agents (orchestrator, researcher, worker, validator, reviewer, documenter, scout, auditor) with permission tiers and the 6-phase Agentic SDLC model.
