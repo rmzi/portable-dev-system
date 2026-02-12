@@ -34,14 +34,14 @@ PDS implements the six-phase agentic development model:
 
 1. **Plan** — Refine requirements into acceptance criteria
 2. **Decompose** — Split into independent tasks, create worktrees
-3. **Execute** — Workers implement in parallel (no inter-agent communication)
+3. **Execute** — Workers implement in parallel (SendMessage when needed)
 4. **Validate** — Merge, test, review, fix
 5. **Consolidate** — PR + docs for human review
 6. **Knowledge** — Meta-improvements, lessons captured
 
 The human remains architect and final authority. Agents become a scalable workforce.
 
-See [Proposal](proposal.md) for the shareable overview, [Whitepaper](whitepaper.md) for full technical depth, and [Agent Tooling](agent-tooling.md) for execution patterns.
+See [Proposal](proposal.md) for the shareable overview and [Whitepaper](whitepaper.md) for full technical depth.
 
 ---
 
