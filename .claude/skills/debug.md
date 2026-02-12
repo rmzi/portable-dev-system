@@ -14,60 +14,39 @@ Debugging is hypothesis testing. Be scientific.
 ## The Debugging Protocol
 
 ### 1. Reproduce
-Before anything else, reliably reproduce the bug.
+Reliably reproduce before anything else.
 
-- What are the exact steps?
-- What is the expected behavior?
-- What is the actual behavior?
-- Is it consistent or intermittent?
+- Exact steps, expected vs actual behavior
+- Consistent or intermittent?
 
 > "If you can't reproduce it, you can't fix it."
 
 ### 2. Isolate
 Narrow the search space systematically.
 
-**Binary search the problem:**
-- Does it happen in production only? Staging? Local?
-- Does it happen with all inputs or specific ones?
+- Production only? Staging? Local?
+- All inputs or specific ones?
 - When did it start? What changed?
-
-**Minimize reproduction:**
 - Remove unrelated code/config until bug disappears
-- The minimal reproduction case reveals the cause
 
 ### 3. Hypothesize
-Form a theory before investigating.
-
-Write down:
+Write down before investigating:
 1. What I think is happening
-2. What evidence would confirm it
-3. What evidence would disprove it
-
-> "Strong opinions, weakly held."
+2. Evidence that would confirm it
+3. Evidence that would disprove it
 
 ### 4. Verify
-Test your hypothesis with the smallest possible experiment.
+Test with the smallest possible experiment.
 
-**Good verification:**
-- Add one log/breakpoint at the suspected location
-- Change one variable to test the theory
-- Check one assumption explicitly
-
-**Bad verification:**
-- Changing multiple things at once
-- Adding logs everywhere
-- Making speculative fixes
+**Good:** One log/breakpoint, one variable change, one assumption check.
+**Bad:** Multiple changes at once, logs everywhere, speculative fixes.
 
 ### 5. Fix
-Once verified, fix the root cause.
-
 - Fix the cause, not the symptom
 - Add a test that would have caught this
-- Consider: are there similar bugs elsewhere?
+- Check for similar bugs elsewhere
 
 ### 6. Reflect
-After fixing:
-
 - Why did this bug exist?
 - Why wasn't it caught earlier?
 - What could prevent similar bugs?
@@ -84,20 +63,13 @@ After fixing:
 
 ## git bisect — Binary Search History
 
-When you know it worked before:
-
 ```bash
 git bisect start
 git bisect bad                 # Current commit is broken
 git bisect good v1.2.0         # This version worked
-
-# Git checks out middle commit
-# Test it, then:
-git bisect good  # or
-git bisect bad
-
-# Repeat until git finds the culprit
-git bisect reset  # Return to original state
+# Git checks out middle commit — test, then: git bisect good/bad
+# Repeat until culprit found
+git bisect reset               # Return to original state
 ```
 
 ## Common Bug Patterns
@@ -112,10 +84,4 @@ git bisect reset  # Return to original state
 
 ## The Rubber Duck Protocol
 
-Explain the problem out loud (or in writing):
-1. What should happen
-2. What actually happens
-3. What I've tried
-4. What I think the problem might be
-
-Often, the act of explaining reveals the answer.
+Explain the problem aloud or in writing: what should happen, what actually happens, what you've tried, what you suspect. The act of explaining often reveals the answer.

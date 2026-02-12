@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0] - 2026-02-11
+
+### Added
+- **Agent team system** — 8 specialized agents for multi-agent orchestration:
+  - **orchestrator** (opus) — team lead, 6-phase Agentic SDLC coordinator
+  - **researcher** (sonnet) — read-only codebase exploration
+  - **worker** (sonnet) — implementation in isolated worktrees
+  - **validator** (sonnet) — merge branches, run tests, produce reports
+  - **reviewer** (sonnet) — code review with severity categories
+  - **documenter** (sonnet) — documentation updates
+  - **scout** (haiku) — PDS meta-improvement suggestions
+  - **auditor** (sonnet) — codebase quality analysis → GitHub issues
+- **`/team` skill** — agent roster, permissions, communication model reference
+- **`/swarm` skill** — 8-step workflow for launching and running agent teams
+- **Deterministic agent invocation** — `@"agent-name (agent)"` syntax for reliable routing
+- **Hub-and-spoke communication** — orchestrator coordinates, peer messaging available
+
+### Changed
+- Enable `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` feature flag in settings
+
 ## [1.0.1] - 2026-02-09
 
 ### Added

@@ -57,15 +57,3 @@ Bump the project version and update the changelog in one atomic operation.
 
 3. **One commit** - Version bump and changelog go in the same commit
 
-## Example
-
-```
-User: /bump patch
-
-Claude:
-- Reads VERSION: 0.7.1
-- Calculates new version: 0.7.2
-- Updates VERSION to 0.7.2
-- Adds ## [0.7.2] section to CHANGELOG.md
-- Commits: "chore: bump version to 0.7.2"
-```

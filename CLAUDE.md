@@ -33,6 +33,9 @@ Terminal-first, AI-assisted dev methodology using worktrees for isolation.
 | `/worktree` | Branch isolation, parallel work |
 | `/bump` | Version bump and changelog update |
 | `/quickref` | Command reference |
+| `/team` | Agent roster, roles, capabilities |
+| `/swarm` | Launch agent team for parallel work |
+| `/trim` | Context efficiency maintenance |
 
 ---
 

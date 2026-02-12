@@ -30,109 +30,50 @@ Tests are a specification that happens to be executable.
 ## When to Use Each Type
 
 ### Unit Tests
-**What:** Test a single function or class in isolation
-**When:**
-- Pure functions with logic
-- Complex algorithms
-- Edge cases and error handling
-
-**Not for:**
-- Simple getters/setters
-- Framework boilerplate
-- Trivial delegation
+Test single function/class in isolation.
+**When:** Pure functions, complex algorithms, edge cases, error handling.
+**Skip:** Simple getters, framework boilerplate, trivial delegation.
 
 ```javascript
-// Good unit test candidate
-function calculateDiscount(price, customerType, quantity) {
-  // Complex logic with multiple paths
-}
-
-// Don't bother unit testing
-function getUsername() {
-  return this.username;
-}
+// Test: complex logic with multiple paths
+function calculateDiscount(price, customerType, quantity) { ... }
 ```
 
 ### Integration Tests
-**What:** Test how components work together
-**When:**
-- Database operations
-- API endpoints
-- External service integration
-- Component interactions
+Test component interactions across boundaries.
+**When:** Database ops, API endpoints, external services, component interactions.
 
 ```javascript
-// Good integration test
-test('user registration creates account and sends welcome email', async () => {
+test('registration creates account and sends email', async () => {
   const result = await registerUser({ email: 'test@example.com' });
-
   expect(await db.users.find(result.id)).toBeDefined();
-  expect(mockEmailService.sent).toContainEqual(
-    expect.objectContaining({ to: 'test@example.com' })
-  );
+  expect(mockEmailService.sent).toContainEqual(expect.objectContaining({ to: 'test@example.com' }));
 });
 ```
 
 ### E2E Tests
-**What:** Test complete user workflows
-**When:**
-- Critical user journeys
-- Smoke tests for deployment
-- Regression prevention on key flows
-
-**Keep them:**
-- Few in number
-- Focused on happy paths
-- Resilient to UI changes
+Test complete user workflows. Few, focused on happy paths, resilient to UI changes.
+Use for: critical user journeys, smoke tests, regression on key flows.
 
 ## Test Naming
 
-```
-test('[unit] [action] [expected outcome]')
-test('[given] [when] [then]')
-```
-
-Examples:
-```javascript
-test('calculateTotal applies discount when quantity exceeds 10')
-test('given expired token, when accessing API, then returns 401')
-test('user can complete checkout with valid payment')
-```
+Pattern: `test('[given] [when] [then]')` or `test('[unit] [action] [expected outcome]')`
+Example: `test('given expired token, when accessing API, then returns 401')`
 
 ## What to Test
 
 ### Test Behavior, Not Implementation
 
 ```javascript
-// Bad: Tests implementation
-test('calls database.save with user object', () => {
-  createUser(data);
-  expect(database.save).toHaveBeenCalledWith(data);
-});
-
-// Good: Tests behavior
-test('created user can be retrieved by email', async () => {
-  await createUser({ email: 'test@example.com' });
-  const user = await findUserByEmail('test@example.com');
-  expect(user).toBeDefined();
-});
+// Bad: test('calls database.save') → tests implementation detail
+// Good: test('created user retrievable by email') → tests behavior
 ```
 
 ### Test the Contract
-
-At boundaries (APIs, public interfaces), test:
-- Valid inputs produce correct outputs
-- Invalid inputs produce appropriate errors
-- Edge cases are handled
+At boundaries (APIs, public interfaces): valid inputs → correct outputs, invalid inputs → errors, edge cases handled.
 
 ### Test the Scary Parts
-
-Focus testing effort on:
-- Code that handles money
-- Security-sensitive operations
-- Complex conditional logic
-- Recently buggy areas
-- Code you don't fully understand
+Prioritize: money handling, security ops, complex conditionals, recent bugs, unfamiliar code.
 
 ## Test Quality Checklist
 
@@ -160,5 +101,3 @@ Focus testing effort on:
 2. GREEN  — Write minimal code to pass
 3. REFACTOR — Improve code, keep tests green
 ```
-
-> "I'm not a great programmer; I'm a good programmer with great habits." — Kent Beck

@@ -67,13 +67,6 @@ Suggestion: How to fix
 
 ## Review Etiquette
 
-**As reviewer:**
-- Ask questions, don't demand
-- Explain the "why" behind suggestions
-- Distinguish nitpicks from blockers
-- Acknowledge good work
-
-**As author:**
-- Assume good intent
-- Explain context reviewer might lack
-- If you disagree, explain why—then defer or discuss
+- Ask questions, don't demand. Explain the "why."
+- Distinguish nitpicks from blockers. Acknowledge good work.
+- As author: assume good intent, explain context, discuss disagreements.

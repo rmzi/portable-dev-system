@@ -36,26 +36,11 @@ Commits are documentation. They tell the story of why code changed.
 
 ### Rules
 
-1. **Subject line**
-   - Imperative mood: "Add feature" not "Added feature"
-   - No period at end
-   - Max 50 characters (hard limit: 72)
-
-2. **Body** (when needed)
-   - Explain *what* and *why*, not *how*
-   - Wrap at 72 characters
-   - Separate from subject with blank line
-
-3. **Footer** (when relevant)
-   - Reference issues: `Fixes #123`
-   - Breaking changes: `BREAKING CHANGE: description`
+1. **Subject line** — Imperative mood ("Add feature" not "Added"), no period, max 50 chars (hard limit: 72)
+2. **Body** (when needed) — Explain *what* and *why*, not *how*. Wrap at 72 chars. Blank line after subject.
+3. **Footer** (when relevant) — `Fixes #123` or `BREAKING CHANGE: description`
 
 ## Examples
-
-### Simple fix
-```
-fix(auth): prevent session fixation on login
-```
 
 ### Feature with context
 ```
@@ -79,19 +64,17 @@ See docs/migration-v3.md for migration guide.
 
 ## Pre-Commit Checklist
 
-Before committing:
-- [ ] `git diff --staged` reviewed
-- [ ] No debug code or console.logs
-- [ ] No secrets or credentials
-- [ ] Tests pass (run test suite before committing)
-- [ ] Commit is atomic (single logical change)
+- `git diff --staged` reviewed
+- No debug code or console.logs
+- No secrets or credentials
+- Tests pass
+- Commit is atomic (single logical change)
 
 ## Pre-Push Checklist
 
-Before pushing:
-- [ ] Pull and rebase: `git pull --rebase origin <branch>`
-- [ ] Tests still pass after rebase
-- [ ] No merge conflicts introduced
+- Pull and rebase: `git pull --rebase origin <branch>`
+- Tests still pass after rebase
+- No merge conflicts introduced
 
 ## The Atomic Commit Test
 
