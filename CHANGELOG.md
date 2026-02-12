@@ -4,23 +4,41 @@ All notable changes to this project will be documented in this file.
 
 ## [2.0.0] - 2026-02-11
 
+PDS is now **"Software for Claude"** — a pure Claude Code configuration package. Tool-layer files (shell helpers, tmux, terminal configs) have moved to [Zaku](https://github.com/rmzi/zaku).
+
 ### Added
 - **Agent team system** — 8 specialized agents for multi-agent orchestration:
-  - **orchestrator** (opus) — team lead, 6-phase Agentic SDLC coordinator
-  - **researcher** (sonnet) — read-only codebase exploration
-  - **worker** (sonnet) — implementation in isolated worktrees
-  - **validator** (sonnet) — merge branches, run tests, produce reports
-  - **reviewer** (sonnet) — code review with severity categories
-  - **documenter** (sonnet) — documentation updates
-  - **scout** (haiku) — PDS meta-improvement suggestions
-  - **auditor** (sonnet) — codebase quality analysis → GitHub issues
-- **`/team` skill** — agent roster, permissions, communication model reference
-- **`/swarm` skill** — 8-step workflow for launching and running agent teams
-- **Deterministic agent invocation** — `@"agent-name (agent)"` syntax for reliable routing
-- **Hub-and-spoke communication** — orchestrator coordinates, peer messaging available
+  - **orchestrator** (opus, delegate) — team lead, 6-phase Agentic SDLC coordinator
+  - **researcher** (sonnet, plan) — read-only codebase exploration
+  - **worker** (sonnet, acceptEdits) — implementation in isolated worktrees
+  - **validator** (sonnet, acceptEdits) — merge branches, run tests, produce reports
+  - **reviewer** (sonnet, plan) — code review with severity categories
+  - **documenter** (sonnet, acceptEdits) — documentation updates
+  - **scout** (haiku, plan) — PDS meta-improvement suggestions
+  - **auditor** (sonnet, plan) — codebase quality analysis → GitHub issues
+- **Agent frontmatter** — `name`, `description`, `model`, `permissionMode`, `maxTurns`, `memory`, `tools`, `skills`, `color` for all agents
+- **File-based agent coordination** — `.agent/task.md`, `status.md`, `output.md` protocol
+- **`/team` skill** — agent roster, permissions, file protocol reference
+- **`/swarm` skill** — multi-agent workflow with file-based coordination
+- **Agentic SDLC documentation** — whitepaper, proposal, agent tooling patterns (from agent-sandbox)
+- **Permission hardening** — `additionalDirectories` for worktree access, hooks in `settings.json`
+- **Agent memory** — `memory: project` for researcher, reviewer, scout, auditor
 
 ### Changed
-- Enable `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` feature flag in settings
+- **Scoped to configuration only** — PDS is editor-agnostic, no tool dependencies
+- **Orchestrator uses `delegate` mode** — cannot implement directly, must dispatch agents
+- **Read-only agents use `plan` mode** — researcher, reviewer, scout, auditor cannot modify files
+
+### Removed
+- `shell-helpers.sh` — moved to Zaku
+- `tmux.conf` — moved to Zaku
+- `starship.toml` — moved to Zaku
+- `install.sh` — moved to Zaku
+- `ghostty.config` — moved to Zaku
+- `claude-statusline.sh` — moved to Zaku
+- `yazi-keymap.toml`, `yazi-theme.toml` — moved to Zaku
+- `docs/commands.md`, `docs/install.md` — moved to Zaku
+- `.claude/hooks.json` — hooks moved into `settings.json` (dead file, Claude Code doesn't read standalone hooks)
 
 ## [1.0.1] - 2026-02-09
 

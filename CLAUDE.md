@@ -1,6 +1,6 @@
 # Portable Development System
 
-Terminal-first, AI-assisted dev methodology using worktrees for isolation.
+AI-assisted development methodology. Skills for consistency. Agents for scale.
 
 ## Skills System (MANDATORY)
 
@@ -39,23 +39,12 @@ Terminal-first, AI-assisted dev methodology using worktrees for isolation.
 
 ---
 
-## Key Commands
-
-- `wt` - Pick worktree, open in tmux layout
-- `wt -b feature/x` - Create new worktree + branch
-- `wts` - Global session picker (from anywhere)
-- `clauder` - Resume Claude session for current directory
-
----
-
 ## Rules
 
 **NEVER clone the repository.** Always use git worktrees for isolation:
-- Need a new branch? Use `git worktree add` or `wt -b branch`
-- Need to work on existing branch? Use `git worktree add` or `wt branch`
+- Need a new branch? Use `git worktree add`
 - Cloning creates disconnected copies. Worktrees share git history and stay in sync.
 
 **NEVER use /tmp for code or worktrees.** Worktrees go in the project's parent directory:
 - Correct: `../project-feature-branch/`
 - Wrong: `/tmp/project/` or `/tmp/feature-work/`
-- /tmp is only for temporary files (downloads, build artifacts, large files that shouldn't persist)

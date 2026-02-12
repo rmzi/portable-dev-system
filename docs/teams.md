@@ -1,35 +1,68 @@
 # Team Setup
 
-## Quick Start for Team Members
+## Quick Start
 
 ```bash
-# 1. Install PDS (one-time)
-curl -fsSL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash
-source ~/.zshrc
+# 1. Install PDS into your project
+cd ~/your-project
+pds-init
 
-# 2. Clone your repo - skills are already there
-git clone <your-repo>
-cd <your-repo>
+# 2. Commit the configuration
+git add .claude CLAUDE.md
+git commit -m "feat: add PDS"
 ```
+
+Now every team member gets the same skills, agents, and conventions.
 
 ---
 
-## Adding PDS to Your Repo
+## Agent Teams
 
-```bash
-cd your-team-repo
-pds-init
-git add .claude CLAUDE.md
-git commit -m "feat: add PDS skills for team workflow"
+PDS includes 8 specialized agents for multi-agent orchestration. Each agent has a defined role, permission mode, and coordination protocol.
+
+### Agent Roster
+
+| Agent | Role | Model | Mode |
+|-------|------|-------|------|
+| orchestrator | Team lead — plans, decomposes, dispatches | opus | delegate |
+| researcher | Deep codebase exploration | sonnet | plan |
+| worker | Implementation in isolated worktrees | sonnet | acceptEdits |
+| validator | Merge branches, run tests, report | sonnet | acceptEdits |
+| reviewer | Code review — quality, security | sonnet | plan |
+| documenter | Documentation updates | sonnet | acceptEdits |
+| scout | PDS meta-improvements | haiku | plan |
+| auditor | Codebase analysis → GitHub issues | sonnet | plan |
+
+### Permission Modes
+
+| Mode | Agents | Behavior |
+|------|--------|----------|
+| **delegate** | orchestrator | Coordination only — cannot implement, must delegate |
+| **acceptEdits** | worker, validator, documenter | Auto-accept file edits, full implementation access |
+| **plan** | researcher, reviewer, scout, auditor | Read-only exploration, no file modifications |
+
+### File Protocol
+
+Agents coordinate through files, not messages:
+
+```
+agent-worktree/.agent/
+  task.md      # Orchestrator writes before spawning
+  status.md    # Agent writes: pending | in_progress | done | blocked
+  output.md    # Agent writes: results, reports, findings
 ```
 
-Now every team member gets:
-- Same code review checklist (`/review`)
-- Same commit conventions (`/commit`)
-- Same debugging protocol (`/debug`)
-- Same architecture decision format (`/design`)
+### 6-Phase Agentic SDLC
 
-**No more "how do we do X here?"** — it's encoded in the skills.
+```
+Plan → Decompose → Dispatch → Validate → Consolidate → Knowledge
+ │         │          │           │            │            │
+ │    researcher   workers    validator      docs        scout
+ │    + human      + tasks    + reviewer    + PR
+ human gate                                human gate
+```
+
+See `/swarm` and `/team` skills for full workflow details.
 
 ---
 
@@ -49,7 +82,10 @@ Add your own skills to `.claude/skills/`:
 ### Skill Template
 
 ```markdown
-# Skill Name
+---
+description: One-line description for skill discovery
+---
+# /skill-name — Title
 
 ## When to Use
 - Trigger conditions
@@ -62,19 +98,6 @@ Add your own skills to `.claude/skills/`:
 - [ ] Item one
 - [ ] Item two
 ```
-
----
-
-## Onboarding
-
-New team member setup:
-
-1. Install dependencies: `brew install yazi zoxide fzf tmux starship ripgrep fd bat`
-2. Run installer: `curl -fsSL .../install.sh | bash`
-3. Clone repo (skills included)
-4. Start working
-
-Time: ~5 minutes.
 
 ---
 
@@ -122,14 +145,6 @@ Add to your repo's `.claude/settings.json`:
 }
 ```
 
-### Philosophy
-
-Everything in git is recoverable. Local dev data is rebuildable. CI/CD validates branches. So:
-- **Dev = velocity** — let Claude move fast
-- **Prod = guardrails** — block credential paths and prod patterns
-
-This gives you `--dangerously-skip-permissions` velocity without the risk of touching prod.
-
 ---
 
 ## Keeping Skills Updated
@@ -140,6 +155,5 @@ When you update skills in your repo:
 
 For PDS core updates:
 ```bash
-pds-update      # Update project skills
-pds-update -s   # Update shell helpers
+pds-update
 ```

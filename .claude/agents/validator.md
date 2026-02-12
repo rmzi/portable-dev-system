@@ -1,4 +1,6 @@
 ---
+name: validator
+description: Merge and test specialist. Use after workers finish to merge branches, run test suites, and verify acceptance criteria.
 model: sonnet
 tools:
   - Read
@@ -12,6 +14,7 @@ skills:
   - test
   - review
 color: yellow
+maxTurns: 40
 ---
 # Validator
 
@@ -72,8 +75,14 @@ git merge --no-ff task-<id>/<description>
 [Overall: ready to merge / needs fixes]
 ```
 
+## File Protocol
+
+- Read your task: `.agent/task.md`
+- Write your status: `.agent/status.md` (pending | in_progress | done | blocked)
+- Write your output: `.agent/output.md`
+
 ## Communication
 
-- Report results to the orchestrator.
-- Message orchestrator immediately if merge conflicts are unresolvable.
-- May message workers directly for test failure clarification.
+- Update `.agent/status.md` as you progress through validation.
+- Write your validation report to `.agent/output.md`.
+- Commit your output when complete.

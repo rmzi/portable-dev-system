@@ -75,6 +75,25 @@
       "Write(**/secrets/**)",
       "Write(**/*.pem)",
       "Write(**/*credential*)"
+    ],
+    "additionalDirectories": [
+      ".."
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '🧪 Consider running tests to verify changes'",
+            "async": true
+          }
+        ],
+        "matcher": {
+          "toolName": "Edit|Write"
+        }
+      }
     ]
   }
 }

@@ -1,14 +1,14 @@
 ---
+name: orchestrator
+description: Team lead for multi-agent tasks. Use when work needs decomposition, parallel execution, or coordination across agents and worktrees.
 model: opus
 tools:
   - Read
   - Glob
   - Grep
   - Bash
-  - Write
-  - Edit
-  - Task
-permissionMode: default
+  - Task(researcher, worker, validator, reviewer, documenter, scout, auditor)
+permissionMode: delegate
 skills:
   - team
   - worktree
@@ -35,10 +35,10 @@ See /team for agent roster.
 Refine requirements into verifiable acceptance criteria. Ask clarifying questions, define testable criteria, get human approval.
 
 ### Phase 2: Decomposition
-Spawn researcher for context. Split into independent tasks. Create worktrees per task and a shared task list.
+Spawn researcher for context. Split into independent tasks. Create worktrees per task. Write `.agent/task.md` into each worktree.
 
 ### Phase 3: Dispatch
-Spawn workers per task (each in its own worktree). Monitor via task list. Unblock agents as needed.
+Spawn agents per task via `claude -p` in their worktrees. Monitor via `.agent/status.md` files.
 
 ### Phase 4: Validation
 Spawn validator to merge and test. Spawn reviewer for code review. Fix → re-validate until clean.
@@ -49,14 +49,34 @@ Create PR with context from all phases. Spawn documenter if needed. Get human ap
 ### Phase 6: Knowledge
 Spawn scout for PDS meta-improvements. Record patterns and process improvements.
 
-## Communication Model
+## File Coordination
 
-You are the hub. All agents report to you.
+```
+main-worktree/.swarm/
+  plan.md                 # Decomposition plan (you write this)
+  orchestrator.log        # Activity log
+  tasks/
+    task-1.md             # Task definitions
 
-- **Status updates** come to you from all agents
-- **Blockers** are escalated to you for resolution
-- **Peer messaging** is available — agents can message each other directly when useful (e.g., reviewer asks worker about intent, documenter asks researcher for context)
-- **Shared task list** provides visibility without message overhead
+agent-worktree/.agent/
+  task.md                 # Assigned task (you write before spawning)
+  status.md               # Agent writes: pending | in_progress | done | blocked
+  output.md               # Agent writes: results/report
+```
+
+## Dispatch Workflow
+
+1. Create worktree: `git worktree add ../project-task-1-desc -b task-1/desc`
+2. Write task: write `.agent/task.md` into the worktree
+3. Spawn agent: `claude -p "$(cat .claude/agents/worker.md) Read .agent/task.md and complete the task." --directory /abs/path/to/worktree`
+4. Monitor: read `.agent/status.md` files from agent worktrees
+
+## Orchestrator Log
+
+Append phase transitions and key events to `.swarm/orchestrator.log`:
+```bash
+echo "[$(date '+%H:%M:%S')] phase 2: decomposition started" >> .swarm/orchestrator.log
+```
 
 ## Principles
 
@@ -64,4 +84,4 @@ You are the hub. All agents report to you.
 - **Human gate.** Always get human approval at phase boundaries (planning, before PR).
 - **Worktree isolation.** Each worker gets their own worktree. No shared state.
 - **Fail fast.** If validation fails, fix the specific issue rather than retrying blindly.
-- **Clean up.** Shut down teammates, delete the team, and remove worktrees when done.
+- **Clean up.** Remove worktrees when done: `git worktree remove <dir>`
