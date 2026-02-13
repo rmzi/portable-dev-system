@@ -57,6 +57,7 @@ cp CLAUDE.md ~/your-project/CLAUDE.md
 | `/swarm` | Multi-agent team workflow |
 | `/team` | Agent roster and coordination |
 | `/grill` | Requirement interrogation |
+| `/contribute` | Contributing to PDS itself |
 | `/trim` | Context efficiency maintenance |
 | `/bump` | Version and changelog |
 | `/permission-router` | Permission hook policy |

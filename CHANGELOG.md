@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.4.0] - 2026-02-12T23:51:35-05:00
+
+### Added
+- **`/contribute` skill** — PDS contribution workflow with whitepaper alignment checklist and cross-reference update guidance
+- **Instruction architecture section in whitepaper** — cites [Vercel's agent evals](https://vercel.com/blog/agents-md-outperforms-skills-in-our-agent-evals) on passive context (100%) vs skills (53-79%), explains PDS's dual-layer approach
+
+### Changed
+- **CLAUDE.md whitepaper rule** replaced with `/contribute` skill reference — fuller checklist instead of a single sentence
+
 ## [2.3.0] - 2026-02-12
 
 ### Added

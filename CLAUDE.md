@@ -38,6 +38,7 @@ AI-assisted development methodology. Skills for consistency. Agents for scale.
 | `/swarm` | Launch agent team for parallel work |
 | `/quickref` | PDS skills, agents, and conventions reference |
 | `/grill` | Requirement interrogation before implementation |
+| `/contribute` | Contributing to PDS itself — whitepaper alignment |
 | `/trim` | Context efficiency maintenance |
 
 
@@ -62,6 +63,6 @@ AI-assisted development methodology. Skills for consistency. Agents for scale.
 - Wrong: `../project-feature-branch/` (old sibling format — migrate with `git worktree move`)
 - /tmp is only for temporary files (downloads, build artifacts, large files that shouldn't persist)
 
-**Read the whitepaper before modifying workflow.** Before changing agent definitions, SDLC phases, or coordination patterns, read `docs/whitepaper.md` to ensure alignment with the Agentic SDLC model.
+**Read `/contribute` before modifying PDS.** Before changing skills, agents, SDLC phases, or coordination patterns, read `/contribute` for the full checklist — including whitepaper alignment.
 
 **Create or update a PR after pushing.** When commits are pushed to a non-main branch, create a PR (or update the existing one). Don't wait to be asked.
