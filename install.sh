@@ -38,6 +38,7 @@ Install PDS (Portable Development System) into a project or at the user level.
 Options:
   --user    Install to ~/.claude/ (personal, all projects)
   --force   Reinstall even if already up to date
+  --test    Run smoke tests in a temp directory (no network)
   --help    Show this help message
 
 Modes:
@@ -233,6 +234,156 @@ install_user() {
   echo "    Agents are project-only — add PDS to a project for agent support."
 }
 
+# --- Self-test ---
+
+run_tests() {
+  PASS=0
+  FAIL=0
+  SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+
+  assert() {
+    desc="$1"; shift
+    if "$@" >/dev/null 2>&1; then
+      ok "PASS: $desc"
+      PASS=$((PASS + 1))
+    else
+      err "FAIL: $desc"
+      FAIL=$((FAIL + 1))
+    fi
+  }
+
+  assert_file()    { assert "$1 exists" test -f "$2"; }
+  assert_dir()     { assert "$1 exists" test -d "$2"; }
+  assert_contains() { assert "$1 contains '$2'" grep -q "$2" "$3"; }
+  assert_not_dir() { assert "$1 does not exist" test ! -d "$2"; }
+
+  info "Running PDS install smoke tests (offline, temp dirs)"
+  echo ""
+
+  # --- Test 1: Project install ---
+  info "Test: project install"
+  testdir=$(mktemp -d)
+  trap 'rm -rf "$testdir"' EXIT
+
+  # Simulate what the real install does, using local repo as source
+  SRC_DIR="$SCRIPT_DIR"
+  TARGET_DIR="$testdir/.claude"
+  VERSION_FILE="$TARGET_DIR/.pds-version"
+  REMOTE_VERSION="test-0.0.0"
+  mkdir -p "$TARGET_DIR/skills" "$TARGET_DIR/agents"
+  cp "$SRC_DIR/.claude/skills/"*.md "$TARGET_DIR/skills/" 2>/dev/null || true
+  cp "$SRC_DIR/.claude/agents/"*.md "$TARGET_DIR/agents/" 2>/dev/null || true
+  cp "$SRC_DIR/.claude/settings.json" "$TARGET_DIR/settings.json"
+  cp "$SRC_DIR/CLAUDE.md" "$testdir/CLAUDE.md"
+  printf '%s\n' "$REMOTE_VERSION" > "$VERSION_FILE"
+  printf '.worktrees/\n' > "$testdir/.gitignore"
+
+  assert_dir  ".claude/skills"    "$TARGET_DIR/skills"
+  assert_dir  ".claude/agents"    "$TARGET_DIR/agents"
+  assert_file "settings.json"     "$TARGET_DIR/settings.json"
+  assert_file "CLAUDE.md"         "$testdir/CLAUDE.md"
+  assert_file ".pds-version"      "$VERSION_FILE"
+  assert_file ".gitignore"        "$testdir/.gitignore"
+  assert_contains "CLAUDE.md"     "PDS:START"  "$testdir/CLAUDE.md"
+  assert_contains "CLAUDE.md"     "PDS:END"    "$testdir/CLAUDE.md"
+  assert_contains ".gitignore"    ".worktrees" "$testdir/.gitignore"
+
+  # Count skills and agents
+  skill_count=$(ls "$TARGET_DIR/skills/"*.md 2>/dev/null | wc -l | tr -d ' ')
+  agent_count=$(ls "$TARGET_DIR/agents/"*.md 2>/dev/null | wc -l | tr -d ' ')
+  assert "skills count > 10 (got $skill_count)" test "$skill_count" -gt 10
+  assert "agents count = 8 (got $agent_count)"   test "$agent_count" -eq 8
+
+  # Validate JSON
+  assert "settings.json is valid JSON" python3 -c "import json; json.load(open('$TARGET_DIR/settings.json'))"
+
+  echo ""
+
+  # --- Test 2: User install ---
+  info "Test: user install"
+  userhome=$(mktemp -d)
+  USER_TARGET="$userhome/.claude"
+  mkdir -p "$USER_TARGET/skills"
+  cp "$SRC_DIR/.claude/skills/"*.md "$USER_TARGET/skills/" 2>/dev/null || true
+  cp "$SRC_DIR/.claude/settings.json" "$USER_TARGET/settings.json"
+  printf '%s\n' "$REMOTE_VERSION" > "$USER_TARGET/.pds-version"
+
+  # Write user-level CLAUDE.md
+  cat > "$USER_TARGET/CLAUDE.md" <<'USEREOF'
+<!-- PDS:START -->
+# Portable Development System (User)
+
+## Rules
+
+- **Never clone repos** — use `git worktree add` for branch isolation
+- **Never use /tmp for code** — worktrees go in `.worktrees/` inside the repo
+- **Create a PR after pushing** — don't wait to be asked
+
+## Skills
+
+If this project has `.claude/skills/`, read and follow those skills before performing actions.
+Otherwise, scan `~/.claude/skills/` for available workflow patterns.
+<!-- PDS:END -->
+USEREOF
+
+  assert_dir  "~/.claude/skills"   "$USER_TARGET/skills"
+  assert_file "user settings.json" "$USER_TARGET/settings.json"
+  assert_file "user CLAUDE.md"     "$USER_TARGET/CLAUDE.md"
+  assert_file "user .pds-version"  "$USER_TARGET/.pds-version"
+  assert_not_dir "no agents dir"   "$USER_TARGET/agents"
+
+  # User CLAUDE.md should be small
+  user_lines=$(wc -l < "$USER_TARGET/CLAUDE.md" | tr -d ' ')
+  assert "user CLAUDE.md is small (<20 lines, got $user_lines)" test "$user_lines" -lt 20
+
+  assert_contains "user CLAUDE.md" "PDS:START" "$USER_TARGET/CLAUDE.md"
+  assert_contains "user CLAUDE.md" "PDS:END"   "$USER_TARGET/CLAUDE.md"
+  assert_contains "user CLAUDE.md" "Otherwise, scan" "$USER_TARGET/CLAUDE.md"
+
+  echo ""
+
+  # --- Test 3: Idempotent re-run ---
+  info "Test: idempotent re-run"
+  settings_before=$(cat "$TARGET_DIR/settings.json")
+  cp "$SRC_DIR/.claude/settings.json" "$TARGET_DIR/settings.json"
+  settings_after=$(cat "$TARGET_DIR/settings.json")
+  assert "settings.json unchanged on re-install" test "$settings_before" = "$settings_after"
+
+  echo ""
+
+  # --- Test 4: PDS marker replacement ---
+  info "Test: PDS marker replacement"
+  cat > "$testdir/marker-test.md" <<'MARKEREOF'
+# My custom header
+
+<!-- PDS:START -->
+old PDS content here
+<!-- PDS:END -->
+
+# My custom footer
+MARKEREOF
+  install_claude_md "$SRC_DIR/CLAUDE.md" "$testdir/marker-test.md"
+  assert_contains "marker-test.md" "PDS:START"       "$testdir/marker-test.md"
+  assert_contains "marker-test.md" "Skills System"   "$testdir/marker-test.md"
+  assert_contains "marker-test.md" "My custom header" "$testdir/marker-test.md"
+  assert_contains "marker-test.md" "My custom footer" "$testdir/marker-test.md"
+
+  echo ""
+
+  # --- Cleanup ---
+  rm -rf "$userhome"
+
+  # --- Summary ---
+  TOTAL=$((PASS + FAIL))
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  if [ "$FAIL" -eq 0 ]; then
+    ok "All $TOTAL tests passed"
+  else
+    err "$FAIL/$TOTAL tests failed"
+  fi
+  return "$FAIL"
+}
+
 # ============================================================
 # Main
 # ============================================================
@@ -242,6 +393,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --user)  MODE="user"; shift ;;
     --force) FORCE=1; shift ;;
+    --test)  MODE="test"; shift ;;
     --help)  usage ;;
     *)
       echo "Unknown option: $1"
@@ -249,6 +401,12 @@ while [ $# -gt 0 ]; do
       ;;
   esac
 done
+
+# --- Self-test mode ---
+if [ "$MODE" = "test" ]; then
+  run_tests
+  exit $?
+fi
 
 # --- Check dependencies ---
 for cmd in curl tar mktemp; do
