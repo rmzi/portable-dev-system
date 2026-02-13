@@ -190,9 +190,18 @@ This ensures workers never receive GitHub tokens and orchestrators don't get dat
 
 The lexicon is persistent engineering knowledge spanning tasks and team members.
 
-**Recommended Structure**: Git-backed markdown files for version control and diffability, with a semantic search layer (vector database) for agent queries. This combines auditability with queryability.
+**Implementation**: The lexicon is realized as **instincts** — structured observations stored in `.claude/instincts.md`. Each instinct records a pattern with context, confidence level, and action. The file is git-tracked, diffable, and readable by any agent with `memory: project`.
 
-The lexicon should be queryable during planning and execution. When agents encounter problems, they ask "has this been solved before?" and receive relevant context.
+**Lifecycle**: Instincts follow an automated lifecycle managed by the scout agent:
+
+1. **Capture**: Any agent or human records a pattern via the `/instinct` skill
+2. **Validate**: Scout reviews instincts post-swarm (Phase 6), increments observation counts, adjusts confidence
+3. **Promote**: When an instinct reaches `high` confidence (3+ validations), scout drafts a new skill. Human approves via PR review.
+4. **Retire**: If an instinct proves wrong or irrelevant, scout marks it `retired`
+
+This auto-evolution means the lexicon grows from work — not from manual documentation efforts. The human gate at promotion (new skill = new committed file = PR review) ensures quality.
+
+Agents query `.claude/instincts.md` during planning (Phase 1) and execution, avoiding repeated mistakes and building on proven patterns.
 
 ---
 
@@ -394,7 +403,7 @@ These questions from v1.0 have been resolved through research and implementation
 | Question | Resolution |
 |----------|------------|
 | **Inter-agent communication** | Supported via SendMessage (direct, broadcast). Orchestrator coordinates through TaskCreate/TaskUpdate task DAGs. Independent execution preferred for simplicity; direct communication available when tasks require it. |
-| **Lexicon structure** | Git-backed markdown (version controlled, diffable) + semantic search layer (vector DB). Combines auditability with queryability. |
+| **Lexicon structure** | Instincts in `.claude/instincts.md` — git-backed markdown with structured entries (confidence, context, action). Scout automates lifecycle: capture → validate → promote → retire. See `/instinct` skill. |
 | **Failure recovery** | Frequent commits + orchestrator checkpoints to manifest file. Worktree itself preserves partial work. |
 | **Metrics** | Primary: tokens per task, validation cycles before pass, human intervention rate. Secondary: PRs merged, time to deployment. |
 | **Organizational integration** | PR-based workflow is the integration point. Agents produce PRs that flow through existing review processes. No changes to sprint planning or on-call. |
@@ -448,7 +457,7 @@ This is a starting point. The model evolves with implementation experience and i
 
 **Documenter**: Agent updating user-facing documentation when changes warrant it. Specialist tier.
 
-**Scout**: Agent analyzing completed swarms for PDS meta-improvements — workflow optimizations, skill gaps, configuration updates. Specialist tier.
+**Scout**: Agent analyzing completed swarms for PDS meta-improvements — workflow optimizations, skill gaps, configuration updates. Manages instinct lifecycle: validates patterns, bumps confidence, proposes skill promotions. Specialist tier.
 
 **Auditor**: Agent scanning codebases for tech debt, code smells, and missing tests, filing findings as GitHub issues. Spawned periodically, not per-swarm. Specialist tier.
 
@@ -456,7 +465,9 @@ This is a starting point. The model evolves with implementation experience and i
 
 **MCP**: Model Context Protocol—standard for agent interaction with external tools.
 
-**Lexicon**: Persistent repository of engineering knowledge, queryable by agents.
+**Lexicon**: Persistent repository of engineering knowledge, queryable by agents. Implemented as instincts in `.claude/instincts.md`.
+
+**Instinct**: A structured observation of a recurring pattern — lighter than a skill, with confidence levels and an automated lifecycle managed by scout.
 
 **Acceptance Criteria**: Specific, mechanically verifiable conditions defining task completion.
 

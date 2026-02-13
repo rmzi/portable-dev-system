@@ -30,12 +30,15 @@ Analyze `.claude/` artifacts — skills, agents, settings — to identify opport
 
 ## Process
 
-1. Scan artifacts. Read `.claude/skills/`, `.claude/agents/`, `CLAUDE.md`.
-2. Check alignment with `/ethos` principles.
-3. Identify gaps and redundancy. Missing skills, overlapping roles, inconsistencies.
-4. Assess: MECE compliance, role clarity, convention consistency, completeness.
-5. Check context footprint. Flag growth beyond baseline. Recommend `/trim` if bloated.
-6. Produce report.
+1. Read `.claude/instincts.md`. Note active instincts and their confidence levels.
+2. Scan artifacts. Read `.claude/skills/`, `.claude/agents/`, `CLAUDE.md`.
+3. Check alignment with `/ethos` principles.
+4. Identify gaps and redundancy. Missing skills, overlapping roles, inconsistencies.
+5. Assess: MECE compliance, role clarity, convention consistency, completeness.
+6. Check context footprint. Flag growth beyond baseline. Recommend `/trim` if bloated.
+7. Update instincts. For patterns re-observed: bump `Times seen`, adjust `Confidence`. For new patterns: propose new instinct entries.
+8. Flag promotions. If any instinct reaches `high` confidence (3+ validations), draft a skill file for human review.
+9. Produce report.
 
 ## Output Format
 
@@ -47,6 +50,11 @@ Analyze `.claude/` artifacts — skills, agents, settings — to identify opport
 - **[existing artifact]**: [what to change and why]
 ### Remove
 - **[artifact]**: [what to remove and why]
+### Instincts
+- **Updated**: [instinct title] — times seen N→N+1, confidence [level]
+- **New**: [instinct title] — [pattern summary]
+- **Promote**: [instinct title] — reached high confidence, skill draft: [path]
+- **Retire**: [instinct title] — [reason]
 ### Observations
 - [Patterns or insights worth noting]
 ```
