@@ -147,6 +147,17 @@ Add to your repo's `.claude/settings.json`:
 
 ---
 
+## Addons
+
+Addons extend Claude Code through independently maintained packages — skills, hooks, agents, and scripts that follow PDS conventions but have no PDS dependency.
+
+See [Addons](addons.md) for the full specification and how to create one.
+
+**Available addons:**
+- [branch-tone](https://github.com/rmzi/branch-tone) — Audio cues for Claude Code events (task completion, permission requests)
+
+---
+
 ## Keeping Skills Updated
 
 When you update skills in your repo:
