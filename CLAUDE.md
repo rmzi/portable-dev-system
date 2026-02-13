@@ -38,6 +38,7 @@ AI-assisted development methodology. Skills for consistency. Agents for scale.
 | `/team` | Agent roster, roles, capabilities |
 | `/swarm` | Launch agent team for parallel work |
 | `/quickref` | PDS skills, agents, and conventions reference |
+| `/instinct` | Record, review, and promote engineering patterns |
 | `/grill` | Requirement interrogation before implementation |
 | `/contribute` | Contributing to PDS itself — whitepaper alignment |
 | `/audit-config` | Verify PDS setup is correct and secure |

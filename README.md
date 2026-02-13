@@ -59,6 +59,7 @@ Installs skills and security settings to `~/.claude/` — works across all proje
 | `/swarm` | Multi-agent team workflow |
 | `/team` | Agent roster and coordination |
 | `/grill` | Requirement interrogation |
+| `/instinct` | Pattern capture and lifecycle |
 | `/contribute` | Contributing to PDS itself |
 | `/audit-config` | Verify PDS config security |
 | `/trim` | Context efficiency maintenance |

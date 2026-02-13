@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.7.0] - 2026-02-13
+
+### Added
+- **Instinct system** — auto-evolving engineering patterns as PDS's concrete lexicon implementation
+  - `.claude/instincts.md` — structured pattern storage with confidence levels and lifecycle
+  - `/instinct` skill — record, validate, promote, and retire engineering patterns
+  - Lifecycle: capture → validate → promote → retire, automated by scout agent
+  - Human gate at promotion: new skill = new committed file = PR review
+- **Scout agent expanded** — reads and manages instincts post-swarm (validate counts, propose new, flag promotions)
+- **Swarm Phase 1** — researcher queries instincts for relevant prior patterns
+- **Swarm Phase 6** — scout captures instincts, not just suggestions
+
+### Changed
+- **Whitepaper lexicon section** — now references concrete instinct implementation instead of abstract recommendation
+- **Whitepaper glossary** — added instinct definition, updated scout and lexicon entries
+
 ## [2.6.0] - 2026-02-13
 
 ### Added

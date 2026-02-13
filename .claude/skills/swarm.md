@@ -15,7 +15,7 @@ Each agent runs in its own worktree with file-based coordination. See `/team` fo
 ## 6-Phase Workflow
 
 ### Phase 1: Plan
-Run `/grill` to validate requirements before decomposition. Spawn researcher for context. Create decomposition plan and get human approval.
+Run `/grill` to validate requirements before decomposition. Spawn researcher for context — researcher queries `.claude/instincts.md` for relevant prior patterns. Create decomposition plan and get human approval.
 
 ### Phase 2: Decompose
 Create worktrees and write task files:
@@ -43,7 +43,7 @@ Spawn validator to merge and test. If issues: dispatch workers to fix, re-valida
 Create PR with context from all phases. Spawn documenter if needed. Get human approval.
 
 ### Phase 6: Knowledge
-Spawn scout for PDS meta-improvements. Capture lessons learned.
+Spawn scout for PDS meta-improvements. Scout reads `.claude/instincts.md`, updates counts for re-observed patterns, proposes new instincts, and flags high-confidence instincts for skill promotion. See `/instinct`.
 
 ## Monitoring
 
@@ -56,5 +56,6 @@ done
 ## See Also
 
 - `/grill` — Requirement interrogation before decomposition
+- `/instinct` — Pattern capture and lifecycle
 - `/team` — Agent roster, file protocol, coordination model
 - `/worktree` — Branch isolation for parallel work

@@ -164,6 +164,12 @@ install_project() {
     ok "Installed agents → $TARGET_DIR/agents/"
   fi
 
+  # Copy instincts.md (seed file if not present)
+  if [ -f "$SRC_DIR/.claude/instincts.md" ] && [ ! -f "$TARGET_DIR/instincts.md" ]; then
+    cp "$SRC_DIR/.claude/instincts.md" "$TARGET_DIR/instincts.md"
+    ok "Installed instincts → $TARGET_DIR/instincts.md"
+  fi
+
   # Copy settings.json
   if [ -f "$SRC_DIR/.claude/settings.json" ]; then
     if [ -f "$TARGET_DIR/settings.json" ] && [ ! -f "$TARGET_DIR/settings.json.pre-pds" ]; then
@@ -181,15 +187,19 @@ install_project() {
   printf '%s\n' "$REMOTE_VERSION" > "$VERSION_FILE"
   ok "Version: $REMOTE_VERSION"
 
-  # Add .worktrees/ to .gitignore if not present
+  # Add .worktrees/ and .agent/ to .gitignore if not present
   if [ -f .gitignore ]; then
     if ! grep -q '^\.worktrees/' .gitignore 2>/dev/null; then
       printf '\n.worktrees/\n' >> .gitignore
       ok "Added .worktrees/ to .gitignore"
     fi
+    if ! grep -q '^\.agent/' .gitignore 2>/dev/null; then
+      printf '.agent/\n' >> .gitignore
+      ok "Added .agent/ to .gitignore"
+    fi
   else
-    printf '.worktrees/\n' > .gitignore
-    ok "Created .gitignore with .worktrees/"
+    printf '.worktrees/\n.agent/\n' > .gitignore
+    ok "Created .gitignore with .worktrees/ and .agent/"
   fi
 
   echo ""
@@ -274,9 +284,10 @@ run_tests() {
   cp "$SRC_DIR/.claude/skills/"*.md "$TARGET_DIR/skills/" 2>/dev/null || true
   cp "$SRC_DIR/.claude/agents/"*.md "$TARGET_DIR/agents/" 2>/dev/null || true
   cp "$SRC_DIR/.claude/settings.json" "$TARGET_DIR/settings.json"
+  [ -f "$SRC_DIR/.claude/instincts.md" ] && cp "$SRC_DIR/.claude/instincts.md" "$TARGET_DIR/instincts.md"
   cp "$SRC_DIR/CLAUDE.md" "$testdir/CLAUDE.md"
   printf '%s\n' "$REMOTE_VERSION" > "$VERSION_FILE"
-  printf '.worktrees/\n' > "$testdir/.gitignore"
+  printf '.worktrees/\n.agent/\n' > "$testdir/.gitignore"
 
   assert_dir  ".claude/skills"    "$TARGET_DIR/skills"
   assert_dir  ".claude/agents"    "$TARGET_DIR/agents"
@@ -287,6 +298,9 @@ run_tests() {
   assert_contains "CLAUDE.md"     "PDS:START"  "$testdir/CLAUDE.md"
   assert_contains "CLAUDE.md"     "PDS:END"    "$testdir/CLAUDE.md"
   assert_contains ".gitignore"    ".worktrees" "$testdir/.gitignore"
+  assert_contains ".gitignore"    ".agent"     "$testdir/.gitignore"
+  assert_file "instincts.md"     "$TARGET_DIR/instincts.md"
+  assert_contains "instincts.md" "Lifecycle"  "$TARGET_DIR/instincts.md"
 
   # Count skills and agents
   skill_count=$(ls "$TARGET_DIR/skills/"*.md 2>/dev/null | wc -l | tr -d ' ')
