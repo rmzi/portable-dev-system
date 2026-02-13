@@ -40,6 +40,7 @@ AI-assisted development methodology. Skills for consistency. Agents for scale.
 | `/quickref` | PDS skills, agents, and conventions reference |
 | `/grill` | Requirement interrogation before implementation |
 | `/contribute` | Contributing to PDS itself — whitepaper alignment |
+| `/audit-config` | Verify PDS setup is correct and secure |
 | `/trim` | Context efficiency maintenance |
 
 

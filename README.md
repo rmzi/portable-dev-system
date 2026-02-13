@@ -60,6 +60,7 @@ Installs skills and security settings to `~/.claude/` — works across all proje
 | `/team` | Agent roster and coordination |
 | `/grill` | Requirement interrogation |
 | `/contribute` | Contributing to PDS itself |
+| `/audit-config` | Verify PDS config security |
 | `/trim` | Context efficiency maintenance |
 | `/bump` | Version and changelog |
 | `/permission-router` | Permission hook policy |

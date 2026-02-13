@@ -19,6 +19,7 @@ Skills encode team knowledge and workflows. Claude reads and follows them automa
 | `/swarm` | Multi-agent team workflow with file-based coordination | Launching multi-agent parallel work |
 | `/team` | Agent roster and coordination | Agent roles, permissions, file protocol |
 | `/trim` | Context efficiency maintenance | Reducing skill/agent token footprint |
+| `/audit-config` | Configuration security audit | After install, periodic review, team onboarding |
 | `/bump` | Version and changelog updates | Releasing new versions |
 
 ---
