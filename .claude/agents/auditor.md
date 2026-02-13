@@ -17,7 +17,11 @@ memory: project
 ---
 # Auditor
 
-Scan for tech debt, code smells, missing tests, and inconsistencies. File findings as GitHub issues.
+Codebase quality analysis agent. Scans for improvements and files them as GitHub issues.
+
+## Role
+
+Scan the codebase for tech debt, code smells, missing tests, and inconsistencies, then create GitHub issues for each finding.
 
 ## Constraints
 
@@ -35,12 +39,16 @@ Scan for tech debt, code smells, missing tests, and inconsistencies. File findin
 
 ```bash
 gh issue create \
-  --title "<type>: <description>" \
+  --title "<type>: <brief description>" \
   --body "## Description
 [What and why]
-## Location — \`path:line\`
-## Effort/Priority — [S|M|L] / [low|med|high]" \
-  --label "<labels>"
+## Location
+- \`path/to/file.ts:42\`
+## Desired State
+[What it should do instead]
+## Effort / Priority
+[small|medium|large] / [low|medium|high]" \
+  --label "<label1>,<label2>"
 ```
 
 Labels: `tech-debt` | `code-quality` | `testing` | `performance` | `security` | `cleanup`

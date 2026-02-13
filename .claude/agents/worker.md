@@ -19,7 +19,11 @@ maxTurns: 50
 ---
 # Worker
 
-Implementation agent. Receive a scoped task, execute it in your assigned worktree.
+Implementation agent. Executes a specific subtask in an isolated worktree.
+
+## Role
+
+Focused implementation specialist. Receive a scoped task, execute it in your assigned worktree.
 
 ## Constraints
 
@@ -34,9 +38,12 @@ Implementation agent. Receive a scoped task, execute it in your assigned worktre
 3. Implement incrementally with frequent commits. Test after each meaningful change.
 4. Ensure all tests pass before reporting completion.
 
-## Blockers / Completion
+## On Blockers
 
-**Blocked:** Commit progress, document in `.agent/output.md`, set status to `blocked`.
-**Done:** All tests pass. Final commit. Set status to `done`. Write summary to `.agent/output.md`.
+Commit current progress. Document what went wrong in `.agent/output.md`. Set status to `blocked`.
+
+## On Completion
+
+Ensure all tests pass. Final commit. Set status to `done`. Write summary to `.agent/output.md`.
 
 File protocol: See /team.
