@@ -5,14 +5,101 @@
 ```bash
 # 1. Install PDS into your project
 cd ~/your-project
-pds-init
+curl -sfL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash
 
 # 2. Commit the configuration
-git add .claude CLAUDE.md
+git add .claude CLAUDE.md .gitignore
 git commit -m "feat: add PDS"
 ```
 
 Now every team member gets the same skills, agents, and conventions.
+
+---
+
+## What Gets Committed
+
+PDS is project-level configuration. Everything lives inside the repo so `git pull` is the only onboarding step.
+
+### Committed (shared with team)
+
+| Path | Purpose |
+|------|---------|
+| `CLAUDE.md` | Project rules — always loaded into context |
+| `.claude/skills/*.md` | Workflow skills — commit, review, debug, etc. |
+| `.claude/agents/*.md` | Agent definitions — roles, constraints, output formats |
+| `.claude/settings.json` | Permissions, hooks, environment — shared defaults |
+| `.claude/.pds-version` | Tracks installed PDS version for auto-update |
+
+### Not committed (user-local)
+
+| Path | Purpose |
+|------|---------|
+| `~/.claude/settings.json` | User-level overrides (merged with project settings) |
+| `~/.claude/CLAUDE.md` | Personal rules across all projects |
+| `.worktrees/` | Git worktrees (auto-added to `.gitignore`) |
+
+### How settings merge
+
+Claude Code merges settings from multiple levels. Project `.claude/settings.json` provides the shared baseline. Each team member can add personal overrides in `~/.claude/settings.json` without affecting the repo. Deny rules are additive — a user can add stricter rules but cannot remove project-level denies.
+
+---
+
+## Clean Install for New Team Members
+
+### Prerequisites
+
+- [Claude Code](https://claude.ai/claude-code) installed and authenticated
+- Git access to the repository
+
+### Steps
+
+```bash
+# 1. Clone the repo (PDS config is already committed)
+git clone <repo-url> && cd <repo>
+
+# 2. Start Claude Code — PDS is active immediately
+claude
+```
+
+That's it. No separate PDS install step. The skills, agents, settings, and hooks are all in the repo. Claude reads them on session start.
+
+### First session checklist
+
+On first use, Claude will:
+1. Read `CLAUDE.md` and scan `.claude/skills/`
+2. Check `.claude/.pds-version` against the remote VERSION (SessionStart hook)
+3. Follow PDS conventions for commits, reviews, debugging, etc.
+
+### Adding PDS to an existing project
+
+If the repo doesn't have PDS yet:
+
+```bash
+cd ~/your-project
+curl -sfL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash
+git add .claude CLAUDE.md .gitignore
+git commit -m "feat: add PDS configuration"
+```
+
+### Customizing for your team
+
+Add team-specific skills without modifying PDS core:
+
+```bash
+# Create team-specific skills
+cat > .claude/skills/deploy.md << 'EOF'
+---
+description: Team deploy process
+---
+# /deploy — Deploy Workflow
+Your deploy steps here...
+EOF
+
+# Add team-specific deny rules
+# Edit .claude/settings.json permissions.deny array
+```
+
+PDS core skills and team-specific skills coexist in `.claude/skills/`. When PDS updates, re-running the install script only touches PDS-managed files.
 
 ---
 
@@ -115,8 +202,10 @@ PDS includes a velocity-focused `.claude/settings.json` that balances speed with
 ### What's Blocked
 
 **Credential paths** (never touched):
-- `~/.aws`, `~/.ssh`, `~/.gnupg`
-- `~/.config/gcloud`, `~/.databrickscfg`, `~/.netrc`
+- `~/.aws`, `~/.ssh`, `~/.gnupg`, `~/.kube`, `~/.azure`
+- `~/.config/gcloud`, `~/.config/gh`, `~/.config/hub`
+- `~/.databrickscfg`, `~/.netrc`, `~/.npmrc`, `~/.pypirc`
+- `~/.docker/config.json`, `~/.gem/credentials`, `~/.cargo/credentials`
 
 **Git guardrails**:
 - Push to `main`, `master`, `dev`, `develop`
@@ -129,6 +218,7 @@ PDS includes a velocity-focused `.claude/settings.json` that balances speed with
 
 **Sensitive files**:
 - `.env`, `.env.*`, `secrets/`, `*.pem`, `*credential*`
+- `.git-credentials`, `id_rsa*`, `id_ed25519*`, `*secret*key*`, `*token*.json`
 
 ### Customizing
 
@@ -147,13 +237,24 @@ Add to your repo's `.claude/settings.json`:
 
 ---
 
+## Addons
+
+Addons extend Claude Code through independently maintained packages — skills, hooks, agents, and scripts that follow PDS conventions but have no PDS dependency.
+
+See [Addons](addons.md) for the full specification and how to create one.
+
+**Available addons:**
+- [branch-tone](https://github.com/rmzi/branch-tone) — Audio cues for Claude Code events (task completion, permission requests)
+
+---
+
 ## Keeping Skills Updated
 
 When you update skills in your repo:
 1. Team members pull changes
 2. Skills are automatically available
 
-For PDS core updates:
+For PDS core updates, re-run the install script:
 ```bash
-pds-update
+curl -sfL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash
 ```

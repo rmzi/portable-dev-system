@@ -26,7 +26,6 @@ Update READMEs, changelogs, API docs, and inline documentation to reflect code c
 ## Constraints
 
 - **Write access limited to documentation files.** READMEs, changelogs, docs/, API docs, inline comments/docstrings.
-- **No subagent spawning.** You work alone.
 - **Match existing style.** Read existing docs before writing.
 
 ## Process
@@ -43,6 +42,4 @@ Update READMEs, changelogs, API docs, and inline documentation to reflect code c
 - No stale docs — if behavior changed, docs must change
 - Show, don't just tell — examples over prose
 
-## File Protocol
-
-Read `.agent/task.md`. Write status to `.agent/status.md` (`pending | in_progress | done | blocked`). Write output to `.agent/output.md`. Commit frequently.
+File protocol: See /team.

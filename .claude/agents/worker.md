@@ -28,7 +28,6 @@ Focused implementation specialist. Receive a scoped task, execute it in your ass
 ## Constraints
 
 - **Stay in your worktree.** Only modify files within your assigned directory.
-- **No subagent spawning.** You work alone.
 - **Commit frequently.** Progress lives in files and commits, not in context.
 - **Follow existing patterns.** Read before writing. Match the codebase style.
 
@@ -47,6 +46,4 @@ Commit current progress. Document what went wrong in `.agent/output.md`. Set sta
 
 Ensure all tests pass. Final commit. Set status to `done`. Write summary to `.agent/output.md`.
 
-## File Protocol
-
-Read `.agent/task.md`. Write status to `.agent/status.md` (`pending | in_progress | done | blocked`). Write results to `.agent/output.md`. Commit frequently.
+File protocol: See /team.

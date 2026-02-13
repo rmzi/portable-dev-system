@@ -2,6 +2,64 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.6.0] - 2026-02-13
+
+### Added
+- **`install.sh`** — standalone install script with two modes:
+  - Project mode (default): installs skills, agents, settings, CLAUDE.md into `.claude/`
+  - User mode (`--user`): installs skills and settings to `~/.claude/` for all projects
+  - Version check with `--force` override, idempotent re-runs
+  - Zero context duplication: user-level CLAUDE.md is ~15 lines with conditional skill fallback, not a copy of project CLAUDE.md
+  - Agents are project-only (not installed at user level)
+- **PDS markers** (`<!-- PDS:START -->` / `<!-- PDS:END -->`) in CLAUDE.md for safe block replacement on updates
+
+### Changed
+- **README and docs/teams.md** — replaced `pds-init` references with `curl | bash` one-liners
+
+## [2.5.0] - 2026-02-13T00:38:28-05:00
+
+### Added
+- **SessionStart hook** — auto-checks `.pds-version` against remote on session start, notifies if update available
+- **Expanded credential deny list** — added `~/.kube`, `~/.docker/config.json`, `~/.npmrc`, `~/.pypirc`, `~/.gem/credentials`, `~/.cargo/credentials`, `~/.azure`, `~/.config/gh`, `~/.config/hub` (both `~` and `$HOME` variants)
+- **Expanded sensitive file denies** — added `.git-credentials`, `id_rsa*`, `id_ed25519*`, `*secret*key*`, `*token*.json` for Read and Write
+- **Clean install guide in teams.md** — what gets committed vs user-local, settings merge behavior, new team member onboarding steps, first session checklist
+
+### Changed
+- **README "For Teams" section** — expanded from one-liner to full onboarding guide with committed-vs-local table
+- **README Permissions section** — reflects expanded credential and sensitive file coverage
+
+## [2.4.0] - 2026-02-12T23:51:35-05:00
+
+### Added
+- **`/contribute` skill** — PDS contribution workflow with whitepaper alignment checklist and cross-reference update guidance
+- **Instruction architecture section in whitepaper** — cites [Vercel's agent evals](https://vercel.com/blog/agents-md-outperforms-skills-in-our-agent-evals) on passive context (100%) vs skills (53-79%), explains PDS's dual-layer approach
+
+### Changed
+- **CLAUDE.md whitepaper rule** replaced with `/contribute` skill reference — fuller checklist instead of a single sentence
+
+## [2.3.0] - 2026-02-12
+
+### Added
+- **`/grill` skill** — structured requirement interrogation protocol (restate, boundary, success, constraints, assumptions, risks, priority, MECE check)
+- **Whitepaper rule in CLAUDE.md** — read `docs/whitepaper.md` before modifying agent definitions, SDLC phases, or coordination patterns
+- **Agent tiering in `/team`** — Core tier (orchestrator, worker, validator, researcher) vs Specialist tier (reviewer, documenter, scout, auditor) with spawning guidance
+
+### Changed
+- **`/swarm` Phase 1** references `/grill` for requirement validation before decomposition
+- **Whitepaper updated to v2.1** — codifies full 8-agent roster with tiering, `/grill` in Phase 1, reviewer as automated pre-review feeding into human Phase 5 gate
+- **README framing** — prominent "software for Claude" identity explaining PDS as configuration files and workflow patterns
+
+## [2.2.0] - 2026-02-12T22:48:38-05:00
+
+### Added
+- **Addon system documentation** — `docs/addons.md` specifying addon structure, conventions, lifecycle, and branch-tone example
+- **Addons section in teams.md** — cross-reference to addon spec
+- **Auto-PR rule in CLAUDE.md** — create or update a PR after pushing to a non-main branch
+
+### Changed
+- **Context footprint reduced 38%** — compressed 8 agents, 5 skills, 2 docs (1,343→830 lines) via cross-references, template compression, and LLM-known content removal
+- **Hook matcher format** — simplified from object to string format in `settings.json`
+
 ## [2.1.0] - 2026-02-12T03:15:43-05:00
 
 ### Added

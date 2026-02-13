@@ -43,39 +43,28 @@ Commits are documentation. They tell the story of why code changed.
 
 ## Examples
 
-### Feature with context
 ```
 feat(api): add rate limiting to public endpoints
 
-Without rate limiting, the API is vulnerable to abuse and DoS.
-Implementing token bucket algorithm with 100 req/min default.
-
-Configurable via RATE_LIMIT_RPM environment variable.
+Without rate limiting, the API is vulnerable to abuse.
+Token bucket algorithm with 100 req/min default.
+Configurable via RATE_LIMIT_RPM env var.
 ```
 
-### Breaking change
 ```
 refactor(config): migrate from JSON to YAML configuration
-
-YAML provides better readability and comment support.
 
 BREAKING CHANGE: config.json must be migrated to config.yaml
 See docs/migration-v3.md for migration guide.
 ```
 
-## Pre-Commit Checklist
+## Pre-Commit
 
-- `git diff --staged` reviewed
-- No debug code or console.logs
-- No secrets or credentials
-- Tests pass
-- Commit is atomic (single logical change)
+Review staged diff. No debug code, secrets, or credentials. Tests pass. Commit is atomic.
 
-## Pre-Push Checklist
+## Pre-Push
 
-- Pull and rebase: `git pull --rebase origin <branch>`
-- Tests still pass after rebase
-- No merge conflicts introduced
+Pull and rebase first. Tests still pass. No merge conflicts introduced.
 
 ## The Atomic Commit Test
 

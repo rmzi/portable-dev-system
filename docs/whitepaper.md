@@ -1,6 +1,6 @@
 # Agentic SDLC: A Technical Whitepaper
 
-**Version 2.0 | February 2026**
+**Version 2.1 | February 2026**
 
 ---
 
@@ -38,7 +38,9 @@ Six phases, each with clear inputs, outputs, and transition criteria. Human invo
 
 Work begins when requirements arrive. The developer engages with an orchestrating agent to refine requirements into an actionable plan.
 
-The orchestrator may spawn research subagents to gather context: querying documentation, searching codebases, accessing external APIs. The orchestrator synthesizes this research and produces a structured task specification.
+The orchestrator runs `/grill` — a structured requirement interrogation protocol — to validate requirements before decomposition. This protocol covers: restating the problem, defining scope boundaries, establishing verifiable acceptance criteria, surfacing constraints, challenging assumptions, identifying risks, ranking priorities, and performing a MECE check to ensure requirements don't overlap and all cases are covered. Ambiguous requirements are the primary source of wasted tokens in agentic workflows.
+
+The orchestrator may spawn a **researcher** agent to gather context: querying documentation, searching codebases, accessing external APIs. The orchestrator synthesizes this research and produces a structured task specification.
 
 The critical output is explicit acceptance criteria—unambiguous and mechanically verifiable. "The API should be fast" becomes "p99 latency for /users under 200ms with 1000 concurrent connections."
 
@@ -68,17 +70,17 @@ If validation fails, the report flows to the orchestrator, which updates the tas
 
 ### Phase 5: Consolidation and Human Review
 
-The orchestrator consolidates worker branches into a single pull request, rebasing or squashing as needed for clean history.
+The orchestrator consolidates worker branches into a single pull request, rebasing or squashing as needed for clean history. A **reviewer** agent performs automated pre-review — checking code quality, security patterns, and consistency — producing a structured report before human review. A **documenter** agent updates user-facing documentation when changes warrant it.
 
-The developer reviews with full context: requirements, plan, validation results, issues encountered. The developer can request changes (flowing back through the orchestrator) or approve for merge.
-
-Agents may participate in PR discussion—performing additional checks, raising concerns, asking questions. The developer arbitrates and makes final decisions.
+The developer reviews with full context: requirements, plan, validation results, reviewer findings, issues encountered. The developer can request changes (flowing back through the orchestrator) or approve for merge. The reviewer's automated pre-review supplements but never replaces the human gate.
 
 ### Phase 6: Knowledge Capture
 
-Before merging, the orchestrator reviews what happened: patterns emerged, architectural decisions made, unexpected challenges.
+Before merging, the orchestrator reviews what happened: patterns emerged, architectural decisions made, unexpected challenges. A **scout** agent analyzes the completed swarm for meta-improvements — workflow optimizations, skill gaps, configuration updates.
 
 This knowledge flows into the lexicon—a persistent repository of engineering knowledge spanning tasks, repositories, and team members. The lexicon captures lessons learned, gotchas, and patterns.
+
+An **auditor** agent may be spawned periodically (not per-swarm) to scan for tech debt, code smells, and missing tests, filing findings as GitHub issues.
 
 Agents query the lexicon during future planning and execution, avoiding repeated mistakes and building on proven patterns.
 
@@ -147,6 +149,17 @@ Agents execute as native Claude Code teams—no containers, no file synchronizat
 **SendMessage** enables direct and broadcast communication. Workers can ask questions, share findings, or coordinate when decomposition requires it. The orchestrator receives all messages and can route or respond as needed.
 
 This approach eliminates Docker/container overhead while maintaining isolation through git worktrees and Claude Code's permission system. Agents run natively with full access to local tools (language servers, build tools, formatters) without the complexity of mounting volumes or synchronizing files.
+
+### Instruction Architecture
+
+Agent effectiveness depends on how instructions reach the model. [Vercel's agent evals](https://vercel.com/blog/agents-md-outperforms-skills-in-our-agent-evals) found that passive context (always-loaded AGENTS.md) achieves 100% pass rates for horizontal framework knowledge, while skills without explicit invocation instructions scored 53%. Skills with careful wording reached 79%.
+
+PDS uses a dual-layer approach informed by these findings:
+
+- **Passive context** (`CLAUDE.md`) — Always loaded. Carries rules, the skills table, and conventions that apply across all tasks. This is the horizontal layer.
+- **Explicit skills** (`.claude/skills/`) — User-triggered vertical workflows (`/commit`, `/review`, `/grill`). Loaded on demand when the user or orchestrator invokes them. These encode multi-step protocols that would bloat passive context if always present.
+
+The passive layer tells the agent *what skills exist and when to use them*. The skills themselves contain the detailed protocol. This avoids the failure mode identified in Vercel's research — agents not discovering skills during general tasks — while keeping context lean.
 
 ### Data Source Registry
 
@@ -324,6 +337,56 @@ Direct work favors: continuous judgment, ambiguous requirements.
 
 ---
 
+## Context Compression
+
+Agent configuration files consume context window. Compression is tempting but has a fidelity cliff — beyond a threshold, agents lose operational knowledge and produce worse results.
+
+### What's Safe to Compress
+
+- **Decorative formatting**: Horizontal rule dividers (`---`), excessive blank lines, redundant section headers. Markdown headers provide sufficient hierarchy.
+- **Cross-file deduplication**: Content stated identically in multiple files. Define once, cross-reference elsewhere (e.g., file protocol defined in `/team`, agents say "See /team").
+- **LLM-known concepts**: Explanations of well-documented tools or universal patterns. "git is a version control system" adds nothing. But "git bisect to binary-search regressions" reinforces method.
+
+### What's NOT Safe to Compress
+
+- **Role sections**: Tell an agent what it is. Without "produce structured context reports for the orchestrator to plan," the researcher drifts into implementation suggestions.
+- **Constraints**: Define boundaries. "Read-only. You do NOT write files" prevents a researcher from editing code. "Does NOT fix code — report issues" prevents a validator from patching.
+- **Process steps**: Encode methodology. A 6-step debugging protocol produces different behavior than "debug the issue."
+- **Output formats**: Structure agent output for downstream consumption. Without a structured validation report format, the validator produces unstructured prose the orchestrator can't parse.
+- **Step-by-step examples**: Especially in complex workflows like merging. Agents need exact git commands and the sequence matters — a compressed "rebase then merge" loses the conflict resolution flow, the cleanup commands, and the multi-subtask coordination pattern.
+- **Anti-pattern tables with rationale**: The "Why" column prevents agents from rationalizing exceptions. "Don't merge without a summary" without "because the coordinator can't meaningfully review" lets the agent skip summaries when it thinks the change is obvious.
+- **Engineering method patterns**: git bisect, TDD, rubber duck debugging. These reinforce disciplined technique over ad-hoc problem solving. They're not trivia — they're method.
+
+### The Test
+
+Before cutting a line, ask: "Would an agent behave differently without this?" If yes — or if you're unsure — keep it.
+
+---
+
+## Engineering Best Practices
+
+PDS encodes two complementary layers of engineering guidance, designed to be MECE (mutually exclusive, collectively exhaustive):
+
+**Principles** (`/ethos`) define *why* — the philosophy that grounds decisions. Understand before acting. Small reversible steps. Tests as specification. Explicit over implicit. Optimize for change. Fail fast. Automation as documentation.
+
+**Techniques** (encoded across skills) define *how* — the concrete methods that implement principles:
+
+| Technique | Skill | Principle it implements |
+|-----------|-------|------------------------|
+| Hypothesis-driven debugging | `/debug` | Understand before you act |
+| git bisect for regression hunting | `/debug` | Automation as documentation |
+| Rubber duck protocol | `/debug` | Explicit over implicit |
+| TDD (RED/GREEN/REFACTOR) | `/test` | Tests as specification |
+| Behavior-based test naming | `/test` | Explicit over implicit |
+| Atomic commits | `/commit` | Small, reversible steps |
+| Severity-categorized review | `/review` | Fail fast, recover gracefully |
+| Rebasing-first merge coordination | `/merge` | Optimize for change |
+| Requirement interrogation | `/grill` | Understand before you act |
+
+This separation matters: principles are stable across projects and technologies, while techniques evolve with tooling and practice. An agent grounded in principles makes better judgment calls when no specific technique applies.
+
+---
+
 ## Resolved Questions
 
 These questions from v1.0 have been resolved through research and implementation experience:
@@ -373,11 +436,21 @@ This is a starting point. The model evolves with implementation experience and i
 
 ## Appendix B: Glossary
 
-**Orchestrator**: Primary agent that plans, dispatches workers, and consolidates results.
+**Orchestrator**: Primary agent that plans, dispatches workers, and consolidates results. Core tier.
 
-**Worker**: Agent executing a specific subtask in an isolated worktree.
+**Researcher**: Agent that gathers context during Phase 1 — querying documentation, searching codebases, mapping dependencies. Core tier.
 
-**Validator**: Agent responsible for testing and reporting validation results.
+**Worker**: Agent executing a specific subtask in an isolated worktree. Core tier (N instances per swarm).
+
+**Validator**: Agent responsible for merging branches, running tests, and reporting validation results. Core tier.
+
+**Reviewer**: Agent performing automated pre-review — code quality, security, consistency checks — before human Phase 5 review. Specialist tier.
+
+**Documenter**: Agent updating user-facing documentation when changes warrant it. Specialist tier.
+
+**Scout**: Agent analyzing completed swarms for PDS meta-improvements — workflow optimizations, skill gaps, configuration updates. Specialist tier.
+
+**Auditor**: Agent scanning codebases for tech debt, code smells, and missing tests, filing findings as GitHub issues. Spawned periodically, not per-swarm. Specialist tier.
 
 **Worktree**: Git feature providing independent working directory sharing the repository's object store.
 

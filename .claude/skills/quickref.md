@@ -19,6 +19,8 @@ description: Quick reference for PDS skills, agents, and conventions
 | `/permission-router` | Hook policy, subagent routing |
 | `/team` | Agent roster, roles |
 | `/swarm` | Multi-agent parallel work |
+| `/grill` | Requirement interrogation |
+| `/contribute` | PDS contribution workflow |
 | `/trim` | Context efficiency |
 | `/quickref` | This reference |
 

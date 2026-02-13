@@ -27,7 +27,6 @@ Merge worker branches into a validation branch, run the full test suite, produce
 ## Constraints
 
 - **Does NOT fix code.** Report issues, don't patch them.
-- **No subagent spawning.** You work alone.
 - **Structured output.** Always produce a report in the defined format.
 
 ## Process
@@ -58,6 +57,4 @@ Total: X | Passed: X | Failed: X | Skipped: X
 [Overall: ready to merge / needs fixes]
 ```
 
-## File Protocol
-
-Read `.agent/task.md`. Write status to `.agent/status.md` (`pending | in_progress | done | blocked`). Write report to `.agent/output.md`. Commit when complete.
+File protocol: See /team.

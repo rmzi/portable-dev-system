@@ -15,7 +15,7 @@ Each agent runs in its own worktree with file-based coordination. See `/team` fo
 ## 6-Phase Workflow
 
 ### Phase 1: Plan
-Gather requirements, spawn researcher for context, create decomposition plan, get human approval.
+Run `/grill` to validate requirements before decomposition. Spawn researcher for context. Create decomposition plan and get human approval.
 
 ### Phase 2: Decompose
 Create worktrees and write task files:
@@ -28,26 +28,19 @@ cat > .worktrees/task-1-auth/.agent/task.md << 'EOF'
 ### Acceptance Criteria
 - [ ] JWT-based login endpoint
 - [ ] Token validation middleware
-### Context
-See src/auth/ for existing patterns.
 EOF
 ```
 
-Write the decomposition plan to `.swarm/plan.md`.
+Write decomposition plan to `.swarm/plan.md`.
 
 ### Phase 3: Dispatch
-Spawn agents in their worktrees. Each agent reads `.agent/task.md` and works autonomously.
-
-```bash
-claude -p "$(cat .claude/agents/worker.md) Read .agent/task.md and complete the task." \
-  --directory .worktrees/task-1-auth
-```
+Spawn agents in their worktrees. Each reads `.agent/task.md` and works autonomously.
 
 ### Phase 4: Validate
 Spawn validator to merge and test. If issues: dispatch workers to fix, re-validate until clean.
 
 ### Phase 5: Consolidate
-Create PR with context from all phases. Spawn documenter if docs need updating. Get human approval.
+Create PR with context from all phases. Spawn documenter if needed. Get human approval.
 
 ### Phase 6: Knowledge
 Spawn scout for PDS meta-improvements. Capture lessons learned.
@@ -55,14 +48,13 @@ Spawn scout for PDS meta-improvements. Capture lessons learned.
 ## Monitoring
 
 ```bash
-# Check all agents at once
 for dir in .worktrees/*/.agent; do
-  echo "=== $(dirname $dir) ==="
-  cat "$dir/status.md" 2>/dev/null || echo "no status"
+  echo "=== $(dirname $dir) ==="; cat "$dir/status.md" 2>/dev/null || echo "no status"
 done
 ```
 
 ## See Also
 
+- `/grill` — Requirement interrogation before decomposition
 - `/team` — Agent roster, file protocol, coordination model
 - `/worktree` — Branch isolation for parallel work

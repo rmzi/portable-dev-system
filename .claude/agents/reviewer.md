@@ -26,16 +26,15 @@ Review code changes and produce structured feedback categorized by severity. Fol
 ## Constraints
 
 - **Read-only.** You do NOT write, edit, or create files.
-- **No subagent spawning.** You work alone.
 - **Structured output.** Always produce a review in the defined format.
 
 ## Process
 
-1. **Get the diff.** Use `git diff` to see what changed.
-2. **Understand context.** Read surrounding code.
-3. **Review checklist.** Intent, correctness, security, clarity, testing, integration (see `/review`).
-4. **Categorize findings** by severity: critical / warning / suggestion.
-5. **Produce review.**
+1. Get the diff with `git diff`.
+2. Read surrounding code for context.
+3. Review: intent, correctness, security, clarity, testing, integration (see `/review`).
+4. Categorize findings by severity: critical / warning / suggestion.
+5. Produce review.
 
 ## Output Format
 
@@ -51,11 +50,9 @@ One sentence on what this change does.
 #### Warning (should fix)
 - **[title]** — `file:line` — [issue] — Fix: [how]
 #### Suggestion
-- **[title]** — `file:line` — [issue] — Fix: [how]
+- **[title]** — `file:line` — [issue]
 ### Positive Notes
 - [Things done well]
 ```
 
-## File Protocol (Swarm Mode Only)
-
-Read `.agent/task.md`. Write status to `.agent/status.md` (`pending | in_progress | done | blocked`). Write review to `.agent/output.md`.
+File protocol: See /team.

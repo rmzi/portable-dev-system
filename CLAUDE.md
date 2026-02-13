@@ -1,3 +1,4 @@
+<!-- PDS:START -->
 # Portable Development System
 
 AI-assisted development methodology. Skills for consistency. Agents for scale.
@@ -10,7 +11,7 @@ AI-assisted development methodology. Skills for consistency. Agents for scale.
 
 1. **At session start**:
    - Check `.claude/.pds-version` against https://raw.githubusercontent.com/rmzi/portable-dev-system/main/VERSION
-   - If outdated: run `pds-update`, commit the changes, and create a PR (or add to existing PR)
+   - If outdated: re-run `install.sh` (or `pds-update` if available), commit changes, and create a PR (or add to existing PR)
    - Scan `.claude/skills/` to understand available capabilities
 2. **Before any task**: Check if the task matches a skill (commit, review, debug, test, design, etc.)
 3. **During work**: Read and follow the skill documentation before performing the action
@@ -37,6 +38,9 @@ AI-assisted development methodology. Skills for consistency. Agents for scale.
 | `/team` | Agent roster, roles, capabilities |
 | `/swarm` | Launch agent team for parallel work |
 | `/quickref` | PDS skills, agents, and conventions reference |
+| `/grill` | Requirement interrogation before implementation |
+| `/contribute` | Contributing to PDS itself — whitepaper alignment |
+| `/audit-config` | Verify PDS setup is correct and secure |
 | `/trim` | Context efficiency maintenance |
 
 
@@ -60,3 +64,8 @@ AI-assisted development methodology. Skills for consistency. Agents for scale.
 - Wrong: `/tmp/project/` or `/tmp/feature-work/`
 - Wrong: `../project-feature-branch/` (old sibling format — migrate with `git worktree move`)
 - /tmp is only for temporary files (downloads, build artifacts, large files that shouldn't persist)
+
+**Read `/contribute` before modifying PDS.** Before changing skills, agents, SDLC phases, or coordination patterns, read `/contribute` for the full checklist — including whitepaper alignment.
+
+**Create or update a PR after pushing.** When commits are pushed to a non-main branch, create a PR (or update the existing one). Don't wait to be asked.
+<!-- PDS:END -->

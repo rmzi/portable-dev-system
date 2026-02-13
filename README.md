@@ -3,9 +3,9 @@
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-compatible-blueviolet)](https://claude.ai/claude-code)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
-**Software for Claude.** Skills encode best practices. Agents provide structure. Configuration enables velocity.
+**Software for Claude.** Not a library. Not a framework. Configuration files and workflow patterns that make Claude Code sessions consistent, efficient, and team-ready.
 
-> Install PDS into any project. Claude reads it, follows it, improves it.
+> PDS is deployed as Claude Code config — `CLAUDE.md`, `.claude/skills/`, `.claude/agents/`, `.claude/settings.json`. Install it into any project. Claude reads it, follows it, improves it.
 
 ---
 
@@ -18,25 +18,29 @@ PDS is a Claude Code configuration package — skills, agents, settings, and hoo
 - **Settings** — Velocity-focused permissions with security guardrails
 - **Hooks** — Automated quality gates on tool usage
 
+**Why both CLAUDE.md and skills?** [Vercel's agent evals](https://vercel.com/blog/agents-md-outperforms-skills-in-our-agent-evals) found that passive context (AGENTS.md) achieves 100% pass rates for horizontal framework knowledge, while skills excel for vertical workflows users explicitly trigger. PDS uses both: `CLAUDE.md` carries always-on rules and context, skills encode opt-in workflows like `/commit` and `/review`.
+
 PDS is **editor-agnostic**. It works with any tool that runs Claude Code — terminal, Cursor, VS Code, or [Zaku](https://github.com/rmzi/zaku).
 
 ---
 
 ## Quick Start
 
+### For teams (project-level)
+
 ```bash
-# Install PDS skills into your project
 cd ~/your-project
-pds-init
+curl -sfL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash
+git add .claude CLAUDE.md .gitignore && git commit -m "feat: add PDS"
 ```
 
-Or manually:
+### For personal use (user-level)
 
 ```bash
-# Copy .claude/ directory from this repo into your project
-cp -r .claude/ ~/your-project/.claude/
-cp CLAUDE.md ~/your-project/CLAUDE.md
+curl -sfL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash -s -- --user
 ```
+
+Installs skills and security settings to `~/.claude/` — works across all projects. When a project has its own `.claude/skills/`, those take priority. No context duplication.
 
 ---
 
@@ -54,6 +58,9 @@ cp CLAUDE.md ~/your-project/CLAUDE.md
 | `/merge` | Merging subtask worktrees back |
 | `/swarm` | Multi-agent team workflow |
 | `/team` | Agent roster and coordination |
+| `/grill` | Requirement interrogation |
+| `/contribute` | Contributing to PDS itself |
+| `/audit-config` | Verify PDS config security |
 | `/trim` | Context efficiency maintenance |
 | `/bump` | Version and changelog |
 | `/permission-router` | Permission hook policy |
@@ -80,25 +87,61 @@ cp CLAUDE.md ~/your-project/CLAUDE.md
 
 ---
 
+## Worktrees
+
+PDS uses git worktrees for branch isolation — no stashing, no context switching. Worktrees live inside the repo at `.worktrees/`:
+
+```
+project/                              # main worktree (main/master)
+project/.worktrees/feature-auth/      # feature work
+project/.worktrees/hotfix-login/      # urgent fix
+project/.worktrees/task-1-api/        # agent worktree
+```
+
+`.worktrees/` is auto-added to `.gitignore`. Never use `/tmp` or sibling directories (`../`) for worktrees.
+
+---
+
 ## Permissions
 
 Auto-allowed: all tools, bash, MCP, web fetches
 
 Blocked:
-- Credential paths (`~/.aws`, `~/.ssh`, `~/.gnupg`)
+- Credential paths (`~/.aws`, `~/.ssh`, `~/.gnupg`, `~/.kube`, `~/.azure`, `~/.config/gh`, `~/.npmrc`, and more)
 - Git push to `main`/`master`/`dev`/`develop`
 - Force push, `ssh`, `scp`
 - Prod patterns (`PROD`, `prod.`, `--profile prod`)
+- Sensitive files (`.env`, `*.pem`, `*credential*`, `id_rsa*`, `*secret*key*`)
 
 ---
 
 ## For Teams
 
+### Adding PDS to your project
+
 ```bash
-pds-init && git add .claude CLAUDE.md && git commit -m "feat: add PDS"
+cd ~/your-project
+curl -sfL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash
+git add .claude CLAUDE.md .gitignore && git commit -m "feat: add PDS"
 ```
 
-Every team member gets the same skills, agents, and conventions.
+### New team member onboarding
+
+```bash
+git clone <repo> && cd <repo> && claude
+```
+
+That's it. PDS config is in the repo — no separate install. Claude reads the skills, agents, and settings on session start.
+
+### What's in the repo vs what's local
+
+| Committed (shared) | Local (per user) |
+|---|---|
+| `CLAUDE.md`, `.claude/skills/`, `.claude/agents/`, `.claude/settings.json` | `~/.claude/settings.json`, `~/.claude/CLAUDE.md`, `.worktrees/` |
+
+Project settings provide the shared baseline. User settings add personal overrides. Deny rules are additive — users can add stricter rules but can't remove project-level ones.
+
+[Full team setup guide →](docs/teams.md)
 
 ---
 

@@ -35,6 +35,7 @@ Pattern: `project/.worktrees/{branch-with-slashes-as-dashes}`
 ```bash
 # Start feature work
 git worktree add .worktrees/feature-user-profiles -b feature/user-profiles
+cd .worktrees/feature-user-profiles
 
 # Urgent bug — new worktree, no context lost
 git worktree add .worktrees/hotfix-critical -b hotfix/critical-fix
@@ -42,6 +43,7 @@ cd .worktrees/hotfix-critical
 
 # Fix bug, PR, merge, clean up
 git worktree remove .worktrees/hotfix-critical
+git branch -d hotfix/critical-fix
 ```
 
 ## Patterns
@@ -68,14 +70,16 @@ git branch -D spike/crazy-idea
 git worktree add .worktrees/feature-api -b feature/api
 git worktree add .worktrees/feature-ui -b feature/ui
 # Work on API in one terminal, UI in another
+# Each has its own index, HEAD, and uncommitted changes
 ```
 
 ### Agent worktrees
 ```bash
-# Create worktrees for multi-agent work
+# Create worktrees for multi-agent work (see /swarm)
 git worktree add .worktrees/task-1-auth -b task-1/auth
 git worktree add .worktrees/task-2-api -b task-2/api
 # Each agent gets its own isolated environment
+# Write .agent/task.md before spawning (see /team)
 ```
 
 ## Cleanup
@@ -84,8 +88,9 @@ git worktree add .worktrees/task-2-api -b task-2/api
 # Identify stale worktrees
 git worktree list
 
-# Remove a specific worktree
+# Remove a specific worktree and its branch
 git worktree remove .worktrees/done-feature
+git branch -d done-feature-branch
 
 # Clean stale references (worktree dir already deleted)
 git worktree prune
@@ -103,4 +108,4 @@ git branch -d merged-branch-name
 2. **Shared git history** — All worktrees share .git
 3. **Independent state** — Each has its own index, HEAD, uncommitted changes
 4. **Clean up after merge** — Remove worktrees when PRs are merged
-5. **Never /tmp** — Worktrees go in `.worktrees/`, not `/tmp`
+5. **Never /tmp or ../** — Worktrees go in `.worktrees/`, not `/tmp` or `../`
