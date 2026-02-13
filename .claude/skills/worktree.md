@@ -66,4 +66,4 @@ For parallel agent worktrees, see `/swarm`.
 2. **Shared git history** — All worktrees share .git
 3. **Independent state** — Each has its own index, HEAD, uncommitted changes
 4. **Clean up after merge** — Remove worktrees when PRs are merged
-5. **Never /tmp** — Worktrees go in `.worktrees/`, not `/tmp`
+5. **Never /tmp or ../** — Worktrees go in `.worktrees/`, not `/tmp` or `../`

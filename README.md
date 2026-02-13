@@ -80,6 +80,21 @@ cp CLAUDE.md ~/your-project/CLAUDE.md
 
 ---
 
+## Worktrees
+
+PDS uses git worktrees for branch isolation — no stashing, no context switching. Worktrees live inside the repo at `.worktrees/`:
+
+```
+project/                              # main worktree (main/master)
+project/.worktrees/feature-auth/      # feature work
+project/.worktrees/hotfix-login/      # urgent fix
+project/.worktrees/task-1-api/        # agent worktree
+```
+
+`.worktrees/` is auto-added to `.gitignore`. Never use `/tmp` or sibling directories (`../`) for worktrees.
+
+---
+
 ## Permissions
 
 Auto-allowed: all tools, bash, MCP, web fetches
