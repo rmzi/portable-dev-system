@@ -95,7 +95,7 @@ bt-init() {
   # Merge hooks into settings.json
   cp VERSION "$project/.branch-tone-version"
 }
-# bt-update follows same pattern as pds-update
+# bt-update follows same pattern as install.sh
 ```
 
 Install via [zaku](https://github.com/rmzi/zaku): `zaku install` prompts for optional addons, runs `cargo install` + `bt-init`.

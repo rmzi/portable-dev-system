@@ -11,7 +11,7 @@ AI-assisted development methodology. Skills for consistency. Agents for scale.
 
 1. **At session start**:
    - Check `.claude/.pds-version` against https://raw.githubusercontent.com/rmzi/portable-dev-system/main/VERSION
-   - If outdated: run `pds-update`, commit the changes, and create a PR (or add to existing PR)
+   - If outdated: re-run `install.sh` (or `pds-update` if available), commit changes, and create a PR (or add to existing PR)
    - Scan `.claude/skills/` to understand available capabilities
 2. **Before any task**: Check if the task matches a skill (commit, review, debug, test, design, etc.)
 3. **During work**: Read and follow the skill documentation before performing the action
