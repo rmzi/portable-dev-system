@@ -3,9 +3,9 @@
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-compatible-blueviolet)](https://claude.ai/claude-code)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
-**Software for Claude.** Skills encode best practices. Agents provide structure. Configuration enables velocity.
+**Software for Claude.** Not a library. Not a framework. Configuration files and workflow patterns that make Claude Code sessions consistent, efficient, and team-ready.
 
-> Install PDS into any project. Claude reads it, follows it, improves it.
+> PDS is deployed as Claude Code config — `CLAUDE.md`, `.claude/skills/`, `.claude/agents/`, `.claude/settings.json`. Install it into any project. Claude reads it, follows it, improves it.
 
 ---
 
@@ -54,6 +54,7 @@ cp CLAUDE.md ~/your-project/CLAUDE.md
 | `/merge` | Merging subtask worktrees back |
 | `/swarm` | Multi-agent team workflow |
 | `/team` | Agent roster and coordination |
+| `/grill` | Requirement interrogation |
 | `/trim` | Context efficiency maintenance |
 | `/bump` | Version and changelog |
 | `/permission-router` | Permission hook policy |

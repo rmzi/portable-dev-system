@@ -5,18 +5,31 @@ description: Agent team roster showing roles, capabilities, and constraints
 
 Agent roster, permissions, and coordination model. See `/swarm` for the 6-phase workflow.
 
-## Agent Roster
+## Agent Tiers
+
+Research shows 3-4 subagents per swarm is optimal. Tier agents by spawning frequency:
+
+### Core Tier (consider for every swarm)
 
 | Agent | Role | Model | Mode | MaxTurns | Memory |
 |-------|------|-------|------|----------|--------|
 | **orchestrator** | Team lead — plans, decomposes, dispatches | opus | delegate | 100 | — |
-| **researcher** | Deep codebase exploration | sonnet | plan | 30 | project |
 | **worker** | Implementation in isolated worktrees | sonnet | acceptEdits | 50 | — |
 | **validator** | Merge branches, run tests, report | sonnet | acceptEdits | 40 | — |
-| **reviewer** | Code review — quality, security | sonnet | plan | 25 | project |
-| **documenter** | Documentation updates | sonnet | acceptEdits | 30 | — |
-| **scout** | PDS meta-improvements | haiku | plan | 15 | project |
-| **auditor** | Codebase analysis → GitHub issues | sonnet | plan | 30 | project |
+| **researcher** | Deep codebase exploration | sonnet | plan | 30 | project |
+
+These map directly to the whitepaper's Agentic SDLC: orchestrator coordinates, workers execute (Phase 3), validator verifies (Phase 4), researcher gathers context (Phase 1).
+
+### Specialist Tier (spawn when specifically needed)
+
+| Agent | Role | Model | Mode | MaxTurns | Memory | When to Spawn |
+|-------|------|-------|------|----------|--------|---------------|
+| **reviewer** | Code review — quality, security | sonnet | plan | 25 | project | PRs, pre-human review |
+| **documenter** | Documentation updates | sonnet | acceptEdits | 30 | — | User-facing docs changed |
+| **scout** | PDS meta-improvements | haiku | plan | 15 | project | Post-swarm knowledge capture |
+| **auditor** | Codebase analysis → GitHub issues | sonnet | plan | 30 | project | Periodic tech debt scans |
+
+Specialists add value in specific situations but aren't needed every swarm. The orchestrator decides based on task requirements.
 
 ## Permission Modes
 

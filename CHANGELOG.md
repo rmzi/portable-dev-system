@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.3.0] - 2026-02-12
+
+### Added
+- **`/grill` skill** — structured requirement interrogation protocol (restate, boundary, success, constraints, assumptions, risks, priority, MECE check)
+- **Whitepaper rule in CLAUDE.md** — read `docs/whitepaper.md` before modifying agent definitions, SDLC phases, or coordination patterns
+- **Agent tiering in `/team`** — Core tier (orchestrator, worker, validator, researcher) vs Specialist tier (reviewer, documenter, scout, auditor) with spawning guidance
+
+### Changed
+- **`/swarm` Phase 1** references `/grill` for requirement validation before decomposition
+- **Whitepaper updated to v2.1** — codifies full 8-agent roster with tiering, `/grill` in Phase 1, reviewer as automated pre-review feeding into human Phase 5 gate
+- **README framing** — prominent "software for Claude" identity explaining PDS as configuration files and workflow patterns
+
 ## [2.2.0] - 2026-02-12T22:48:38-05:00
 
 ### Added

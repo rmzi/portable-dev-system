@@ -15,7 +15,7 @@ Each agent runs in its own worktree with file-based coordination. See `/team` fo
 ## 6-Phase Workflow
 
 ### Phase 1: Plan
-Gather requirements, spawn researcher for context, create decomposition plan, get human approval.
+Run `/grill` to validate requirements before decomposition. Spawn researcher for context. Create decomposition plan and get human approval.
 
 ### Phase 2: Decompose
 Create worktrees and write task files:
@@ -55,5 +55,6 @@ done
 
 ## See Also
 
+- `/grill` — Requirement interrogation before decomposition
 - `/team` — Agent roster, file protocol, coordination model
 - `/worktree` — Branch isolation for parallel work

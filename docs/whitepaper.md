@@ -1,6 +1,6 @@
 # Agentic SDLC: A Technical Whitepaper
 
-**Version 2.0 | February 2026**
+**Version 2.1 | February 2026**
 
 ---
 
@@ -38,7 +38,9 @@ Six phases, each with clear inputs, outputs, and transition criteria. Human invo
 
 Work begins when requirements arrive. The developer engages with an orchestrating agent to refine requirements into an actionable plan.
 
-The orchestrator may spawn research subagents to gather context: querying documentation, searching codebases, accessing external APIs. The orchestrator synthesizes this research and produces a structured task specification.
+The orchestrator runs `/grill` — a structured requirement interrogation protocol — to validate requirements before decomposition. This protocol covers: restating the problem, defining scope boundaries, establishing verifiable acceptance criteria, surfacing constraints, challenging assumptions, identifying risks, ranking priorities, and performing a MECE check to ensure requirements don't overlap and all cases are covered. Ambiguous requirements are the primary source of wasted tokens in agentic workflows.
+
+The orchestrator may spawn a **researcher** agent to gather context: querying documentation, searching codebases, accessing external APIs. The orchestrator synthesizes this research and produces a structured task specification.
 
 The critical output is explicit acceptance criteria—unambiguous and mechanically verifiable. "The API should be fast" becomes "p99 latency for /users under 200ms with 1000 concurrent connections."
 
@@ -68,17 +70,17 @@ If validation fails, the report flows to the orchestrator, which updates the tas
 
 ### Phase 5: Consolidation and Human Review
 
-The orchestrator consolidates worker branches into a single pull request, rebasing or squashing as needed for clean history.
+The orchestrator consolidates worker branches into a single pull request, rebasing or squashing as needed for clean history. A **reviewer** agent performs automated pre-review — checking code quality, security patterns, and consistency — producing a structured report before human review. A **documenter** agent updates user-facing documentation when changes warrant it.
 
-The developer reviews with full context: requirements, plan, validation results, issues encountered. The developer can request changes (flowing back through the orchestrator) or approve for merge.
-
-Agents may participate in PR discussion—performing additional checks, raising concerns, asking questions. The developer arbitrates and makes final decisions.
+The developer reviews with full context: requirements, plan, validation results, reviewer findings, issues encountered. The developer can request changes (flowing back through the orchestrator) or approve for merge. The reviewer's automated pre-review supplements but never replaces the human gate.
 
 ### Phase 6: Knowledge Capture
 
-Before merging, the orchestrator reviews what happened: patterns emerged, architectural decisions made, unexpected challenges.
+Before merging, the orchestrator reviews what happened: patterns emerged, architectural decisions made, unexpected challenges. A **scout** agent analyzes the completed swarm for meta-improvements — workflow optimizations, skill gaps, configuration updates.
 
 This knowledge flows into the lexicon—a persistent repository of engineering knowledge spanning tasks, repositories, and team members. The lexicon captures lessons learned, gotchas, and patterns.
+
+An **auditor** agent may be spawned periodically (not per-swarm) to scan for tech debt, code smells, and missing tests, filing findings as GitHub issues.
 
 Agents query the lexicon during future planning and execution, avoiding repeated mistakes and building on proven patterns.
 
@@ -373,11 +375,21 @@ This is a starting point. The model evolves with implementation experience and i
 
 ## Appendix B: Glossary
 
-**Orchestrator**: Primary agent that plans, dispatches workers, and consolidates results.
+**Orchestrator**: Primary agent that plans, dispatches workers, and consolidates results. Core tier.
 
-**Worker**: Agent executing a specific subtask in an isolated worktree.
+**Researcher**: Agent that gathers context during Phase 1 — querying documentation, searching codebases, mapping dependencies. Core tier.
 
-**Validator**: Agent responsible for testing and reporting validation results.
+**Worker**: Agent executing a specific subtask in an isolated worktree. Core tier (N instances per swarm).
+
+**Validator**: Agent responsible for merging branches, running tests, and reporting validation results. Core tier.
+
+**Reviewer**: Agent performing automated pre-review — code quality, security, consistency checks — before human Phase 5 review. Specialist tier.
+
+**Documenter**: Agent updating user-facing documentation when changes warrant it. Specialist tier.
+
+**Scout**: Agent analyzing completed swarms for PDS meta-improvements — workflow optimizations, skill gaps, configuration updates. Specialist tier.
+
+**Auditor**: Agent scanning codebases for tech debt, code smells, and missing tests, filing findings as GitHub issues. Spawned periodically, not per-swarm. Specialist tier.
 
 **Worktree**: Git feature providing independent working directory sharing the repository's object store.
 
