@@ -337,6 +337,56 @@ Direct work favors: continuous judgment, ambiguous requirements.
 
 ---
 
+## Context Compression
+
+Agent configuration files consume context window. Compression is tempting but has a fidelity cliff — beyond a threshold, agents lose operational knowledge and produce worse results.
+
+### What's Safe to Compress
+
+- **Decorative formatting**: Horizontal rule dividers (`---`), excessive blank lines, redundant section headers. Markdown headers provide sufficient hierarchy.
+- **Cross-file deduplication**: Content stated identically in multiple files. Define once, cross-reference elsewhere (e.g., file protocol defined in `/team`, agents say "See /team").
+- **LLM-known concepts**: Explanations of well-documented tools or universal patterns. "git is a version control system" adds nothing. But "git bisect to binary-search regressions" reinforces method.
+
+### What's NOT Safe to Compress
+
+- **Role sections**: Tell an agent what it is. Without "produce structured context reports for the orchestrator to plan," the researcher drifts into implementation suggestions.
+- **Constraints**: Define boundaries. "Read-only. You do NOT write files" prevents a researcher from editing code. "Does NOT fix code — report issues" prevents a validator from patching.
+- **Process steps**: Encode methodology. A 6-step debugging protocol produces different behavior than "debug the issue."
+- **Output formats**: Structure agent output for downstream consumption. Without a structured validation report format, the validator produces unstructured prose the orchestrator can't parse.
+- **Step-by-step examples**: Especially in complex workflows like merging. Agents need exact git commands and the sequence matters — a compressed "rebase then merge" loses the conflict resolution flow, the cleanup commands, and the multi-subtask coordination pattern.
+- **Anti-pattern tables with rationale**: The "Why" column prevents agents from rationalizing exceptions. "Don't merge without a summary" without "because the coordinator can't meaningfully review" lets the agent skip summaries when it thinks the change is obvious.
+- **Engineering method patterns**: git bisect, TDD, rubber duck debugging. These reinforce disciplined technique over ad-hoc problem solving. They're not trivia — they're method.
+
+### The Test
+
+Before cutting a line, ask: "Would an agent behave differently without this?" If yes — or if you're unsure — keep it.
+
+---
+
+## Engineering Best Practices
+
+PDS encodes two complementary layers of engineering guidance, designed to be MECE (mutually exclusive, collectively exhaustive):
+
+**Principles** (`/ethos`) define *why* — the philosophy that grounds decisions. Understand before acting. Small reversible steps. Tests as specification. Explicit over implicit. Optimize for change. Fail fast. Automation as documentation.
+
+**Techniques** (encoded across skills) define *how* — the concrete methods that implement principles:
+
+| Technique | Skill | Principle it implements |
+|-----------|-------|------------------------|
+| Hypothesis-driven debugging | `/debug` | Understand before you act |
+| git bisect for regression hunting | `/debug` | Automation as documentation |
+| Rubber duck protocol | `/debug` | Explicit over implicit |
+| TDD (RED/GREEN/REFACTOR) | `/test` | Tests as specification |
+| Behavior-based test naming | `/test` | Explicit over implicit |
+| Atomic commits | `/commit` | Small, reversible steps |
+| Severity-categorized review | `/review` | Fail fast, recover gracefully |
+| Rebasing-first merge coordination | `/merge` | Optimize for change |
+| Requirement interrogation | `/grill` | Understand before you act |
+
+This separation matters: principles are stable across projects and technologies, while techniques evolve with tooling and practice. An agent grounded in principles makes better judgment calls when no specific technique applies.
+
+---
+
 ## Resolved Questions
 
 These questions from v1.0 have been resolved through research and implementation experience:
