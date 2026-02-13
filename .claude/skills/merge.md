@@ -16,17 +16,15 @@ When a coordinator kicks off multiple subtasks as worktrees, getting their work 
 
 This skill provides an ordered, rebasing-first approach that keeps the coordinator branch clean and catches integration issues early.
 
----
 
-## When to Use
+##When to Use
 
 - A coordinator branch has spawned subtask worktrees that need to merge back
 - Multiple agents have completed parallel work on branches off a shared base
 - You need to integrate work from one or more subtasks into a parent branch
 
----
 
-## Concepts
+##Concepts
 
 | Term | Meaning |
 |------|---------|
@@ -35,9 +33,8 @@ This skill provides an ordered, rebasing-first approach that keeps the coordinat
 | **Merge order** | The agreed sequence in which subtasks merge back |
 | **Rebase round** | After each merge, all remaining subtasks rebase onto the updated coordinator |
 
----
 
-## Single Subtask Merge
+##Single Subtask Merge
 
 The simple case: one subtask merging back into the coordinator.
 
@@ -65,9 +62,8 @@ The simple case: one subtask merging back into the coordinator.
    git branch -d subtask-branch
    ```
 
----
 
-## N Subtask Merge
+##N Subtask Merge
 
 The complex case: multiple subtasks merging back in sequence.
 
@@ -149,9 +145,8 @@ Round N: SN rebases onto coordinator, merges
          Done.
 ```
 
----
 
-## Conflict Resolution
+##Conflict Resolution
 
 **The subtask that is merging owns their conflicts.**
 
@@ -176,9 +171,8 @@ git rebase --continue
 # Run tests to verify
 ```
 
----
 
-## Review Strategy
+##Review Strategy
 
 A coordinator cannot review every line from every subagent. Instead:
 
@@ -196,9 +190,8 @@ A coordinator cannot review every line from every subagent. Instead:
 - **Review the combined diff** from coordinator branch against its base
 - **Trust but verify** — if tests pass and the combined diff looks coherent, the individual work was sound
 
----
 
-## Git Commands Reference
+##Git Commands Reference
 
 ```bash
 # Rebase subtask onto coordinator
@@ -226,9 +219,8 @@ git worktree remove .worktrees/subtask-branch
 git branch -d subtask-branch
 ```
 
----
 
-## Anti-Patterns
+##Anti-Patterns
 
 | Avoid | Why | Instead |
 |-------|-----|---------|
@@ -240,9 +232,8 @@ git branch -d subtask-branch
 | Leaving worktrees after merge | Stale worktrees clutter the workspace | Remove worktrees and delete branches after merge |
 | Rebasing onto an outdated coordinator | Creates false confidence about conflict-free state | Always fetch/pull coordinator before rebasing |
 
----
 
-## Cleanup
+##Cleanup
 
 After all subtasks are merged:
 

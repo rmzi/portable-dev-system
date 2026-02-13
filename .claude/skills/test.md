@@ -68,9 +68,3 @@ Example: `test('given expired token, when accessing API, then returns 401')`
 | Too many mocks | Use real deps where possible |
 | Flaky tests | Fix or delete immediately |
 | Wrong level | Match test type to need |
-
-## TDD Workflow
-
-1. **RED** — Write a failing test
-2. **GREEN** — Write minimal code to pass
-3. **REFACTOR** — Improve code, keep tests green
