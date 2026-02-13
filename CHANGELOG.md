@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.5.0] - 2026-02-13T00:38:28-05:00
+
+### Added
+- **SessionStart hook** — auto-checks `.pds-version` against remote on session start, notifies if update available
+- **Expanded credential deny list** — added `~/.kube`, `~/.docker/config.json`, `~/.npmrc`, `~/.pypirc`, `~/.gem/credentials`, `~/.cargo/credentials`, `~/.azure`, `~/.config/gh`, `~/.config/hub` (both `~` and `$HOME` variants)
+- **Expanded sensitive file denies** — added `.git-credentials`, `id_rsa*`, `id_ed25519*`, `*secret*key*`, `*token*.json` for Read and Write
+- **Clean install guide in teams.md** — what gets committed vs user-local, settings merge behavior, new team member onboarding steps, first session checklist
+
+### Changed
+- **README "For Teams" section** — expanded from one-liner to full onboarding guide with committed-vs-local table
+- **README Permissions section** — reflects expanded credential and sensitive file coverage
+
 ## [2.4.0] - 2026-02-12T23:51:35-05:00
 
 ### Added

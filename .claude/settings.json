@@ -23,12 +23,30 @@
       "Bash(*~/.config/gcloud*)",
       "Bash(*~/.databrickscfg*)",
       "Bash(*~/.netrc*)",
+      "Bash(*~/.kube*)",
+      "Bash(*~/.docker/config.json*)",
+      "Bash(*~/.npmrc*)",
+      "Bash(*~/.pypirc*)",
+      "Bash(*~/.gem/credentials*)",
+      "Bash(*~/.cargo/credentials*)",
+      "Bash(*~/.azure*)",
+      "Bash(*~/.config/gh*)",
+      "Bash(*~/.config/hub*)",
       "Bash(*$HOME/.aws*)",
       "Bash(*$HOME/.ssh*)",
       "Bash(*$HOME/.gnupg*)",
       "Bash(*$HOME/.config/gcloud*)",
       "Bash(*$HOME/.databrickscfg*)",
       "Bash(*$HOME/.netrc*)",
+      "Bash(*$HOME/.kube*)",
+      "Bash(*$HOME/.docker/config.json*)",
+      "Bash(*$HOME/.npmrc*)",
+      "Bash(*$HOME/.pypirc*)",
+      "Bash(*$HOME/.gem/credentials*)",
+      "Bash(*$HOME/.cargo/credentials*)",
+      "Bash(*$HOME/.azure*)",
+      "Bash(*$HOME/.config/gh*)",
+      "Bash(*$HOME/.config/hub*)",
       "Bash(* --profile prod*)",
       "Bash(* --profile=prod*)",
       "Bash(*PROD*)",
@@ -72,16 +90,37 @@
       "Read(**/secrets/**)",
       "Read(**/*.pem)",
       "Read(**/*credential*)",
+      "Read(**/.git-credentials)",
+      "Read(**/id_rsa*)",
+      "Read(**/id_ed25519*)",
+      "Read(**/*secret*key*)",
+      "Read(**/*token*.json)",
       "Write(**/.env*)",
       "Write(**/secrets/**)",
       "Write(**/*.pem)",
-      "Write(**/*credential*)"
+      "Write(**/*credential*)",
+      "Write(**/.git-credentials)",
+      "Write(**/id_rsa*)",
+      "Write(**/id_ed25519*)",
+      "Write(**/*secret*key*)",
+      "Write(**/*token*.json)"
     ],
     "additionalDirectories": [
       ".."
     ]
   },
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "LOCAL=$(cat .claude/.pds-version 2>/dev/null || echo 'unknown'); REMOTE=$(curl -sf --max-time 5 https://raw.githubusercontent.com/rmzi/portable-dev-system/main/VERSION 2>/dev/null || echo ''); if [ -n \"$REMOTE\" ] && [ \"$LOCAL\" != \"$REMOTE\" ]; then echo \"⚠️ PDS update available: $LOCAL → $REMOTE. Run pds-update to upgrade.\"; fi",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "hooks": [
@@ -99,7 +138,7 @@
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "You are a permission evaluator for a velocity-focused dev environment. Evaluate this permission request: $ARGUMENTS\n\nALLOW routine dev operations: reading/writing source code, running tests, installing deps, git operations on feature branches, linters, formatters, builds, file search, web search/fetch.\n\nDENY: credential file access (~/.aws, ~/.ssh, ~/.gnupg, ~/.config/gcloud, ~/.netrc, .pem files), production patterns (PROD, prod.*, --profile prod), remote access (ssh, scp, sftp), push to protected branches (main/master/dev/develop), force push, .env files, secrets directories.\n\nWhen in doubt, ALLOW — explicit deny rules above are the guardrails.\n\nRespond with JSON: {\"ok\": true} to allow, or {\"ok\": false, \"reason\": \"brief reason\"} to deny.",
+            "prompt": "You are a permission evaluator for a velocity-focused dev environment. Evaluate this permission request: $ARGUMENTS\n\nALLOW routine dev operations: reading/writing source code, running tests, installing deps, git operations on feature branches, linters, formatters, builds, file search, web search/fetch.\n\nDENY: credential file access (~/.aws, ~/.ssh, ~/.gnupg, ~/.kube, ~/.azure, ~/.config/gcloud, ~/.config/gh, ~/.npmrc, ~/.pypirc, ~/.docker/config.json, ~/.gem/credentials, ~/.cargo/credentials, ~/.netrc, .pem files, .git-credentials, id_rsa/id_ed25519 keys, *secret*key*, *token*.json), production patterns (PROD, prod.*, --profile prod), remote access (ssh, scp, sftp), push to protected branches (main/master/dev/develop), force push, .env files, secrets directories.\n\nWhen in doubt, ALLOW — explicit deny rules above are the guardrails.\n\nRespond with JSON: {\"ok\": true} to allow, or {\"ok\": false, \"reason\": \"brief reason\"} to deny.",
             "timeout": 15
           }
         ]

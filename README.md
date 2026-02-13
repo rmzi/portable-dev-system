@@ -104,20 +104,40 @@ project/.worktrees/task-1-api/        # agent worktree
 Auto-allowed: all tools, bash, MCP, web fetches
 
 Blocked:
-- Credential paths (`~/.aws`, `~/.ssh`, `~/.gnupg`)
+- Credential paths (`~/.aws`, `~/.ssh`, `~/.gnupg`, `~/.kube`, `~/.azure`, `~/.config/gh`, `~/.npmrc`, and more)
 - Git push to `main`/`master`/`dev`/`develop`
 - Force push, `ssh`, `scp`
 - Prod patterns (`PROD`, `prod.`, `--profile prod`)
+- Sensitive files (`.env`, `*.pem`, `*credential*`, `id_rsa*`, `*secret*key*`)
 
 ---
 
 ## For Teams
 
+### Adding PDS to your project
+
 ```bash
+cd ~/your-project
 pds-init && git add .claude CLAUDE.md && git commit -m "feat: add PDS"
 ```
 
-Every team member gets the same skills, agents, and conventions.
+### New team member onboarding
+
+```bash
+git clone <repo> && cd <repo> && claude
+```
+
+That's it. PDS config is in the repo — no separate install. Claude reads the skills, agents, and settings on session start.
+
+### What's in the repo vs what's local
+
+| Committed (shared) | Local (per user) |
+|---|---|
+| `CLAUDE.md`, `.claude/skills/`, `.claude/agents/`, `.claude/settings.json` | `~/.claude/settings.json`, `~/.claude/CLAUDE.md`, `.worktrees/` |
+
+Project settings provide the shared baseline. User settings add personal overrides. Deny rules are additive — users can add stricter rules but can't remove project-level ones.
+
+[Full team setup guide →](docs/teams.md)
 
 ---
 
