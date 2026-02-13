@@ -18,6 +18,8 @@ PDS is a Claude Code configuration package — skills, agents, settings, and hoo
 - **Settings** — Velocity-focused permissions with security guardrails
 - **Hooks** — Automated quality gates on tool usage
 
+**Why both CLAUDE.md and skills?** [Vercel's agent evals](https://vercel.com/blog/agents-md-outperforms-skills-in-our-agent-evals) found that passive context (AGENTS.md) achieves 100% pass rates for horizontal framework knowledge, while skills excel for vertical workflows users explicitly trigger. PDS uses both: `CLAUDE.md` carries always-on rules and context, skills encode opt-in workflows like `/commit` and `/review`.
+
 PDS is **editor-agnostic**. It works with any tool that runs Claude Code — terminal, Cursor, VS Code, or [Zaku](https://github.com/rmzi/zaku).
 
 ---

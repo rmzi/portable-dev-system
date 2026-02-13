@@ -150,6 +150,17 @@ Agents execute as native Claude Code teams—no containers, no file synchronizat
 
 This approach eliminates Docker/container overhead while maintaining isolation through git worktrees and Claude Code's permission system. Agents run natively with full access to local tools (language servers, build tools, formatters) without the complexity of mounting volumes or synchronizing files.
 
+### Instruction Architecture
+
+Agent effectiveness depends on how instructions reach the model. [Vercel's agent evals](https://vercel.com/blog/agents-md-outperforms-skills-in-our-agent-evals) found that passive context (always-loaded AGENTS.md) achieves 100% pass rates for horizontal framework knowledge, while skills without explicit invocation instructions scored 53%. Skills with careful wording reached 79%.
+
+PDS uses a dual-layer approach informed by these findings:
+
+- **Passive context** (`CLAUDE.md`) — Always loaded. Carries rules, the skills table, and conventions that apply across all tasks. This is the horizontal layer.
+- **Explicit skills** (`.claude/skills/`) — User-triggered vertical workflows (`/commit`, `/review`, `/grill`). Loaded on demand when the user or orchestrator invokes them. These encode multi-step protocols that would bloat passive context if always present.
+
+The passive layer tells the agent *what skills exist and when to use them*. The skills themselves contain the detailed protocol. This avoids the failure mode identified in Vercel's research — agents not discovering skills during general tasks — while keeping context lean.
+
 ### Data Source Registry
 
 Agents need credentials to access external systems. The data source registry configures:
