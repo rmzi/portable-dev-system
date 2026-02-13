@@ -33,13 +33,17 @@ Pattern: `project/.worktrees/{branch-with-slashes-as-dashes}`
 ## Workflow
 
 ```bash
+# Start feature work
 git worktree add .worktrees/feature-user-profiles -b feature/user-profiles
-# Now in project/.worktrees/feature-user-profiles/
+cd .worktrees/feature-user-profiles
 
 # Urgent bug — new worktree, no context lost
 git worktree add .worktrees/hotfix-critical -b hotfix/critical-fix
-# Fix, PR, merge, then:
+cd .worktrees/hotfix-critical
+
+# Fix bug, PR, merge, clean up
 git worktree remove .worktrees/hotfix-critical
+git branch -d hotfix/critical-fix
 ```
 
 ## Patterns
@@ -49,16 +53,54 @@ git worktree remove .worktrees/hotfix-critical
 git fetch origin pull/123/head:pr-123
 git worktree add .worktrees/pr-123 pr-123
 # Review, test, done
-git worktree remove .worktrees/pr-123 && git branch -d pr-123
+git worktree remove .worktrees/pr-123
+git branch -d pr-123
 ```
 
 ### Explore without fear
 ```bash
 git worktree add .worktrees/spike-idea -b spike/crazy-idea
 # If good: merge. If bad: remove worktree + delete branch
+git worktree remove .worktrees/spike-idea
+git branch -D spike/crazy-idea
 ```
 
-For parallel agent worktrees, see `/swarm`.
+### Parallel feature development
+```bash
+git worktree add .worktrees/feature-api -b feature/api
+git worktree add .worktrees/feature-ui -b feature/ui
+# Work on API in one terminal, UI in another
+# Each has its own index, HEAD, and uncommitted changes
+```
+
+### Agent worktrees
+```bash
+# Create worktrees for multi-agent work (see /swarm)
+git worktree add .worktrees/task-1-auth -b task-1/auth
+git worktree add .worktrees/task-2-api -b task-2/api
+# Each agent gets its own isolated environment
+# Write .agent/task.md before spawning (see /team)
+```
+
+## Cleanup
+
+```bash
+# Identify stale worktrees
+git worktree list
+
+# Remove a specific worktree and its branch
+git worktree remove .worktrees/done-feature
+git branch -d done-feature-branch
+
+# Clean stale references (worktree dir already deleted)
+git worktree prune
+
+# Find branches already merged to main
+git branch --merged main
+
+# Delete merged branches
+git branch -d merged-branch-name
+```
 
 ## Rules
 
