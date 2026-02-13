@@ -60,3 +60,5 @@ AI-assisted development methodology. Skills for consistency. Agents for scale.
 - Wrong: `/tmp/project/` or `/tmp/feature-work/`
 - Wrong: `../project-feature-branch/` (old sibling format — migrate with `git worktree move`)
 - /tmp is only for temporary files (downloads, build artifacts, large files that shouldn't persist)
+
+**Create or update a PR after pushing.** When commits are pushed to a non-main branch, create a PR (or update the existing one). Don't wait to be asked.

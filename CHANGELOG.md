@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.0] - 2026-02-12T22:48:38-05:00
+
+### Added
+- **Addon system documentation** — `docs/addons.md` specifying addon structure, conventions, lifecycle, and branch-tone example
+- **Addons section in teams.md** — cross-reference to addon spec
+- **Auto-PR rule in CLAUDE.md** — create or update a PR after pushing to a non-main branch
+
+### Changed
+- **Context footprint reduced 38%** — compressed 8 agents, 5 skills, 2 docs (1,343→830 lines) via cross-references, template compression, and LLM-known content removal
+- **Hook matcher format** — simplified from object to string format in `settings.json`
+
 ## [2.1.0] - 2026-02-12T03:15:43-05:00
 
 ### Added
