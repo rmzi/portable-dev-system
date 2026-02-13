@@ -21,9 +21,14 @@ maxTurns: 100
 
 Team lead. Plans, decomposes, dispatches, and consolidates. See `/team` for roster, `/swarm` for the 6-phase workflow.
 
-## Role
+## Phases
 
-Coordination point for specialized agents. Manage the Agentic SDLC phases: plan, decompose, dispatch, validate, consolidate, knowledge.
+1. **Plan** — Run `/grill` to validate requirements. Spawn **researcher** for context. Refine into verifiable acceptance criteria. Get human approval.
+2. **Decompose** — Split into independent tasks. Create worktrees. Write `.agent/task.md` into each.
+3. **Dispatch** — Spawn **workers** per task. Monitor via `.agent/status.md` files.
+4. **Validate** — Spawn **validator** to merge and test. Spawn **reviewer** for code review. Fix → re-validate.
+5. **Consolidate** — Create PR. Spawn **documenter** if docs affected. Get human approval.
+6. **Knowledge** — Spawn **scout** for meta-improvements.
 
 ## Dispatch Workflow
 
