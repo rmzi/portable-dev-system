@@ -31,18 +31,18 @@ Pattern: `project/.worktrees/{branch-with-slashes-as-dashes}`
 
 `.worktrees/` is auto-added to `.gitignore` on first use.
 
-Worktrees go in the project's parent directory (`../`), never in `/tmp`.
+Worktrees go inside the repo at `.worktrees/`, never in `/tmp` or `../`.
 
 ## Workflow
 
 ```bash
 # Start feature work
 wt -b feature/user-profiles
-# Now in myproject/.worktrees/feature-user-profiles/
+# Now in project/.worktrees/feature-user-profiles/
 
 # Urgent bug — new worktree, no context lost
-git worktree add ../myproject-hotfix-critical -b hotfix/critical-fix
-cd ../myproject-hotfix-critical
+git worktree add .worktrees/hotfix-critical -b hotfix/critical-fix
+cd .worktrees/hotfix-critical
 
 # Fix bug, PR, merge, clean up
 wtr  # Remove current worktree
@@ -63,22 +63,22 @@ wtr  # Remove from inside the worktree
 
 ### Explore without fear
 ```bash
-git worktree add ../project-spike-idea -b spike/crazy-idea
+git worktree add .worktrees/spike-crazy-idea -b spike/crazy-idea
 # If good: merge. If bad: remove worktree + delete branch
 ```
 
 ### Parallel feature development
 ```bash
-git worktree add ../project-feature-api -b feature/api
-git worktree add ../project-feature-ui -b feature/ui
+git worktree add .worktrees/feature-api -b feature/api
+git worktree add .worktrees/feature-ui -b feature/ui
 # Work on API in one terminal, UI in another
 ```
 
 ### Agent worktrees
 ```bash
 # Create worktrees for multi-agent work
-git worktree add ../project-task-1-auth -b task-1/auth
-git worktree add ../project-task-2-api -b task-2/api
+git worktree add .worktrees/task-1-auth -b task-1/auth
+git worktree add .worktrees/task-2-api -b task-2/api
 # Each agent gets its own isolated environment
 ```
 
@@ -88,4 +88,4 @@ git worktree add ../project-task-2-api -b task-2/api
 2. **Shared git history** — All worktrees share .git
 3. **Independent state** — Each has its own index, HEAD, uncommitted changes
 4. **Clean up after merge** — Remove worktrees when PRs are merged
-5. **Never /tmp** — Worktrees go in `../`, not `/tmp`
+5. **Never /tmp or ../** — Worktrees go in `.worktrees/`, not `/tmp` or `../`
