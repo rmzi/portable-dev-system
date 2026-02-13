@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.6.0] - 2026-02-13
+
+### Added
+- **`install.sh`** — standalone install script with two modes:
+  - Project mode (default): installs skills, agents, settings, CLAUDE.md into `.claude/`
+  - User mode (`--user`): installs skills and settings to `~/.claude/` for all projects
+  - Version check with `--force` override, idempotent re-runs
+  - Zero context duplication: user-level CLAUDE.md is ~15 lines with conditional skill fallback, not a copy of project CLAUDE.md
+  - Agents are project-only (not installed at user level)
+- **PDS markers** (`<!-- PDS:START -->` / `<!-- PDS:END -->`) in CLAUDE.md for safe block replacement on updates
+
+### Changed
+- **README and docs/teams.md** — replaced `pds-init` references with `curl | bash` one-liners
+
 ## [2.5.0] - 2026-02-13T00:38:28-05:00
 
 ### Added

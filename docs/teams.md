@@ -5,10 +5,10 @@
 ```bash
 # 1. Install PDS into your project
 cd ~/your-project
-pds-init
+curl -sfL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash
 
 # 2. Commit the configuration
-git add .claude CLAUDE.md
+git add .claude CLAUDE.md .gitignore
 git commit -m "feat: add PDS"
 ```
 
@@ -59,9 +59,6 @@ git clone <repo-url> && cd <repo>
 
 # 2. Start Claude Code — PDS is active immediately
 claude
-
-# 3. (Optional) Install pds-update for future PDS upgrades
-# See https://github.com/rmzi/portable-dev-system for the pds-update command
 ```
 
 That's it. No separate PDS install step. The skills, agents, settings, and hooks are all in the repo. Claude reads them on session start.
@@ -78,15 +75,9 @@ On first use, Claude will:
 If the repo doesn't have PDS yet:
 
 ```bash
-# Option A: Use pds-init (downloads latest)
-pds-init
-
-# Option B: Copy from another PDS project
-cp -r /path/to/pds-project/.claude/ .claude/
-cp /path/to/pds-project/CLAUDE.md CLAUDE.md
-
-# Then commit
-git add .claude CLAUDE.md
+cd ~/your-project
+curl -sfL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash
+git add .claude CLAUDE.md .gitignore
 git commit -m "feat: add PDS configuration"
 ```
 
@@ -108,7 +99,7 @@ EOF
 # Edit .claude/settings.json permissions.deny array
 ```
 
-PDS core skills and team-specific skills coexist in `.claude/skills/`. When PDS updates, `pds-update` only touches PDS-managed files.
+PDS core skills and team-specific skills coexist in `.claude/skills/`. When PDS updates, re-running the install script only touches PDS-managed files.
 
 ---
 
@@ -263,7 +254,7 @@ When you update skills in your repo:
 1. Team members pull changes
 2. Skills are automatically available
 
-For PDS core updates:
+For PDS core updates, re-run the install script:
 ```bash
-pds-update
+curl -sfL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash
 ```

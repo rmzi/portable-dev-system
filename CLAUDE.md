@@ -1,3 +1,4 @@
+<!-- PDS:START -->
 # Portable Development System
 
 AI-assisted development methodology. Skills for consistency. Agents for scale.
@@ -66,3 +67,4 @@ AI-assisted development methodology. Skills for consistency. Agents for scale.
 **Read `/contribute` before modifying PDS.** Before changing skills, agents, SDLC phases, or coordination patterns, read `/contribute` for the full checklist — including whitepaper alignment.
 
 **Create or update a PR after pushing.** When commits are pushed to a non-main branch, create a PR (or update the existing one). Don't wait to be asked.
+<!-- PDS:END -->

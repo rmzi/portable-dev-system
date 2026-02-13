@@ -58,7 +58,7 @@ A JSON file containing hook entries to merge into a project's `.claude/settings.
 
 ### Lifecycle Shell Functions
 
-Sourceable file in `shell/<addon>-helpers.sh` providing `<prefix>-init` (install skill + hooks, write version marker) and `<prefix>-update` (check remote VERSION, pull if newer). Same pattern as `pds-init`/`pds-update`.
+Sourceable file in `shell/<addon>-helpers.sh` providing `<prefix>-init` (install skill + hooks, write version marker) and `<prefix>-update` (check remote VERSION, pull if newer). Same pattern as PDS's `install.sh`.
 
 ---
 
@@ -99,6 +99,16 @@ bt-init() {
 ```
 
 Install via [zaku](https://github.com/rmzi/zaku): `zaku install` prompts for optional addons, runs `cargo install` + `bt-init`.
+
+---
+
+## Future: Agent Packs
+
+Agent definitions (`.claude/agents/*.md`) are bundled with PDS core today — every project install gets the full 8-agent roster. This is intentional: discoverability matters more than file count, and agent files only enter context when spawned via Task.
+
+Composable agent packs (e.g., a security-focused roster, data-eng roster, or team-specific agents) are a natural addon extension. An agent pack addon would provide `.claude/agents/*.md` files and optionally orchestration skills (`/swarm`-style) tuned to that domain. The install script's project mode already copies agents — an addon could follow the same pattern with its own agent set.
+
+Not needed yet. Worth building when teams want custom rosters beyond PDS core.
 
 ---
 

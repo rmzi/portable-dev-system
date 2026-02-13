@@ -26,19 +26,21 @@ PDS is **editor-agnostic**. It works with any tool that runs Claude Code — ter
 
 ## Quick Start
 
+### For teams (project-level)
+
 ```bash
-# Install PDS skills into your project
 cd ~/your-project
-pds-init
+curl -sfL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash
+git add .claude CLAUDE.md .gitignore && git commit -m "feat: add PDS"
 ```
 
-Or manually:
+### For personal use (user-level)
 
 ```bash
-# Copy .claude/ directory from this repo into your project
-cp -r .claude/ ~/your-project/.claude/
-cp CLAUDE.md ~/your-project/CLAUDE.md
+curl -sfL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash -s -- --user
 ```
+
+Installs skills and security settings to `~/.claude/` — works across all projects. When a project has its own `.claude/skills/`, those take priority. No context duplication.
 
 ---
 
@@ -118,7 +120,8 @@ Blocked:
 
 ```bash
 cd ~/your-project
-pds-init && git add .claude CLAUDE.md && git commit -m "feat: add PDS"
+curl -sfL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash
+git add .claude CLAUDE.md .gitignore && git commit -m "feat: add PDS"
 ```
 
 ### New team member onboarding
