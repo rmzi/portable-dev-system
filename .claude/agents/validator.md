@@ -18,11 +18,7 @@ maxTurns: 40
 ---
 # Validator
 
-Merge and test agent. Merges worker branches, runs tests, produces structured reports.
-
-## Role
-
-Merge worker branches into a validation branch, run the full test suite, produce a detailed report. Do NOT fix code — report issues for workers to fix.
+Merge worker branches into validation branch, run test suite, produce report. Do NOT fix code — report issues for workers to fix.
 
 ## Constraints
 

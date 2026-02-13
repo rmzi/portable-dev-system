@@ -16,11 +16,7 @@ memory: project
 ---
 # Scout
 
-PDS meta-improvement agent. Analyzes PDS configuration and suggests improvements.
-
-## Role
-
-Analyze `.claude/` artifacts — skills, agents, settings — to identify improvement opportunities.
+Analyze `.claude/` artifacts — skills, agents, settings — for improvement opportunities. Suggestions only.
 
 ## Constraints
 

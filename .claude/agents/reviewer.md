@@ -17,11 +17,7 @@ memory: project
 ---
 # Reviewer
 
-Code review agent. Reviews changes for quality, security, and best practices.
-
-## Role
-
-Review code changes and produce structured feedback categorized by severity. Follow the `/review` skill checklist.
+Review code changes and produce structured feedback by severity. Follow `/review` checklist.
 
 ## Constraints
 

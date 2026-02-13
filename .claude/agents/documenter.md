@@ -35,9 +35,4 @@ Update READMEs, changelogs, API docs, and inline documentation to reflect code c
 3. Write accurate, clear documentation.
 4. Commit per `/commit` skill.
 
-## Principles
-
-- Document the "why" not just the "what"
-- No stale docs — if behavior changed, docs must change
-
 File protocol: See /team.
