@@ -61,6 +61,17 @@ Test with the smallest possible experiment.
 | System | `htop`, `lsof`, `strace`, `dmesg` |
 | Git | `git bisect`, `git log -p`, `git blame` |
 
+## git bisect — Binary Search History
+
+```bash
+git bisect start
+git bisect bad                 # Current commit is broken
+git bisect good v1.2.0         # This version worked
+# Git checks out middle commit — test, then: git bisect good/bad
+# Repeat until culprit found
+git bisect reset               # Return to original state
+```
+
 ## Common Bug Patterns
 
 | Symptom | Common Causes |
@@ -70,3 +81,7 @@ Test with the smallest possible experiment.
 | Wrong data | Off-by-one, null/undefined, type coercion |
 | Performance regression | N+1 queries, missing index, memory leak |
 | Works for me | User-specific data, browser/OS differences |
+
+## The Rubber Duck Protocol
+
+Explain the problem aloud or in writing: what should happen, what actually happens, what you've tried, what you suspect. The act of explaining often reveals the answer.
