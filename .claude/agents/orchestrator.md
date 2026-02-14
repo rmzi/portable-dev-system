@@ -32,10 +32,11 @@ Team lead. Plans, decomposes, dispatches, and consolidates. See `/team` for rost
 
 ## Dispatch Workflow
 
-1. Create worktree: `git worktree add .worktrees/task-1-desc -b task-1/desc`
-2. Write `.agent/task.md` into the worktree
-3. Spawn agent with `--directory /abs/path/to/worktree`
-4. Monitor: read `.agent/status.md` from agent worktrees
+1. Resolve repo root: `REPO_ROOT="$(git rev-parse --path-format=absolute --git-common-dir | sed 's|/.git$||')"`
+2. Create worktree: `git worktree add "$REPO_ROOT/.worktrees/task-1-desc" -b task-1/desc`
+3. Write `.agent/task.md` into the worktree
+4. Spawn agent with `--directory /abs/path/to/worktree`
+5. Monitor: read `.agent/status.md` from agent worktrees
 
 ## Principles
 

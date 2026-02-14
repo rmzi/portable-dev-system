@@ -40,11 +40,12 @@ description: Quick reference for PDS skills, agents, and conventions
 ## Worktrees
 
 ```bash
-git worktree add .worktrees/name -b branch    # Create
-git worktree remove .worktrees/name           # Remove
-git worktree list                             # List all
-git worktree prune                            # Clean stale
-git branch --merged main | xargs git branch -d  # Delete merged branches
+REPO_ROOT="$(git rev-parse --path-format=absolute --git-common-dir | sed 's|/.git$||')"
+git worktree add "$REPO_ROOT/.worktrees/name" -b branch    # Create
+git worktree remove "$REPO_ROOT/.worktrees/name"           # Remove
+git worktree list                                          # List all
+git worktree prune                                         # Clean stale
+git branch --merged main | xargs git branch -d             # Delete merged branches
 ```
 
 Convention: `project/.worktrees/{branch-as-dashes}/` — never `../`, never `/tmp`.

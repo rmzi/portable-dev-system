@@ -58,7 +58,8 @@ The simple case: one subtask merging back into the coordinator.
    ```
 6. **Clean up** the subtask worktree
    ```bash
-   git worktree remove .worktrees/subtask-branch
+   REPO_ROOT="$(git rev-parse --path-format=absolute --git-common-dir | sed 's|/.git$||')"
+   git worktree remove "$REPO_ROOT/.worktrees/subtask-branch"
    git branch -d subtask-branch
    ```
 
@@ -72,13 +73,15 @@ The complex case: multiple subtasks merging back in sequence.
 The coordinator creates a base branch. Subtasks branch off from it as worktrees:
 
 ```bash
+REPO_ROOT="$(git rev-parse --path-format=absolute --git-common-dir | sed 's|/.git$||')"
+
 # Coordinator creates the base
-git worktree add .worktrees/feature-big -b feature/big-feature
+git worktree add "$REPO_ROOT/.worktrees/feature-big" -b feature/big-feature
 
 # Subtasks branch off the coordinator
-git worktree add .worktrees/subtask-1 -b feature/big-feature/subtask-1 feature/big-feature
-git worktree add .worktrees/subtask-2 -b feature/big-feature/subtask-2 feature/big-feature
-git worktree add .worktrees/subtask-3 -b feature/big-feature/subtask-3 feature/big-feature
+git worktree add "$REPO_ROOT/.worktrees/subtask-1" -b feature/big-feature/subtask-1 feature/big-feature
+git worktree add "$REPO_ROOT/.worktrees/subtask-2" -b feature/big-feature/subtask-2 feature/big-feature
+git worktree add "$REPO_ROOT/.worktrees/subtask-3" -b feature/big-feature/subtask-3 feature/big-feature
 ```
 
 ### Workflow
@@ -215,7 +218,8 @@ git log --oneline coordinator-branch..subtask-branch
 git diff coordinator-branch...subtask-branch -- <file>
 
 # Clean up after merge
-git worktree remove .worktrees/subtask-branch
+REPO_ROOT="$(git rev-parse --path-format=absolute --git-common-dir | sed 's|/.git$||')"
+git worktree remove "$REPO_ROOT/.worktrees/subtask-branch"
 git branch -d subtask-branch
 ```
 
@@ -238,10 +242,12 @@ git branch -d subtask-branch
 After all subtasks are merged:
 
 ```bash
+REPO_ROOT="$(git rev-parse --path-format=absolute --git-common-dir | sed 's|/.git$||')"
+
 # Remove each subtask worktree
-git worktree remove .worktrees/subtask-1
-git worktree remove .worktrees/subtask-2
-git worktree remove .worktrees/subtask-3
+git worktree remove "$REPO_ROOT/.worktrees/subtask-1"
+git worktree remove "$REPO_ROOT/.worktrees/subtask-2"
+git worktree remove "$REPO_ROOT/.worktrees/subtask-3"
 
 # Delete the subtask branches
 git branch -d feature/big-feature/subtask-1

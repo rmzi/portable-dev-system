@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.7.1] - 2026-02-13T23:26:24-05:00
+
+### Fixed
+- Fix worktree path resolution for agents running inside worktrees — bare `.worktrees/` paths created nested directories instead of sibling worktrees at the repo root
+- Add `REPO_ROOT` resolution via `git rev-parse --path-format=absolute --git-common-dir` to all code blocks across skills, agents, and CLAUDE.md
+- Document alternatives table in `/worktree` skill with rationale, including community `dirname` pattern from [anthropics/claude-code#1052](https://github.com/anthropics/claude-code/issues/1052)
+
 ## [2.7.0] - 2026-02-13
 
 ### Added
