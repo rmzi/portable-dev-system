@@ -21,9 +21,10 @@ Run `/grill` to validate requirements before decomposition. Spawn researcher for
 Create worktrees and write task files:
 
 ```bash
-git worktree add .worktrees/task-1-auth -b task-1/auth
-mkdir -p .worktrees/task-1-auth/.agent
-cat > .worktrees/task-1-auth/.agent/task.md << 'EOF'
+REPO_ROOT="$(git rev-parse --path-format=absolute --git-common-dir | sed 's|/.git$||')"
+git worktree add "$REPO_ROOT/.worktrees/task-1-auth" -b task-1/auth
+mkdir -p "$REPO_ROOT/.worktrees/task-1-auth/.agent"
+cat > "$REPO_ROOT/.worktrees/task-1-auth/.agent/task.md" << 'EOF'
 ## Task: Implement auth module
 ### Acceptance Criteria
 - [ ] JWT-based login endpoint
@@ -48,7 +49,8 @@ Spawn scout for PDS meta-improvements. Scout reads `.claude/instincts.md`, updat
 ## Monitoring
 
 ```bash
-for dir in .worktrees/*/.agent; do
+REPO_ROOT="$(git rev-parse --path-format=absolute --git-common-dir | sed 's|/.git$||')"
+for dir in "$REPO_ROOT"/.worktrees/*/.agent; do
   echo "=== $(dirname $dir) ==="; cat "$dir/status.md" 2>/dev/null || echo "no status"
 done
 ```

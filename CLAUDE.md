@@ -66,6 +66,15 @@ AI-assisted development methodology. Skills for consistency. Agents for scale.
 - Wrong: `../project-feature-branch/` (old sibling format — migrate with `git worktree move`)
 - /tmp is only for temporary files (downloads, build artifacts, large files that shouldn't persist)
 
+**Always resolve REPO_ROOT before using `.worktrees/` paths in code.** Relative `.worktrees/` paths break when running inside a worktree (they create nested directories). Use:
+```bash
+REPO_ROOT="$(git rev-parse --path-format=absolute --git-common-dir | sed 's|/.git$||')"
+git worktree add "$REPO_ROOT/.worktrees/name" -b branch
+```
+- Correct: `"$REPO_ROOT/.worktrees/feature-branch"` (resolves to main repo root from anywhere)
+- Wrong: `.worktrees/feature-branch` (creates nested path when run from a worktree)
+- Wrong: `git rev-parse --show-toplevel` (returns current worktree root, not main repo root)
+
 **Read `/contribute` before modifying PDS.** Before changing skills, agents, SDLC phases, or coordination patterns, read `/contribute` for the full checklist — including whitepaper alignment.
 
 **Create or update a PR after pushing.** When commits are pushed to a non-main branch, create a PR (or update the existing one). Don't wait to be asked.
