@@ -142,7 +142,7 @@ The closest analogy: claude-flow is Kubernetes, everything-claude-code is a dotf
 1. **Security scanning** — everything-claude-code's A-F grading tool for settings.json is clever. PDS could add a `/audit-config` skill.
 2. **Instinct → skill evolution** — everything-claude-code's instinct system (auto-learning from patterns) is worth watching. PDS's scout agent partially fills this role.
 3. **Cross-session context** — OneContext's approach to syncing context across devices/sessions addresses a real gap. PDS's user-level install partially solves this for a single machine.
-4. **Domain skill packs** — everything-claude-code ships Python/Django and Java skill packs. PDS's addon system is ready for this but no packs exist yet.
+4. **Domain skill packs** — everything-claude-code ships Python/Django and Java skill packs. PDS doesn't have domain-specific packs yet.
 
 ---
 
