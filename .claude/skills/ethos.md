@@ -1,5 +1,5 @@
 ---
-description: Core development principles for grounding before significant work
+description: Grounding in core development principles. Use when starting significant work, feeling stuck, or needing to reset decision-making clarity.
 ---
 # /ethos — Core Development Principles
 

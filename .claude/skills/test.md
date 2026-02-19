@@ -1,5 +1,5 @@
 ---
-description: Test strategy selection and coverage analysis
+description: Selecting test strategy and analyzing coverage. Use when writing tests, choosing test types, or planning test coverage for a feature.
 ---
 # /test — Test Strategy Selection
 
@@ -71,6 +71,21 @@ Example: `test('given expired token, when accessing API, then returns 401')`
 
 ## TDD Workflow
 
-1. **RED** — Write a failing test
-2. **GREEN** — Write minimal code to pass
-3. **REFACTOR** — Improve code, keep tests green
+Test-driven development is a discipline, not a suggestion. The cycle enforces design thinking before implementation.
+
+1. **RED** — Write a failing test that describes the behavior you want. Run it. Watch it fail. The failure message is your specification.
+2. **GREEN** — Write the *minimal* code to make the test pass. No more. Resist the urge to implement ahead.
+3. **REFACTOR** — Improve the code while keeping tests green. Extract patterns, rename for clarity, remove duplication.
+
+Repeat. Each cycle should take minutes, not hours.
+
+### Test-First vs Test-After
+
+| Aspect | Test-First (TDD) | Test-After |
+|--------|-------------------|------------|
+| Design feedback | Immediate — tests shape the API | Late — tests adapt to existing API |
+| Coverage gaps | Rare — untested code doesn't exist yet | Common — easy to forget edge cases |
+| Refactoring safety | High — comprehensive tests already exist | Variable — depends on discipline |
+| When to use | New features, complex logic, public APIs | Legacy code, exploratory prototyping |
+
+When in doubt, write the test first. The discipline pays compound interest.
