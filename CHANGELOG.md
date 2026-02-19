@@ -16,6 +16,7 @@ All notable changes to this project will be documented in this file.
 - `/debug` adds investigation discipline paragraph
 - `/review` adds review integrity section
 - `/merge` heading formatting fixed (missing space after `##`)
+- `/swarm` Phase 2 adds zone-based decomposition and contract-first guidance
 - `/quickref` updated with all missing skill entries
 - `docs/whitepaper.md` updated with `/verify` in Phase 4 and `/finish` in Phase 5
 - `.claude/.pds-version` synced (was 2.7.0, now matches VERSION)
