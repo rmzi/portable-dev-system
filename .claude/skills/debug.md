@@ -1,5 +1,5 @@
 ---
-description: Systematic debugging using scientific hypothesis testing
+description: Debugging systematically using hypothesis-driven investigation. Use when troubleshooting failures, unexpected behavior, or performance regressions.
 ---
 # /debug — Systematic Debugging
 
@@ -12,6 +12,8 @@ Debugging is hypothesis testing. Be scientific.
 ```
 
 ## The Debugging Protocol
+
+Resist pressure to skip steps. Speculation is cheaper than debugging a speculation-based fix. Complete the protocol before proposing any fix.
 
 ### 1. Reproduce
 Reliably reproduce before anything else.

@@ -1,5 +1,5 @@
 ---
-description: Maintain context efficiency of PDS skills and agent definitions
+description: Maintaining context efficiency of PDS artifacts. Use when skills or agents grow beyond baseline, or during periodic context audits.
 ---
 # /trim — Context Efficiency Maintenance
 

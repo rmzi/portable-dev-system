@@ -1,5 +1,5 @@
 ---
-description: Structured code review checklist
+description: Reviewing code systematically with a structured checklist. Use before submitting PRs, when reviewing others' code, or during pre-merge validation.
 ---
 # /review — Structured Code Review
 
@@ -53,6 +53,10 @@ Location: file:line | Issue: [what] | Suggestion: [how]
 ## Questions
 - [Things needing clarification]
 ```
+
+## Review Integrity
+
+State honest assessments. Don't performatively agree to avoid conflict. If code has problems, say so clearly and constructively. A review that rubber-stamps bad code is worse than no review — it creates false confidence.
 
 ## Review Etiquette
 

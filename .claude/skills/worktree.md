@@ -1,5 +1,5 @@
 ---
-description: Git worktrees for isolated parallel development
+description: Managing git worktrees for isolated parallel development. Use when creating branches, setting up agent worktrees, or cleaning up after merges.
 ---
 # /worktree — Isolated Parallel Development
 

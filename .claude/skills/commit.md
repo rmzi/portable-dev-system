@@ -1,5 +1,5 @@
 ---
-description: Create semantic git commits with proper format and context
+description: Creating semantic git commits with conventional format. Use before any git commit to ensure proper type, scope, and message body.
 disable-model-invocation: true
 ---
 # /commit — Semantic Commit Workflow

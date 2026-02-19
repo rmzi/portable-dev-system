@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.8.0] - 2026-02-19T04:11:56-05:00
+
+### Added
+- `/verify` skill — completion self-check before declaring done
+- `/finish` skill — branch completion protocol for merge readiness
+- `/bugfix` skill — test-first bug fix loop with minimal blast radius
+
+### Changed
+- All 19 skill descriptions rewritten to Anthropic "what + when" trigger format
+- `/merge-main` upgraded from ad-hoc note to proper skill with frontmatter and structure
+- `/test` TDD section expanded with discipline guidance and test-first vs test-after comparison
+- `/debug` adds investigation discipline paragraph
+- `/review` adds review integrity section
+- `/merge` heading formatting fixed (missing space after `##`)
+- `/swarm` Phase 2 adds zone-based decomposition and contract-first guidance
+- `/quickref` updated with all missing skill entries
+- `docs/whitepaper.md` updated with `/verify` in Phase 4 and `/finish` in Phase 5
+- `.claude/.pds-version` synced (was 2.7.0, now matches VERSION)
+
 ## [2.7.1] - 2026-02-13T23:26:24-05:00
 
 ### Fixed

@@ -1,5 +1,5 @@
 ---
-description: Merge subtask worktrees back into a coordinator branch
+description: Merging subtask worktrees back into a coordinator branch. Use when parallel subtask branches are ready to consolidate via rebase-then-fast-forward.
 disable-model-invocation: true
 ---
 # /merge — Subtask Worktree Coordination
@@ -17,14 +17,14 @@ When a coordinator kicks off multiple subtasks as worktrees, getting their work 
 This skill provides an ordered, rebasing-first approach that keeps the coordinator branch clean and catches integration issues early.
 
 
-##When to Use
+## When to Use
 
 - A coordinator branch has spawned subtask worktrees that need to merge back
 - Multiple agents have completed parallel work on branches off a shared base
 - You need to integrate work from one or more subtasks into a parent branch
 
 
-##Concepts
+## Concepts
 
 | Term | Meaning |
 |------|---------|
@@ -34,7 +34,7 @@ This skill provides an ordered, rebasing-first approach that keeps the coordinat
 | **Rebase round** | After each merge, all remaining subtasks rebase onto the updated coordinator |
 
 
-##Single Subtask Merge
+## Single Subtask Merge
 
 The simple case: one subtask merging back into the coordinator.
 
@@ -64,7 +64,7 @@ The simple case: one subtask merging back into the coordinator.
    ```
 
 
-##N Subtask Merge
+## N Subtask Merge
 
 The complex case: multiple subtasks merging back in sequence.
 
@@ -149,7 +149,7 @@ Round N: SN rebases onto coordinator, merges
 ```
 
 
-##Conflict Resolution
+## Conflict Resolution
 
 **The subtask that is merging owns their conflicts.**
 
@@ -175,7 +175,7 @@ git rebase --continue
 ```
 
 
-##Review Strategy
+## Review Strategy
 
 A coordinator cannot review every line from every subagent. Instead:
 
@@ -194,7 +194,7 @@ A coordinator cannot review every line from every subagent. Instead:
 - **Trust but verify** — if tests pass and the combined diff looks coherent, the individual work was sound
 
 
-##Git Commands Reference
+## Git Commands Reference
 
 ```bash
 # Rebase subtask onto coordinator
@@ -224,7 +224,7 @@ git branch -d subtask-branch
 ```
 
 
-##Anti-Patterns
+## Anti-Patterns
 
 | Avoid | Why | Instead |
 |-------|-----|---------|
@@ -237,7 +237,7 @@ git branch -d subtask-branch
 | Rebasing onto an outdated coordinator | Creates false confidence about conflict-free state | Always fetch/pull coordinator before rebasing |
 
 
-##Cleanup
+## Cleanup
 
 After all subtasks are merged:
 

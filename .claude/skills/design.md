@@ -1,5 +1,5 @@
 ---
-description: Create and review Architecture Decision Records (ADRs)
+description: Creating and reviewing Architecture Decision Records. Use when choosing between approaches, making hard-to-reverse decisions, or settling design debates.
 ---
 # /design — Architecture Decision Records
 

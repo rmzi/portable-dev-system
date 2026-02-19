@@ -1,5 +1,5 @@
 ---
-description: Requirement interrogation protocol — validate before building
+description: Interrogating requirements to validate before building. Use before swarm decomposition, design decisions on ambiguous features, or when scope creep risk is high.
 ---
 # /grill — Requirement Interrogation
 

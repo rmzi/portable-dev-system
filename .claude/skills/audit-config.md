@@ -1,5 +1,5 @@
 ---
-description: Verify PDS configuration is correct, complete, and secure
+description: Auditing PDS configuration for security, completeness, and consistency. Use after install, on periodic review, before team onboarding, or after PDS upgrades.
 ---
 # /audit-config — Configuration Audit
 
