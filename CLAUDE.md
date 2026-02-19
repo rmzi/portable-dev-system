@@ -11,7 +11,10 @@ AI-assisted development methodology. Skills for consistency. Agents for scale.
 
 1. **At session start**:
    - Check `.claude/.pds-version` against https://raw.githubusercontent.com/rmzi/portable-dev-system/main/VERSION
-   - If outdated: re-run `install.sh` (or `pds-update` if available), commit changes, and create a PR (or add to existing PR)
+   - If outdated: update and commit:
+     ```bash
+     curl -sfL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash
+     ```
    - Scan `.claude/skills/` to understand available capabilities
 2. **Before any task**: Check if the task matches a skill (commit, review, debug, test, design, etc.)
 3. **During work**: Read and follow the skill documentation before performing the action
@@ -48,38 +51,42 @@ AI-assisted development methodology. Skills for consistency. Agents for scale.
 | `/finish` | Branch completion protocol for merge readiness |
 | `/merge-main` | Merge approved PRs into main |
 
+See `/team` for the 8-agent roster (orchestrator, researcher, worker, validator, reviewer, documenter, scout, auditor).
+
+---
+
+## Project Structure
+
+```
+.claude/skills/    — 22 workflow skills (invoked via /skill-name)
+.claude/agents/    — 8 agent definitions (orchestrator, researcher, worker, etc.)
+.claude/settings.json — Permissions and security guardrails
+docs/              — Philosophy, whitepaper, team setup, agent tooling
+install.sh         — Installer for project-level or user-level PDS
+VERSION            — Current version (semver)
+CHANGELOG.md       — Release history
+```
 
 ---
 
 ## Rules
 
-**NEVER clone the repository.** Always use git worktrees for isolation:
-- Need a new branch? Use `git worktree add`
-- Cloning creates disconnected copies. Worktrees share git history and stay in sync.
+### Worktree Hygiene
 
-**Send denied commands to the terminal.** When a command is blocked by permissions (force push, etc.) or otherwise requires manual action, don't just print it — send it to the user's terminal pane via `tmux send-keys -t 2 'command' ''` (no Enter, so the user can review before executing).
+Use `git worktree add` for branch isolation — never `git clone` (clones disconnect history).
 
-**Read terminal output to stay current.** After sending commands to tmux or when you need to know the state of the user's environment, read the terminal pane:
-- `tmux capture-pane -t 2 -p` — read current visible content from the terminal pane
-- Use this after sending a denied command to check if the user executed it and what happened
-- Use this when the user references terminal output or you need to verify external state
+- Always inside repo: `.worktrees/feature-branch/`
+- Never `/tmp/`, never `../` siblings
+- Always resolve REPO_ROOT first (relative paths nest incorrectly inside worktrees):
+  ```bash
+  REPO_ROOT="$(git rev-parse --path-format=absolute --git-common-dir | sed 's|/.git$||')"
+  git worktree add "$REPO_ROOT/.worktrees/name" -b branch
+  ```
+- Never use `git rev-parse --show-toplevel` (returns worktree root, not repo root)
 
-**NEVER use /tmp for code or worktrees.** Worktrees go inside the repo at `.worktrees/`:
-- Correct: `.worktrees/feature-branch/` (inside the main repo)
-- Wrong: `/tmp/project/` or `/tmp/feature-work/`
-- Wrong: `../project-feature-branch/` (old sibling format — migrate with `git worktree move`)
-- /tmp is only for temporary files (downloads, build artifacts, large files that shouldn't persist)
+### Workflow
 
-**Always resolve REPO_ROOT before using `.worktrees/` paths in code.** Relative `.worktrees/` paths break when running inside a worktree (they create nested directories). Use:
-```bash
-REPO_ROOT="$(git rev-parse --path-format=absolute --git-common-dir | sed 's|/.git$||')"
-git worktree add "$REPO_ROOT/.worktrees/name" -b branch
-```
-- Correct: `"$REPO_ROOT/.worktrees/feature-branch"` (resolves to main repo root from anywhere)
-- Wrong: `.worktrees/feature-branch` (creates nested path when run from a worktree)
-- Wrong: `git rev-parse --show-toplevel` (returns current worktree root, not main repo root)
+**Read `/contribute` before modifying PDS.** Skills, agents, SDLC phases, or coordination patterns require the whitepaper-alignment checklist.
 
-**Read `/contribute` before modifying PDS.** Before changing skills, agents, SDLC phases, or coordination patterns, read `/contribute` for the full checklist — including whitepaper alignment.
-
-**Create or update a PR after pushing.** When commits are pushed to a non-main branch, create a PR (or update the existing one). Don't wait to be asked.
+**Create or update a PR after pushing.** Don't wait to be asked.
 <!-- PDS:END -->

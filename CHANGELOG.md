@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.8.1] - 2026-02-19
+
+### Changed
+- CLAUDE.md: add Project Structure section, agent roster reference, copy-paste update command
+- CLAUDE.md: consolidate 3 worktree rules into single Worktree Hygiene section
+- CLAUDE.md: remove tmux operational config (not a dev principle)
+- CLAUDE.md: 29% size reduction (5.2KB → 3.7KB)
+
 ## [2.8.0] - 2026-02-19T04:11:56-05:00
 
 ### Added
