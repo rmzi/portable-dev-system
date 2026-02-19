@@ -1,5 +1,5 @@
 ---
-description: Record, review, and promote engineering patterns (instincts)
+description: Recording, reviewing, and promoting engineering patterns. Use when observing a recurring pattern, during post-swarm analysis, or when an instinct reaches promotion threshold.
 ---
 # /instinct — Pattern Lifecycle
 

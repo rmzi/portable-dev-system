@@ -1,5 +1,5 @@
 ---
-description: Permission hook routing policy for subagent tool requests
+description: Routing subagent permission requests through policy evaluation. Use when configuring or understanding the PermissionRequest hook behavior.
 ---
 # Permission Router
 

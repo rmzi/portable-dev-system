@@ -1,5 +1,5 @@
 ---
-description: Multi-agent team workflow with file-based coordination across worktrees
+description: Launching multi-agent parallel work with file-based coordination. Use when a task benefits from decomposition into parallel subtasks across worktrees.
 disable-model-invocation: true
 ---
 # /swarm — Multi-Agent Team Workflow

@@ -1,5 +1,5 @@
 ---
-description: Contributing to PDS itself — workflow changes, skills, agents, docs
+description: Contributing changes to PDS skills, agents, or workflow. Use before modifying any PDS artifact to follow the whitepaper-alignment checklist.
 ---
 # /contribute — PDS Contribution Workflow
 

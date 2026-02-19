@@ -1,5 +1,5 @@
 ---
-description: Quick reference for PDS skills, agents, and conventions
+description: Quick reference for PDS skills, agents, and conventions. Use for fast lookup of skill triggers, agent roles, worktree commands, or commit format.
 ---
 # /quickref — PDS Quick Reference
 
@@ -23,6 +23,11 @@ description: Quick reference for PDS skills, agents, and conventions
 | `/contribute` | PDS contribution workflow |
 | `/trim` | Context efficiency |
 | `/quickref` | This reference |
+| `/instinct` | Record and promote engineering patterns |
+| `/audit-config` | Configuration security audit |
+| `/verify` | Completion self-check before declaring done |
+| `/finish` | Branch completion protocol |
+| `/merge-main` | Merge approved PRs to main |
 
 ## Agents
 

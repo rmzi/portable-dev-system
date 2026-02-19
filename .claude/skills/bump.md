@@ -1,5 +1,5 @@
 ---
-description: Bump version and update changelog
+description: Bumping project version and updating changelog atomically. Use when releasing a new version — patch, minor, or major.
 disable-model-invocation: true
 ---
 # /bump — Version Bump Workflow
