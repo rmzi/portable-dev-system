@@ -22,6 +22,11 @@ Skills encode team knowledge and workflows. Claude reads and follows them automa
 | `/instinct` | Pattern capture and lifecycle | Recording, reviewing, and promoting engineering patterns |
 | `/audit-config` | Configuration security audit | After install, periodic review, team onboarding |
 | `/bump` | Version and changelog updates | Releasing new versions |
+| `/contribute` | PDS contribution workflow | Before modifying PDS artifacts |
+| `/grill` | Requirement interrogation | Before decomposition, ambiguous features |
+| `/verify` | Completion self-check | Before declaring tasks done, creating PRs |
+| `/finish` | Branch completion protocol | When branch needs preparation for merge |
+| `/merge-main` | Merge approved PRs to main | When PRs are approved and ready to land |
 
 ---
 

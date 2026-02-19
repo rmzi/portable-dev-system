@@ -66,6 +66,9 @@ Installs skills and security settings to `~/.claude/` — works across all proje
 | `/bump` | Version and changelog |
 | `/permission-router` | Permission hook policy |
 | `/quickref` | PDS skills, agents, conventions |
+| `/verify` | Completion self-check |
+| `/finish` | Branch completion protocol |
+| `/merge-main` | Merge approved PRs to main |
 
 [Full skills catalog →](docs/skills.md)
 

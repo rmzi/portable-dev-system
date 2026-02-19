@@ -43,6 +43,9 @@ AI-assisted development methodology. Skills for consistency. Agents for scale.
 | `/contribute` | Contributing to PDS itself — whitepaper alignment |
 | `/audit-config` | Verify PDS setup is correct and secure |
 | `/trim` | Context efficiency maintenance |
+| `/verify` | Completion self-check before declaring done |
+| `/finish` | Branch completion protocol for merge readiness |
+| `/merge-main` | Merge approved PRs into main |
 
 
 ---

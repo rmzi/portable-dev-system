@@ -64,13 +64,13 @@ Each worker produces a result artifact: code changes, summary, issues encountere
 
 A validator agent examines all worker output by monitoring TaskUpdate status changes. The validator operates in its own worktree, merging worker branches and running comprehensive tests.
 
-Responsibilities: writing tests based on acceptance criteria, running the existing test suite, performing static analysis, checking for defects. The validator does not fix issues—it produces a structured report (via TaskUpdate) identifying failures, localizing them, and suggesting remediation.
+Responsibilities: writing tests based on acceptance criteria, running the existing test suite, performing static analysis, checking for defects. Workers run `/verify` before declaring tasks done — a structured self-check covering acceptance criteria, test suite, debug artifacts, git status, and diff review. The validator does not fix issues—it produces a structured report (via TaskUpdate) identifying failures, localizing them, and suggesting remediation.
 
 If validation fails, the report flows to the orchestrator, which updates the task DAG and dispatches targeted fix requests. This cycle continues until validation passes or human intervention is required.
 
 ### Phase 5: Consolidation and Human Review
 
-The orchestrator consolidates worker branches into a single pull request, rebasing or squashing as needed for clean history. A **reviewer** agent performs automated pre-review — checking code quality, security patterns, and consistency — producing a structured report before human review. A **documenter** agent updates user-facing documentation when changes warrant it.
+The orchestrator consolidates worker branches into a single pull request, using `/finish` to prepare each branch — rebasing onto the target, cleaning commit history, and running post-rebase tests — before creating the PR. A **reviewer** agent performs automated pre-review — checking code quality, security patterns, and consistency — producing a structured report before human review. A **documenter** agent updates user-facing documentation when changes warrant it.
 
 The developer reviews with full context: requirements, plan, validation results, reviewer findings, issues encountered. The developer can request changes (flowing back through the orchestrator) or approve for merge. The reviewer's automated pre-review supplements but never replaces the human gate.
 
@@ -391,6 +391,8 @@ PDS encodes two complementary layers of engineering guidance, designed to be MEC
 | Severity-categorized review | `/review` | Fail fast, recover gracefully |
 | Rebasing-first merge coordination | `/merge` | Optimize for change |
 | Requirement interrogation | `/grill` | Understand before you act |
+| Completion verification | `/verify` | Explicit over implicit |
+| Branch preparation for merge | `/finish` | Small, reversible steps |
 
 This separation matters: principles are stable across projects and technologies, while techniques evolve with tooling and practice. An agent grounded in principles makes better judgment calls when no specific technique applies.
 
