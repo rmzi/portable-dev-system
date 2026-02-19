@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 - `/verify` skill — completion self-check before declaring done
 - `/finish` skill — branch completion protocol for merge readiness
+- `/bugfix` skill — test-first bug fix loop with minimal blast radius
 
 ### Changed
 - All 19 skill descriptions rewritten to Anthropic "what + when" trigger format

@@ -24,6 +24,7 @@ Skills encode team knowledge and workflows. Claude reads and follows them automa
 | `/bump` | Version and changelog updates | Releasing new versions |
 | `/contribute` | PDS contribution workflow | Before modifying PDS artifacts |
 | `/grill` | Requirement interrogation | Before decomposition, ambiguous features |
+| `/bugfix` | Test-first bug fix loop | When a bug is reported and needs a verified fix |
 | `/verify` | Completion self-check | Before declaring tasks done, creating PRs |
 | `/finish` | Branch completion protocol | When branch needs preparation for merge |
 | `/merge-main` | Merge approved PRs to main | When PRs are approved and ready to land |

@@ -25,6 +25,7 @@ description: Quick reference for PDS skills, agents, and conventions. Use for fa
 | `/quickref` | This reference |
 | `/instinct` | Record and promote engineering patterns |
 | `/audit-config` | Configuration security audit |
+| `/bugfix` | Test-first bug fix loop |
 | `/verify` | Completion self-check before declaring done |
 | `/finish` | Branch completion protocol |
 | `/merge-main` | Merge approved PRs to main |

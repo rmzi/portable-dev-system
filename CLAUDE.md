@@ -42,6 +42,7 @@ AI-assisted development methodology. Skills for consistency. Agents for scale.
 | `/grill` | Requirement interrogation before implementation |
 | `/contribute` | Contributing to PDS itself — whitepaper alignment |
 | `/audit-config` | Verify PDS setup is correct and secure |
+| `/bugfix` | Test-first bug fix loop |
 | `/trim` | Context efficiency maintenance |
 | `/verify` | Completion self-check before declaring done |
 | `/finish` | Branch completion protocol for merge readiness |
