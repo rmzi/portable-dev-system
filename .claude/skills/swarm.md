@@ -18,6 +18,10 @@ Each agent runs in its own worktree with file-based coordination. See `/team` fo
 Run `/grill` to validate requirements before decomposition. Spawn researcher for context — researcher queries `.claude/instincts.md` for relevant prior patterns. Create decomposition plan and get human approval.
 
 ### Phase 2: Decompose
+Split along architecture boundaries. If CLAUDE.md defines **Agent Zones** (a table mapping zones to paths and merge order), use them to guide decomposition — one worktree per zone, foundation-first merge order.
+
+When zones cross a boundary (e.g., backend ↔ frontend), write a **contract** to `.swarm/contracts.md` defining the interface (command names, input/output types, error variants) before dispatching agents. Both sides develop against the contract.
+
 Create worktrees and write task files:
 
 ```bash
