@@ -50,3 +50,13 @@ jq '.hooks.PermissionRequest' .claude/settings.json
 ## Relationship to Static Permissions
 
 The static `permissions.allow` and `permissions.deny` lists in `settings.json` still apply. The prompt hook handles cases where static rules don't cover the request — it acts as a dynamic second layer for subagent permission routing.
+
+## Sandbox Interaction
+
+When `sandbox.autoAllowBashIfSandboxed` is `true` (PDS default), sandboxed Bash commands auto-approve without triggering the permission flow at all. The PermissionRequest hook only fires for:
+
+- **Excluded commands** — `git` and `docker` bypass the sandbox and go through normal permissions
+- **Unsandboxed commands** — Commands using `dangerouslyDisableSandbox: true`
+- **Non-Bash tools** — MCP tools, Read/Write on paths not in the allow list, etc.
+
+This means most routine Bash commands (build, test, lint, install) run without any permission prompt — the sandbox provides the safety guarantee instead of the hook.

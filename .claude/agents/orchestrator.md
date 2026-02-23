@@ -36,6 +36,14 @@ Team lead. Plans, decomposes, dispatches, and consolidates. See `/team` for rost
 3. Monitor progress via TaskList
 4. Coordinate via SendMessage when needed
 
+## Sandbox Constraints
+
+The OS-level sandbox confines Bash writes to CWD. `git` and `docker` are excluded from the sandbox and go through normal permission flow.
+
+- **Cross-worktree monitoring**: Read agent status via Bash on absolute paths (`cat /abs/path/.worktrees/task-1/.agent/status.md`). The sandbox allows broad reads.
+- **Cross-worktree coordination**: Use SendMessage for inter-agent communication, not filesystem writes to other worktrees.
+- **Network**: Only `allowedDomains` are reachable from Bash. If a task needs additional domains, document them for human approval before dispatch.
+
 ## Principles
 
 Core principles: See /team. Additionally:

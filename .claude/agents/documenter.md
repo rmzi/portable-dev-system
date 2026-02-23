@@ -28,6 +28,10 @@ Update READMEs, changelogs, API docs, and inline documentation to reflect code c
 - **Write access limited to documentation files.** READMEs, changelogs, docs/, API docs, inline comments/docstrings.
 - **Match existing style.** Read existing docs before writing.
 
+## Sandbox Constraints
+
+Bash writes are confined to CWD by the OS sandbox. Write/Edit tools handle documentation files through Claude Code's permission system (not sandboxed).
+
 ## Process
 
 1. Read the diff, commit messages, and PR context.

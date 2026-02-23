@@ -191,8 +191,8 @@ PDS includes a velocity-focused `.claude/settings.json` that balances speed with
 ### What's Auto-Allowed
 - All read operations
 - All file writes/edits within the repo
-- All bash commands (with exceptions below)
-- All MCP tools
+- All bash commands — sandboxed (writes confined to CWD, network restricted to allowlist)
+- All MCP tools (via `mcp__*` wildcard — see note below)
 - Web fetches and searches
 
 ### What's Blocked
@@ -230,6 +230,20 @@ Add to your repo's `.claude/settings.json`:
   }
 }
 ```
+
+### Sandbox
+
+PDS enables Claude Code's native OS-level sandbox for all Bash commands. The sandbox (Seatbelt on macOS, bubblewrap on Linux) confines filesystem writes to the current working directory and restricts network access to an allowlist of domains.
+
+**Key behaviors:**
+- Sandboxed Bash commands auto-approve without permission prompts (`autoAllowBashIfSandboxed: true`)
+- `git` and `docker` are excluded from the sandbox — they go through normal deny rules and the PermissionRequest hook
+- Workers are OS-confined to their worktree directory for writes
+- Cross-worktree reads work via Bash on absolute paths (sandbox allows broad reads)
+
+**`mcp__*` wildcard risk:** The default `mcp__*` permission auto-approves all MCP tools from any configured server. For security-sensitive environments, replace with explicit allowlists per MCP server (e.g., `mcp__github__create_pull_request`).
+
+See `/sandbox` skill for full configuration reference and customization guide.
 
 ---
 

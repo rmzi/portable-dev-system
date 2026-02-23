@@ -114,25 +114,26 @@ This ecosystem reduces the barrier to agent integration significantly.
 
 Agents must operate within well-defined boundaries. Unrestricted access to production systems is unacceptable risk.
 
-**Claude Code Permission Model**:
+**Defense-in-Depth Model**:
 
-Rather than heavyweight container isolation, PDS uses Claude Code's native permission system combined with git worktree filesystem isolation:
+PDS layers six enforcement mechanisms, from OS-level sandboxing to human review:
 
-- **Permission hooks** route agent actions through policy evaluation (see `/permission-router` skill)
-- **Worktree isolation** limits each worker to its own worktree directory
-- **The human gate** ensures all changes flow through PR review before reaching production
-- **Message routing** enables orchestrator oversight of all inter-agent communication
-- **Token budgets** prevent unbounded costs and runaway agents
+1. **OS-level sandbox** — Claude Code's native sandbox (Seatbelt on macOS, bubblewrap on Linux) confines Bash commands: filesystem writes are restricted to the working directory, network access is limited to an allowlist of domains. This is the hard floor — no prompt injection or agent confusion can bypass OS-level enforcement.
+2. **Static deny rules** — Pattern-matched rules in `settings.json` block credential paths, protected branches, sensitive files, and production patterns across all tools.
+3. **Permission hooks** — An LLM-as-judge `PermissionRequest` hook evaluates subagent requests not covered by static rules (see `/permission-router` skill).
+4. **Agent prompt constraints** — Each agent's `.md` file defines role-specific boundaries ("read-only", "stay in your worktree", "does not fix code").
+5. **Permission modes** — `plan`, `acceptEdits`, `delegate` control which tools each agent type can access.
+6. **The human gate** — All changes flow through PR review before reaching production.
 
-This approach favors lightweight isolation over heavyweight containers. The blast radius of a misbehaving worker is limited to its worktree branch. No changes reach production without human approval.
+This approach favors lightweight isolation over heavyweight containers. The sandbox adds OS enforcement without container overhead. The blast radius of a misbehaving worker is limited to its worktree branch. No changes reach production without human approval.
 
 **Permission Tiers**:
 
-| Agent Type | Network | Filesystem | Credentials |
-|------------|---------|------------|-------------|
-| Worker | Limited | Own worktree only | None |
-| Validator | Test databases | Own worktree + read others | Test DB credentials |
-| Orchestrator | External APIs (Jira, Slack) | All worktrees | API tokens (no prod) |
+| Agent Type | Sandbox | Network | Filesystem | Credentials |
+|------------|---------|---------|------------|-------------|
+| Worker | Yes (writes to CWD) | Package registries only | Own worktree only | None |
+| Validator | Yes (writes to CWD) | Package registries + test DBs | Own worktree + read others | Test DB credentials |
+| Orchestrator | Yes (writes to CWD) | External APIs (Jira, Slack) | All worktrees (read) | API tokens (no prod) |
 
 ### Native Agent Teams
 
@@ -289,11 +290,13 @@ Agents write code, run tests, create PRs. They cannot merge, deploy, or affect u
 
 ### Isolation Boundaries
 
-**Network**: Workers have no network by default. Validators access test databases. Orchestrators access external APIs.
+**Sandbox**: All Bash commands run inside an OS-level sandbox (Seatbelt on macOS, bubblewrap on Linux). Writes are confined to the working directory. Network access is restricted to `allowedDomains`. Commands that need broader access (`git`, `docker`) are excluded from the sandbox and go through the normal permission flow.
 
-**Filesystem**: Agents access only their designated worktree.
+**Network**: Workers access only package registries via the sandbox allowlist. Validators may need test database endpoints (added to allowlist per project). Orchestrators access external APIs. All network restrictions are OS-enforced for Bash commands.
 
-**Credentials**: Scoped to role. No agent receives production credentials.
+**Filesystem**: Agents access only their designated worktree for writes (OS-enforced via sandbox). Reads are broadly allowed across the repository for cross-worktree monitoring.
+
+**Credentials**: Scoped to role. No agent receives production credentials. Credential paths are blocked by both deny rules and sandbox filesystem restrictions.
 
 **Resources**: CPU/memory limits prevent runaway processes. Token budgets prevent unbounded costs.
 

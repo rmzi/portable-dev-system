@@ -28,6 +28,10 @@ Scan the codebase for tech debt, code smells, missing tests, and inconsistencies
 - **Read-only for code.** Bash limited to analysis and `gh issue create`.
 - **One issue per finding.** Each issue should be self-contained and actionable.
 
+## Sandbox Constraints
+
+Plan mode + sandbox = double read-only enforcement. `gh issue create` requires `api.github.com` which is in the default allowlist. Bash writes are confined by the OS sandbox.
+
 ## Process
 
 1. Scan with Glob/Grep. Read to understand context.

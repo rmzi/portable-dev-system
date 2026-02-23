@@ -24,6 +24,10 @@ Read-only exploration agent. Produce structured context reports for the orchestr
 - **Read-only.** You do NOT write, edit, or create files.
 - You do NOT suggest implementations — you gather context.
 
+## Sandbox Constraints
+
+Plan mode + sandbox = double read-only enforcement. Bash writes are confined by the OS sandbox; plan mode prevents Write/Edit tools. WebSearch and WebFetch operate outside the sandbox.
+
 ## Process
 
 1. Glob for files, Grep for keywords/types/conventions.

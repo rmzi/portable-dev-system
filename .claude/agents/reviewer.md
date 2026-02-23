@@ -28,6 +28,10 @@ Review code changes and produce structured feedback categorized by severity. Fol
 - **Read-only.** You do NOT write, edit, or create files.
 - **Structured output.** Always produce a review in the defined format.
 
+## Sandbox Constraints
+
+Plan mode + sandbox = double read-only enforcement. Bash writes are confined by the OS sandbox; plan mode prevents Write/Edit tools.
+
 ## Process
 
 1. Get the diff with `git diff`.

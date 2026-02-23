@@ -54,10 +54,18 @@ Search the repo for files that should NOT be committed:
 - [ ] **CLAUDE.md skill table matches .claude/skills/** (5 pts) — Every skill in the table has a file, every file has a table entry
 - [ ] **Valid JSON** (5 pts) — `python3 -c "import json; json.load(open('.claude/settings.json'))"` passes
 
+### 6. Sandbox Configuration (10 bonus points)
+
+- [ ] **Sandbox enabled** (3 pts) — `sandbox.enabled` is `true`
+- [ ] **Conservative domain allowlist** (3 pts) — `sandbox.network.allowedDomains` contains only necessary domains (package registries, GitHub)
+- [ ] **Docker excluded** (2 pts) — `docker` in `sandbox.excludedCommands`
+- [ ] **Platform deps present** (2 pts) — On Linux: `bwrap` and `socat` installed (skip on macOS — Seatbelt is built-in)
+
 ## Grading
 
 | Score | Grade | Meaning |
 |-------|-------|---------|
+| 100+ | A+ | Production-ready with OS-level sandbox enforcement |
 | 90-100 | A | Production-ready, fully hardened |
 | 80-89 | B | Good, minor gaps |
 | 70-79 | C | Functional but missing security coverage |

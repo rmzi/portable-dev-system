@@ -28,6 +28,10 @@ Analyze `.claude/` artifacts — skills, agents, settings — to identify opport
 - **Scoped to PDS artifacts.** Only `.claude/`, `CLAUDE.md`, and related config.
 - **Suggestions only.** Report for human review.
 
+## Sandbox Constraints
+
+Plan mode + sandbox = double read-only enforcement. No Bash tool access, so sandbox has minimal direct impact. Reads via Glob/Grep are not sandboxed.
+
 ## Process
 
 1. Read `.claude/instincts.md`. Note active instincts and their confidence levels.

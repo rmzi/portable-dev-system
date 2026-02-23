@@ -14,6 +14,7 @@ Skills encode team knowledge and workflows. Claude reads and follows them automa
 | `/design` | Architecture decision records | New features, significant changes |
 | `/merge` | Merging subtask branches back | After subtask branches are ready to consolidate |
 | `/permission-router` | Permission hook routing policy | Subagent permission requests, hook configuration |
+| `/sandbox` | OS-level sandbox configuration | Filesystem confinement, network restrictions, platform support |
 | `/quickref` | PDS skills, agents, conventions | Quick reference |
 | `/swarm` | Multi-agent team workflow with native coordination | Launching multi-agent parallel work |
 | `/team` | Agent roster and coordination | Agent roles, permissions, coordination model |
