@@ -40,4 +40,3 @@ Dependencies & Conflicts: [issue] — [why it matters]
 Risks: [risk] — [mitigation]
 ```
 
-File protocol: See /team.

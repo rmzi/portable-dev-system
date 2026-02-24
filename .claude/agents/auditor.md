@@ -53,4 +53,3 @@ gh issue create \
 
 Labels: `tech-debt` | `code-quality` | `testing` | `performance` | `security` | `cleanup`
 
-File protocol: See /team.

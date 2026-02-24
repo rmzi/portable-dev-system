@@ -55,4 +55,3 @@ One sentence on what this change does.
 - [Things done well]
 ```
 
-File protocol: See /team.

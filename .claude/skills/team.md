@@ -48,23 +48,14 @@ Specialists add value in specific situations but aren't needed every swarm. The 
            ┌───────┬───────┼───────┬───────┬───────┐
            │       │       │       │       │       │
       researcher worker validator reviewer documenter scout/auditor
-      (each in own worktree, running claude -p)
+      (each spawned via Task tool with worktree isolation)
 ```
 
-Orchestrator writes `.agent/task.md` before spawning. Agents update `.agent/status.md` and write results to `.agent/output.md`.
-
-## File Protocol
-
-```
-agent-worktree/.agent/
-  task.md      # Orchestrator writes before spawning
-  status.md    # Agent writes: pending | in_progress | done | blocked
-  output.md    # Agent writes: results, reports, findings
-```
+Agents coordinate via TaskCreate/TaskUpdate for status and SendMessage for communication. TeamCreate establishes the team and shared task list.
 
 ## Core Principles
 
-- **Progress in files, not context.** Commits and task updates are durable.
+- **Progress in commits and task updates.** Commits and TaskUpdate are durable. Context is ephemeral.
 - **Human gate.** Get approval at phase boundaries (planning, before PR).
 - **Worktree isolation.** Each worker gets their own worktree. No shared state.
 - **Fail fast.** Fix specific issues rather than retrying blindly.

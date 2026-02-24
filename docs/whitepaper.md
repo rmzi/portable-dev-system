@@ -92,9 +92,7 @@ Agents query the lexicon during future planning and execution, avoiding repeated
 
 A worktree is an additional working directory associated with a repository. Unlike a clone, it shares the object store (commits, blobs, trees) with the main repository. Creation is nearly instantaneous with minimal disk overhead.
 
-```bash
-git worktree add .worktrees/task-123-worker-1 -b task-123/worker-1
-```
+Claude Code manages worktrees natively — agents spawned with `isolation: "worktree"` receive their own worktree automatically. Path resolution, branch creation, and cleanup are handled by the runtime.
 
 Each worktree has its own index and HEAD. Operations in one worktree do not affect others. A key constraint: each branch can only be checked out in one worktree at a time.
 
@@ -121,7 +119,7 @@ Agents must operate within well-defined boundaries. Unrestricted access to produ
 Rather than heavyweight container isolation, PDS uses Claude Code's native permission system combined with git worktree filesystem isolation:
 
 - **Permission hooks** route agent actions through policy evaluation (see `/permission-router` skill)
-- **Worktree isolation** limits each worker to its own `.worktrees/<task-id>/` directory
+- **Worktree isolation** limits each worker to its own worktree directory
 - **The human gate** ensures all changes flow through PR review before reaching production
 - **Message routing** enables orchestrator oversight of all inter-agent communication
 - **Token budgets** prevent unbounded costs and runaway agents
@@ -144,7 +142,7 @@ Agents execute as native Claude Code teams—no containers, no file synchronizat
 
 **TaskCreate** defines work units with dependencies, forming task DAGs. Workers can depend on each other's completion, enabling sophisticated workflows while maintaining clarity about execution order.
 
-**Task tool** spawns worker agents. Each worker receives its own git worktree (via `git worktree add`), providing filesystem isolation without containerization overhead. Workers operate in `.worktrees/<task-id>/` directories.
+**Task tool** spawns worker agents. Each worker receives its own git worktree (via `isolation: "worktree"`), providing filesystem isolation without containerization overhead. Claude Code handles worktree creation, path resolution, and cleanup automatically.
 
 **SendMessage** enables direct and broadcast communication. Workers can ask questions, share findings, or coordinate when decomposition requires it. The orchestrator receives all messages and can route or respond as needed.
 
@@ -353,7 +351,7 @@ Agent configuration files consume context window. Compression is tempting but ha
 ### What's Safe to Compress
 
 - **Decorative formatting**: Horizontal rule dividers (`---`), excessive blank lines, redundant section headers. Markdown headers provide sufficient hierarchy.
-- **Cross-file deduplication**: Content stated identically in multiple files. Define once, cross-reference elsewhere (e.g., file protocol defined in `/team`, agents say "See /team").
+- **Cross-file deduplication**: Content stated identically in multiple files. Define once, cross-reference elsewhere (e.g., coordination model defined in `/team`, agents reference "See /team").
 - **LLM-known concepts**: Explanations of well-documented tools or universal patterns. "git is a version control system" adds nothing. But "git bisect to binary-search regressions" reinforces method.
 
 ### What's NOT Safe to Compress

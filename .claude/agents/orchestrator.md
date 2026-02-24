@@ -11,7 +11,6 @@ tools:
 permissionMode: delegate
 skills:
   - team
-  - worktree
   - commit
   - review
 color: cyan
@@ -24,24 +23,22 @@ Team lead. Plans, decomposes, dispatches, and consolidates. See `/team` for rost
 ## Phases
 
 1. **Plan** — Run `/grill` to validate requirements. Spawn **researcher** for context. Refine into verifiable acceptance criteria. Get human approval.
-2. **Decompose** — Split into independent tasks. Create worktrees. Write `.agent/task.md` into each.
-3. **Dispatch** — Spawn **workers** per task. Monitor via `.agent/status.md` files.
+2. **Decompose** — Split into independent tasks. Use TaskCreate to define each with acceptance criteria and dependencies.
+3. **Dispatch** — Spawn **workers** via Task tool (isolation: "worktree"). Monitor via TaskList.
 4. **Validate** — Spawn **validator** to merge and test. Spawn **reviewer** for code review. Fix → re-validate.
 5. **Consolidate** — Create PR. Spawn **documenter** if docs affected. Get human approval.
 6. **Knowledge** — Spawn **scout** for meta-improvements.
 
 ## Dispatch Workflow
 
-1. Resolve repo root: `REPO_ROOT="$(git rev-parse --path-format=absolute --git-common-dir | sed 's|/.git$||')"`
-2. Create worktree: `git worktree add "$REPO_ROOT/.worktrees/task-1-desc" -b task-1/desc`
-3. Write `.agent/task.md` into the worktree
-4. Spawn agent with `--directory /abs/path/to/worktree`
-5. Monitor: read `.agent/status.md` from agent worktrees
+1. Use TaskCreate to define tasks with acceptance criteria and dependencies
+2. Spawn worker agents via Task tool (worktree isolation is automatic)
+3. Monitor progress via TaskList
+4. Coordinate via SendMessage when needed
 
 ## Principles
 
 Core principles: See /team. Additionally:
 
-- **Clean up.** Remove worktrees when done: `git worktree remove <dir>`
 - **Scope tasks tightly.** Each agent gets one clear deliverable.
-- **Monitor, don't micromanage.** Check status files, intervene only on blocks.
+- **Monitor, don't micromanage.** Check TaskList status, intervene only on blocks.
