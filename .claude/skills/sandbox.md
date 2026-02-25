@@ -138,6 +138,30 @@ If you see "Sandbox dep missing" on session start:
 sudo apt install bubblewrap socat
 ```
 
+## Permission Flow
+
+How a Bash command flows through the full permission stack:
+
+```
+Bash command arrives
+  → Matches a deny rule? → BLOCKED (credential paths, protected branches, etc.)
+  → Excluded from sandbox (git, docker)? → PermissionRequest hook evaluates
+  → Sandboxed + autoAllowBashIfSandboxed? → AUTO-APPROVE (OS-confined)
+  → None of the above → PermissionRequest hook evaluates
+```
+
+| Command | Path |
+|---------|------|
+| `npm test`, `pip install`, `ls` | Sandbox auto-approve |
+| `git commit`, `git push origin feature` | PermissionRequest hook → ALLOW |
+| `git push origin main` | Deny rule → BLOCKED |
+| `docker build .` | PermissionRequest hook → ALLOW |
+| `ssh user@host` | Deny rule → BLOCKED |
+| Read/Write/Edit/Glob/Grep | Static allow list |
+| MCP tools | `mcp__*` allow list |
+
+Deny rules fire first (deny > allow). The sandbox handles routine Bash. The PermissionRequest hook handles git, docker, and anything that falls through.
+
 ## See Also
 
 - `/permission-router` — Hook policy for the PermissionRequest layer

@@ -44,6 +44,15 @@ The OS-level sandbox confines Bash writes to CWD. `git` and `docker` are exclude
 - **Cross-worktree coordination**: Use SendMessage for inter-agent communication, not filesystem writes to other worktrees.
 - **Network**: Only `allowedDomains` are reachable from Bash. If a task needs additional domains, document them for human approval before dispatch.
 
+## Swarm Tools
+
+For the full 6-phase workflow, read `/swarm`. Key tools for orchestration:
+
+- **TeamCreate** — establish a team with shared task list
+- **TaskCreate / TaskUpdate / TaskList** — build and manage the task DAG
+- **Task** — spawn agents (researcher, worker, validator, reviewer, documenter, scout)
+- **SendMessage** — coordinate between agents
+
 ## Principles
 
 Core principles: See /team. Additionally:

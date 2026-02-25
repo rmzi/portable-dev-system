@@ -1,26 +1,23 @@
 ---
-description: Launching multi-agent parallel work with native coordination. Use when a task benefits from decomposition into parallel subtasks across worktrees.
-disable-model-invocation: true
+description: Launching multi-agent parallel work with the Agentic SDLC. Use when a task benefits from decomposition into parallel subtasks.
 ---
-# /swarm — Multi-Agent Team Workflow
+# /swarm — Agentic SDLC
 
-Each agent runs in its own worktree with native tool coordination. See `/team` for agent roster.
+Six-phase workflow for decomposing, dispatching, and validating parallel work across agents. Each phase shows the concrete tool calls needed to execute it.
 
-## Invocation
+## Phase 1: Plan
 
-```
-/swarm [task description]
-```
+1. Run `/grill` on the requirements to surface gaps and ambiguities
+2. Spawn a researcher for codebase context:
+   ```
+   Task(subagent_type="researcher", prompt="Analyze the codebase for X. Query .claude/instincts.md for relevant prior patterns.")
+   ```
+3. Synthesize findings into **mechanically verifiable acceptance criteria** — each criterion must be checkable by running a command or reading output (no subjective criteria)
+4. Present plan + criteria to the human. **Do not proceed without approval.**
 
-## 6-Phase Workflow
+## Phase 2: Decompose
 
-### Phase 1: Plan
-Run `/grill` to validate requirements before decomposition. Spawn researcher for context — researcher queries `.claude/instincts.md` for relevant prior patterns. Create decomposition plan and get human approval.
-
-### Phase 2: Decompose
 Split along architecture boundaries. If CLAUDE.md defines **Agent Zones** (a table mapping zones to paths and merge order), use them to guide decomposition — one task per zone, foundation-first merge order.
-
-When zones cross a boundary (e.g., backend ↔ frontend), write a **contract** to `.swarm/contracts.md` defining the interface (command names, input/output types, error variants) before dispatching agents. Both sides develop against the contract.
 
 Use TaskCreate for each work unit. Put acceptance criteria in the `description` field — this is what workers and the validator check against:
 
@@ -32,19 +29,70 @@ TaskCreate(
 )
 ```
 
-Use TaskUpdate to set dependencies between tasks (`addBlockedBy`, `addBlocks`). Write decomposition plan to `.swarm/plan.md`.
+Use TaskUpdate to set dependencies between tasks (`addBlockedBy`, `addBlocks`). When zones cross a boundary (e.g., backend <-> frontend), write a **contract** to `.swarm/contracts.md` defining the interface before dispatching. Write decomposition plan to `.swarm/plan.md`.
 
-### Phase 3: Dispatch
-Spawn workers via Task tool with `isolation: "worktree"`. Each agent receives its own worktree and branch automatically. The Task tool returns `{worktreeBranch}` — record these branch names for the validator in Phase 4.
+## Phase 3: Dispatch
 
-### Phase 4: Validate
-Monitor progress via TaskList. Spawn validator with the list of worker branch names — the validator merges these branches using `/merge` protocol (rebase-first, one at a time). If issues: dispatch workers to fix, re-validate until clean.
+1. Create the team:
+   ```
+   TeamCreate(team_name="project-name", description="Working on feature X")
+   ```
+2. Spawn workers via Task tool — each agent receives its own worktree automatically:
+   ```
+   Task(subagent_type="worker", team_name="project-name", name="worker-auth",
+        prompt="Implement auth module per task description. Run /verify before reporting done.")
+   ```
+3. Assign tasks to workers:
+   ```
+   TaskUpdate(taskId="1", owner="worker-auth", status="in_progress")
+   ```
+4. Workers implement autonomously:
+   - Read task description for requirements
+   - Use `SendMessage` for cross-agent coordination when needed
+   - Run `/verify` before declaring done
+   - Mark task completed: `TaskUpdate(taskId="1", status="completed")`
+5. Monitor progress via `TaskList`
 
-### Phase 5: Consolidate
-Create PR with context from all phases. Spawn documenter if needed. Get human approval.
+## Phase 4: Validate
 
-### Phase 6: Knowledge
-Spawn scout for PDS meta-improvements. Scout reads `.claude/instincts.md`, updates counts for re-observed patterns, proposes new instincts, and flags high-confidence instincts for skill promotion. See `/instinct`.
+1. Workers run `/verify` (self-check) before reporting task complete
+2. Spawn a validator in its own worktree:
+   ```
+   Task(subagent_type="validator", team_name="project-name", name="validator",
+        prompt="Merge all task branches, run full test suite, produce structured pass/fail report.")
+   ```
+3. Validator merges branches, runs tests, produces a structured report
+4. If issues found:
+   - Update tasks: `TaskUpdate(taskId="1", status="in_progress", description="Fix: ...")`
+   - Dispatch targeted workers to fix specific failures
+   - Re-validate
+5. **Escalate to human after 2 failed validation cycles** — don't loop indefinitely
+
+## Phase 5: Consolidate
+
+1. Run `/finish` on each task branch (rebase, clean history, post-rebase tests)
+2. Spawn a reviewer for pre-human code review:
+   ```
+   Task(subagent_type="reviewer", prompt="Review the diff against acceptance criteria from Phase 1.")
+   ```
+3. Spawn a documenter if user-facing docs are affected:
+   ```
+   Task(subagent_type="documenter", prompt="Update docs for the changes in this PR.")
+   ```
+4. Create PR with full context:
+   ```bash
+   gh pr create --title "feat: ..." --body "## Summary\n...\n## Acceptance Criteria\n...\n## Validation\n...\n## Issues\n..."
+   ```
+5. **Get human approval before merge.**
+
+## Phase 6: Knowledge
+
+1. Spawn scout for PDS meta-improvements:
+   ```
+   Task(subagent_type="scout", prompt="Read .claude/instincts.md. Update counts for re-observed patterns. Propose new instincts. Flag high-confidence patterns for skill promotion.")
+   ```
+2. Scout updates observation counts, proposes new patterns, flags promotions (human-gated — new skill = new file = PR review)
+3. Clean up: `TeamDelete`
 
 ## Monitoring
 
@@ -52,6 +100,9 @@ Check task progress via TaskList. For detailed status on individual tasks, use T
 
 ## See Also
 
-- `/grill` — Requirement interrogation before decomposition
-- `/instinct` — Pattern capture and lifecycle
-- `/team` — Agent roster, coordination model
+- `/grill` — Requirement interrogation (Phase 1)
+- `/verify` — Completion self-check (Phase 4 worker exit)
+- `/finish` — Branch completion protocol (Phase 5)
+- `/merge` — Merging subtask worktrees
+- `/team` — Agent roster and capabilities
+- `/instinct` — Pattern capture and lifecycle (Phase 6)

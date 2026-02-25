@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.1] - 2026-02-25
+
+### Fixed
+- **SessionStart hook semver comparison** — no longer warns to "downgrade" when local version is ahead of published remote (uses `sort -V` for proper semver ordering)
+- **Permission flow: removed `Bash(*)` from allow list** — was making the PermissionRequest hook unreachable for git/docker commands. Sandbox handles routine Bash via `autoAllowBashIfSandboxed`; git/docker now properly flow through the PermissionRequest hook
+- **Removed PostToolUse test reminder hook** — fired on every Edit/Write creating noise; agents have `/test` and `/verify` skills instead
+
+### Changed
+- **`/swarm` rewritten** — each of the 6 phases now shows concrete tool calls (TeamCreate, TaskCreate, Task, SendMessage, TaskUpdate, TaskList) instead of one-sentence summaries. Self-contained enough to execute the full Agentic SDLC without reading other files
+- **`/sandbox` adds Permission Flow section** — documents the full decision tree for how Bash commands flow through deny rules → sandbox → PermissionRequest hook
+- **`/permission-router` updated** — reflects `Bash(*)` removal and documents why; the hook now actively gates git/docker commands
+- **Orchestrator agent adds Swarm Tools section** — lists TeamCreate, TaskCreate, Task, SendMessage for quick reference
+
 ## [3.0.0] - 2026-02-20T11:04:15-05:00
 
 ### Added

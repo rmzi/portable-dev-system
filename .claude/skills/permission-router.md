@@ -53,10 +53,15 @@ The static `permissions.allow` and `permissions.deny` lists in `settings.json` s
 
 ## Sandbox Interaction
 
-When `sandbox.autoAllowBashIfSandboxed` is `true` (PDS default), sandboxed Bash commands auto-approve without triggering the permission flow at all. The PermissionRequest hook only fires for:
+With the sandbox enabled and `Bash(*)` removed from the static allow list, the PermissionRequest hook is the primary gate for non-sandboxed Bash commands. The flow:
 
-- **Excluded commands** — `git` and `docker` bypass the sandbox and go through normal permissions
-- **Unsandboxed commands** — Commands using `dangerouslyDisableSandbox: true`
-- **Non-Bash tools** — MCP tools, Read/Write on paths not in the allow list, etc.
+1. **Sandboxed Bash** (npm, pip, ls, etc.) — `autoAllowBashIfSandboxed` auto-approves. The hook never fires.
+2. **Excluded commands** (git, docker) — bypass the sandbox entirely. The PermissionRequest hook evaluates them. This means `git commit`, `git push origin feature`, and `docker build` all flow through the hook.
+3. **Unsandboxed commands** — Commands using `dangerouslyDisableSandbox: true` also go through the hook.
+4. **Non-Bash tools** — MCP tools not covered by `mcp__*`, Read/Write on paths not in the allow list, etc.
 
-This means most routine Bash commands (build, test, lint, install) run without any permission prompt — the sandbox provides the safety guarantee instead of the hook.
+Deny rules always fire before the hook. A `git push origin main` is blocked by the static deny rule and never reaches the hook.
+
+### Why Bash(*) was removed
+
+Previously `Bash(*)` in the allow list auto-approved all Bash commands including git and docker, making the PermissionRequest hook unreachable. With the sandbox handling routine Bash safety, `Bash(*)` was redundant — and it prevented the hook from meaningfully evaluating git/docker operations. Removing it restores the hook as an active gate for excluded commands while the sandbox continues to auto-approve everything else.
