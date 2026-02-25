@@ -34,8 +34,7 @@ AI-assisted development methodology. Skills for consistency. Agents for scale.
 | `/debug` | When troubleshooting issues |
 | `/test` | Writing or running tests |
 | `/design` | Architecture decisions, new features |
-| `/worktree` | Branch isolation, parallel work |
-| `/merge` | Merging subtask worktrees back to coordinator |
+| `/merge` | Merging subtask branches back to coordinator |
 | `/bump` | Version bump and changelog update |
 | `/permission-router` | Permission hook policy, subagent routing |
 | `/team` | Agent roster, roles, capabilities |
@@ -58,7 +57,7 @@ See `/team` for the 8-agent roster (orchestrator, researcher, worker, validator,
 ## Project Structure
 
 ```
-.claude/skills/    — 22 workflow skills (invoked via /skill-name)
+.claude/skills/    — workflow skills (invoked via /skill-name)
 .claude/agents/    — 8 agent definitions (orchestrator, researcher, worker, etc.)
 .claude/settings.json — Permissions and security guardrails
 docs/              — Philosophy, whitepaper, team setup, agent tooling
@@ -71,20 +70,7 @@ CHANGELOG.md       — Release history
 
 ## Rules
 
-### Worktree Hygiene
-
-Use `git worktree add` for branch isolation — never `git clone` (clones disconnect history).
-
-- Always inside repo: `.worktrees/feature-branch/`
-- Never `/tmp/`, never `../` siblings
-- Always resolve REPO_ROOT first (relative paths nest incorrectly inside worktrees):
-  ```bash
-  REPO_ROOT="$(git rev-parse --path-format=absolute --git-common-dir | sed 's|/.git$||')"
-  git worktree add "$REPO_ROOT/.worktrees/name" -b branch
-  ```
-- Never use `git rev-parse --show-toplevel` (returns worktree root, not repo root)
-
-### Workflow
+**Use git worktrees for isolation.** Worktrees are managed natively by Claude Code. Never clone the repository — worktrees share git history and stay in sync.
 
 **Read `/contribute` before modifying PDS.** Skills, agents, SDLC phases, or coordination patterns require the whitepaper-alignment checklist.
 

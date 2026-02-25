@@ -57,4 +57,3 @@ Total: X | Passed: X | Failed: X | Skipped: X
 [Overall: ready to merge / needs fixes]
 ```
 
-File protocol: See /team.

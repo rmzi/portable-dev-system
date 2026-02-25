@@ -110,8 +110,8 @@ install_user_claude_md() {
 
 ## Rules
 
-- **Never clone repos** — use \`git worktree add\` for branch isolation
-- **Never use /tmp for code** — worktrees go in \`.worktrees/\` inside the repo
+- **Never clone repos** — use git worktrees for branch isolation
+- **Never use /tmp for code** — worktrees are managed natively by Claude Code
 - **Create a PR after pushing** — don't wait to be asked
 
 ## Skills
@@ -187,19 +187,15 @@ install_project() {
   printf '%s\n' "$REMOTE_VERSION" > "$VERSION_FILE"
   ok "Version: $REMOTE_VERSION"
 
-  # Add .worktrees/ and .agent/ to .gitignore if not present
+  # Add .worktrees/ to .gitignore if not present
   if [ -f .gitignore ]; then
     if ! grep -q '^\.worktrees/' .gitignore 2>/dev/null; then
       printf '\n.worktrees/\n' >> .gitignore
       ok "Added .worktrees/ to .gitignore"
     fi
-    if ! grep -q '^\.agent/' .gitignore 2>/dev/null; then
-      printf '.agent/\n' >> .gitignore
-      ok "Added .agent/ to .gitignore"
-    fi
   else
-    printf '.worktrees/\n.agent/\n' > .gitignore
-    ok "Created .gitignore with .worktrees/ and .agent/"
+    printf '.worktrees/\n' > .gitignore
+    ok "Created .gitignore with .worktrees/"
   fi
 
   echo ""
@@ -287,7 +283,7 @@ run_tests() {
   [ -f "$SRC_DIR/.claude/instincts.md" ] && cp "$SRC_DIR/.claude/instincts.md" "$TARGET_DIR/instincts.md"
   cp "$SRC_DIR/CLAUDE.md" "$testdir/CLAUDE.md"
   printf '%s\n' "$REMOTE_VERSION" > "$VERSION_FILE"
-  printf '.worktrees/\n.agent/\n' > "$testdir/.gitignore"
+  printf '.worktrees/\n' > "$testdir/.gitignore"
 
   assert_dir  ".claude/skills"    "$TARGET_DIR/skills"
   assert_dir  ".claude/agents"    "$TARGET_DIR/agents"
@@ -298,7 +294,6 @@ run_tests() {
   assert_contains "CLAUDE.md"     "PDS:START"  "$testdir/CLAUDE.md"
   assert_contains "CLAUDE.md"     "PDS:END"    "$testdir/CLAUDE.md"
   assert_contains ".gitignore"    ".worktrees" "$testdir/.gitignore"
-  assert_contains ".gitignore"    ".agent"     "$testdir/.gitignore"
   assert_file "instincts.md"     "$TARGET_DIR/instincts.md"
   assert_contains "instincts.md" "Lifecycle"  "$TARGET_DIR/instincts.md"
 

@@ -54,8 +54,7 @@ Installs skills and security settings to `~/.claude/` — works across all proje
 | `/debug` | Systematic troubleshooting |
 | `/test` | Test strategy and patterns |
 | `/design` | Architecture decision records |
-| `/worktree` | Git worktree workflow |
-| `/merge` | Merging subtask worktrees back |
+| `/merge` | Merging subtask branches back |
 | `/swarm` | Multi-agent team workflow |
 | `/team` | Agent roster and coordination |
 | `/grill` | Requirement interrogation |
@@ -94,16 +93,7 @@ Installs skills and security settings to `~/.claude/` — works across all proje
 
 ## Worktrees
 
-PDS uses git worktrees for branch isolation — no stashing, no context switching. Worktrees live inside the repo at `.worktrees/`:
-
-```
-project/                              # main worktree (main/master)
-project/.worktrees/feature-auth/      # feature work
-project/.worktrees/hotfix-login/      # urgent fix
-project/.worktrees/task-1-api/        # agent worktree
-```
-
-`.worktrees/` is auto-added to `.gitignore`. Never use `/tmp` or sibling directories (`../`) for worktrees.
+PDS uses git worktrees for branch isolation — no stashing, no context switching. Worktrees are managed natively by Claude Code via `--worktree` (interactive) or `isolation: "worktree"` (agents). Path resolution, cleanup, and lifecycle are handled automatically.
 
 ---
 

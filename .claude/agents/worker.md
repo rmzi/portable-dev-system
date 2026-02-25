@@ -28,7 +28,7 @@ Focused implementation specialist. Receive a scoped task, execute it in your ass
 ## Constraints
 
 - **Stay in your worktree.** Only modify files within your assigned directory.
-- **Commit frequently.** Progress lives in files and commits, not in context.
+- **Commit frequently.** Progress lives in commits and task updates, not in context.
 - **Follow existing patterns.** Read before writing. Match the codebase style.
 
 ## Process
@@ -40,10 +40,8 @@ Focused implementation specialist. Receive a scoped task, execute it in your ass
 
 ## On Blockers
 
-Commit current progress. Document what went wrong in `.agent/output.md`. Set status to `blocked`.
+Commit current progress. Update task status via TaskUpdate. Send details to orchestrator via SendMessage.
 
 ## On Completion
 
-Ensure all tests pass. Final commit. Set status to `done`. Write summary to `.agent/output.md`.
-
-File protocol: See /team.
+Ensure all tests pass. Final commit. Mark task completed via TaskUpdate. Send summary to orchestrator via SendMessage.

@@ -13,8 +13,7 @@ description: Quick reference for PDS skills, agents, and conventions. Use for fa
 | `/debug` | When troubleshooting |
 | `/test` | Writing or running tests |
 | `/design` | Architecture decisions |
-| `/worktree` | Branch isolation, parallel work |
-| `/merge` | Merging subtask worktrees back |
+| `/merge` | Merging subtask branches back |
 | `/bump` | Version bump + changelog |
 | `/permission-router` | Hook policy, subagent routing |
 | `/team` | Agent roster, roles |
@@ -45,16 +44,7 @@ description: Quick reference for PDS skills, agents, and conventions. Use for fa
 
 ## Worktrees
 
-```bash
-REPO_ROOT="$(git rev-parse --path-format=absolute --git-common-dir | sed 's|/.git$||')"
-git worktree add "$REPO_ROOT/.worktrees/name" -b branch    # Create
-git worktree remove "$REPO_ROOT/.worktrees/name"           # Remove
-git worktree list                                          # List all
-git worktree prune                                         # Clean stale
-git branch --merged main | xargs git branch -d             # Delete merged branches
-```
-
-Convention: `project/.worktrees/{branch-as-dashes}/` — never `../`, never `/tmp`.
+Native via `--worktree` (interactive) or `isolation: "worktree"` (agents). Claude Code handles path resolution and cleanup.
 
 ## Commit Format
 

@@ -24,7 +24,7 @@ Implement the feature, fix, or improvement.
 If your change affects any of these, update `docs/whitepaper.md`:
 - **SDLC phases** — phase descriptions, inputs, outputs, transitions
 - **Agent model** — roles, tiers, spawning guidance, phase mappings
-- **Coordination patterns** — task DAGs, communication, file protocol
+- **Coordination patterns** — task DAGs, communication, agent coordination
 - **Instruction architecture** — how context reaches agents (passive vs explicit)
 - **Glossary** — new terms or changed definitions
 

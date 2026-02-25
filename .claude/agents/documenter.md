@@ -42,4 +42,3 @@ Update READMEs, changelogs, API docs, and inline documentation to reflect code c
 - No stale docs — if behavior changed, docs must change
 - Show, don't just tell — examples over prose
 
-File protocol: See /team.

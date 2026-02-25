@@ -1,10 +1,10 @@
 ---
-description: Launching multi-agent parallel work with file-based coordination. Use when a task benefits from decomposition into parallel subtasks across worktrees.
+description: Launching multi-agent parallel work with native coordination. Use when a task benefits from decomposition into parallel subtasks across worktrees.
 disable-model-invocation: true
 ---
 # /swarm — Multi-Agent Team Workflow
 
-Each agent runs in its own worktree with file-based coordination. See `/team` for agent roster and file protocol.
+Each agent runs in its own worktree with native tool coordination. See `/team` for agent roster.
 
 ## Invocation
 
@@ -18,31 +18,27 @@ Each agent runs in its own worktree with file-based coordination. See `/team` fo
 Run `/grill` to validate requirements before decomposition. Spawn researcher for context — researcher queries `.claude/instincts.md` for relevant prior patterns. Create decomposition plan and get human approval.
 
 ### Phase 2: Decompose
-Split along architecture boundaries. If CLAUDE.md defines **Agent Zones** (a table mapping zones to paths and merge order), use them to guide decomposition — one worktree per zone, foundation-first merge order.
+Split along architecture boundaries. If CLAUDE.md defines **Agent Zones** (a table mapping zones to paths and merge order), use them to guide decomposition — one task per zone, foundation-first merge order.
 
 When zones cross a boundary (e.g., backend ↔ frontend), write a **contract** to `.swarm/contracts.md` defining the interface (command names, input/output types, error variants) before dispatching agents. Both sides develop against the contract.
 
-Create worktrees and write task files:
+Use TaskCreate for each work unit. Put acceptance criteria in the `description` field — this is what workers and the validator check against:
 
-```bash
-REPO_ROOT="$(git rev-parse --path-format=absolute --git-common-dir | sed 's|/.git$||')"
-git worktree add "$REPO_ROOT/.worktrees/task-1-auth" -b task-1/auth
-mkdir -p "$REPO_ROOT/.worktrees/task-1-auth/.agent"
-cat > "$REPO_ROOT/.worktrees/task-1-auth/.agent/task.md" << 'EOF'
-## Task: Implement auth module
-### Acceptance Criteria
-- [ ] JWT-based login endpoint
-- [ ] Token validation middleware
-EOF
+```
+TaskCreate(
+  subject: "Implement auth module",
+  description: "JWT login endpoint at POST /auth/login. Token validation middleware on protected routes. Tests for both.",
+  activeForm: "Implementing auth module"
+)
 ```
 
-Write decomposition plan to `.swarm/plan.md`.
+Use TaskUpdate to set dependencies between tasks (`addBlockedBy`, `addBlocks`). Write decomposition plan to `.swarm/plan.md`.
 
 ### Phase 3: Dispatch
-Spawn agents in their worktrees. Each reads `.agent/task.md` and works autonomously.
+Spawn workers via Task tool with `isolation: "worktree"`. Each agent receives its own worktree and branch automatically. The Task tool returns `{worktreeBranch}` — record these branch names for the validator in Phase 4.
 
 ### Phase 4: Validate
-Spawn validator to merge and test. If issues: dispatch workers to fix, re-validate until clean.
+Monitor progress via TaskList. Spawn validator with the list of worker branch names — the validator merges these branches using `/merge` protocol (rebase-first, one at a time). If issues: dispatch workers to fix, re-validate until clean.
 
 ### Phase 5: Consolidate
 Create PR with context from all phases. Spawn documenter if needed. Get human approval.
@@ -52,16 +48,10 @@ Spawn scout for PDS meta-improvements. Scout reads `.claude/instincts.md`, updat
 
 ## Monitoring
 
-```bash
-REPO_ROOT="$(git rev-parse --path-format=absolute --git-common-dir | sed 's|/.git$||')"
-for dir in "$REPO_ROOT"/.worktrees/*/.agent; do
-  echo "=== $(dirname $dir) ==="; cat "$dir/status.md" 2>/dev/null || echo "no status"
-done
-```
+Check task progress via TaskList. For detailed status on individual tasks, use TaskGet.
 
 ## See Also
 
 - `/grill` — Requirement interrogation before decomposition
 - `/instinct` — Pattern capture and lifecycle
-- `/team` — Agent roster, file protocol, coordination model
-- `/worktree` — Branch isolation for parallel work
+- `/team` — Agent roster, coordination model

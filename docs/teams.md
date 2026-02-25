@@ -128,16 +128,12 @@ PDS includes 8 specialized agents for multi-agent orchestration. Each agent has 
 | **acceptEdits** | worker, validator, documenter | Auto-accept file edits, full implementation access |
 | **plan** | researcher, reviewer, scout, auditor | Read-only exploration, no file modifications |
 
-### File Protocol
+### Coordination
 
-Agents coordinate through files, not messages:
-
-```
-agent-worktree/.agent/
-  task.md      # Orchestrator writes before spawning
-  status.md    # Agent writes: pending | in_progress | done | blocked
-  output.md    # Agent writes: results, reports, findings
-```
+Agents coordinate via native Claude Code tools:
+- **TaskCreate/TaskUpdate** — Task definition, status tracking, and dependencies
+- **SendMessage** — Direct and broadcast communication between agents
+- **TeamCreate** — Team setup with shared task list
 
 ### 6-Phase Agentic SDLC
 
@@ -145,7 +141,7 @@ agent-worktree/.agent/
 Plan → Decompose → Dispatch → Validate → Consolidate → Knowledge
  │         │          │           │            │            │
  │    researcher   workers    validator      docs        scout
- │    + human      + tasks    + reviewer    + PR
+ │    + human    (worktrees)  + reviewer    + PR
  human gate                                human gate
 ```
 

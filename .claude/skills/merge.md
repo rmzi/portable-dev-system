@@ -1,14 +1,14 @@
 ---
-description: Merging subtask worktrees back into a coordinator branch. Use when parallel subtask branches are ready to consolidate via rebase-then-fast-forward.
+description: Merging subtask branches back into a coordinator branch. Use when parallel subtask branches are ready to consolidate via rebase-then-fast-forward.
 disable-model-invocation: true
 ---
-# /merge — Subtask Worktree Coordination
+# /merge — Subtask Branch Coordination
 
-Merge work from parallel subtask worktrees back into a coordinator branch, one at a time, with rebasing to keep history clean.
+Merge work from parallel subtask branches back into a coordinator branch, one at a time, with rebasing to keep history clean.
 
 ## Why a Merge Skill?
 
-When a coordinator kicks off multiple subtasks as worktrees, getting their work back together is the hardest part. Without a consistent methodology:
+When a coordinator kicks off multiple subtasks, getting their work back together is the hardest part. Without a consistent methodology:
 - Merge conflicts compound unpredictably
 - Integration issues hide until the end
 - No one knows whose turn it is to merge
@@ -19,7 +19,7 @@ This skill provides an ordered, rebasing-first approach that keeps the coordinat
 
 ## When to Use
 
-- A coordinator branch has spawned subtask worktrees that need to merge back
+- A coordinator branch has spawned subtask branches that need to merge back
 - Multiple agents have completed parallel work on branches off a shared base
 - You need to integrate work from one or more subtasks into a parent branch
 
@@ -29,7 +29,7 @@ This skill provides an ordered, rebasing-first approach that keeps the coordinat
 | Term | Meaning |
 |------|---------|
 | **Coordinator branch** | The base branch that subtasks branch from and merge back into |
-| **Subtask branch** | A worktree/branch created for isolated parallel work off the coordinator |
+| **Subtask branch** | A branch created for isolated parallel work off the coordinator |
 | **Merge order** | The agreed sequence in which subtasks merge back |
 | **Rebase round** | After each merge, all remaining subtasks rebase onto the updated coordinator |
 
@@ -56,10 +56,8 @@ The simple case: one subtask merging back into the coordinator.
    # In the coordinator worktree
    git merge --ff-only subtask-branch
    ```
-6. **Clean up** the subtask worktree
+6. **Clean up** the subtask branch
    ```bash
-   REPO_ROOT="$(git rev-parse --path-format=absolute --git-common-dir | sed 's|/.git$||')"
-   git worktree remove "$REPO_ROOT/.worktrees/subtask-branch"
    git branch -d subtask-branch
    ```
 
@@ -70,18 +68,14 @@ The complex case: multiple subtasks merging back in sequence.
 
 ### Setup
 
-The coordinator creates a base branch. Subtasks branch off from it as worktrees:
+The coordinator creates a base branch. Workers are spawned with `isolation: "worktree"` — each gets its own branch automatically. The Task tool returns `{worktreeBranch}` for each worker. Pass these branch names to the validator.
 
-```bash
-REPO_ROOT="$(git rev-parse --path-format=absolute --git-common-dir | sed 's|/.git$||')"
-
-# Coordinator creates the base
-git worktree add "$REPO_ROOT/.worktrees/feature-big" -b feature/big-feature
-
-# Subtasks branch off the coordinator
-git worktree add "$REPO_ROOT/.worktrees/subtask-1" -b feature/big-feature/subtask-1 feature/big-feature
-git worktree add "$REPO_ROOT/.worktrees/subtask-2" -b feature/big-feature/subtask-2 feature/big-feature
-git worktree add "$REPO_ROOT/.worktrees/subtask-3" -b feature/big-feature/subtask-3 feature/big-feature
+```
+Example branch names:
+  feature/big-feature           (coordinator)
+  feature/big-feature/subtask-1 (worker 1)
+  feature/big-feature/subtask-2 (worker 2)
+  feature/big-feature/subtask-3 (worker 3)
 ```
 
 ### Workflow
@@ -93,46 +87,46 @@ git worktree add "$REPO_ROOT/.worktrees/subtask-3" -b feature/big-feature/subtas
 
 2. **First subtask merges** (conflict-free since base hasn't changed)
    ```bash
-   # In subtask-1 worktree
+   # Worker 1 (in its own worktree) rebases before merge
    git rebase feature/big-feature
    # Run tests
 
-   # In coordinator worktree
+   # Validator (in its own worktree, on coordinator branch) merges
    git merge --ff-only feature/big-feature/subtask-1
    ```
 
 3. **Remaining subtasks rebase** onto the updated coordinator
    ```bash
-   # In subtask-2 worktree
+   # Worker 2 (in its own worktree)
    git rebase feature/big-feature
-   # Resolve any conflicts (subtask-2 owns their conflicts)
+   # Resolve any conflicts (worker 2 owns their conflicts)
    # Run tests
 
-   # In subtask-3 worktree
+   # Worker 3 (in its own worktree)
    git rebase feature/big-feature
-   # Resolve any conflicts (subtask-3 owns their conflicts)
+   # Resolve any conflicts (worker 3 owns their conflicts)
    # Run tests
    ```
 
 4. **Next subtask merges**, repeat rebase for remaining
    ```bash
-   # In coordinator worktree
+   # Validator merges next
    git merge --ff-only feature/big-feature/subtask-2
 
-   # In subtask-3 worktree
+   # Worker 3 rebases again
    git rebase feature/big-feature
    # Resolve conflicts, run tests
    ```
 
 5. **Last subtask merges**
    ```bash
-   # In coordinator worktree
+   # Validator merges last
    git merge --ff-only feature/big-feature/subtask-3
    ```
 
 6. **Final verification** — run full test suite on the coordinator branch
 
-7. **Clean up** all subtask worktrees and branches
+7. **Clean up** all subtask branches
 
 ### The Pattern
 
@@ -218,8 +212,6 @@ git log --oneline coordinator-branch..subtask-branch
 git diff coordinator-branch...subtask-branch -- <file>
 
 # Clean up after merge
-REPO_ROOT="$(git rev-parse --path-format=absolute --git-common-dir | sed 's|/.git$||')"
-git worktree remove "$REPO_ROOT/.worktrees/subtask-branch"
 git branch -d subtask-branch
 ```
 
@@ -233,7 +225,6 @@ git branch -d subtask-branch
 | All subtasks merging simultaneously | Conflicts multiply, no clear ownership | Establish and follow merge order |
 | Coordinator resolving subtask conflicts | They lack context on the subtask's intent | Subtask owner resolves their own conflicts |
 | Merging without a summary | Coordinator can't meaningfully review | Require clear change summaries or PR descriptions |
-| Leaving worktrees after merge | Stale worktrees clutter the workspace | Remove worktrees and delete branches after merge |
 | Rebasing onto an outdated coordinator | Creates false confidence about conflict-free state | Always fetch/pull coordinator before rebasing |
 
 
@@ -242,13 +233,6 @@ git branch -d subtask-branch
 After all subtasks are merged:
 
 ```bash
-REPO_ROOT="$(git rev-parse --path-format=absolute --git-common-dir | sed 's|/.git$||')"
-
-# Remove each subtask worktree
-git worktree remove "$REPO_ROOT/.worktrees/subtask-1"
-git worktree remove "$REPO_ROOT/.worktrees/subtask-2"
-git worktree remove "$REPO_ROOT/.worktrees/subtask-3"
-
 # Delete the subtask branches
 git branch -d feature/big-feature/subtask-1
 git branch -d feature/big-feature/subtask-2

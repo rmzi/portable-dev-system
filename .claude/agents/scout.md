@@ -59,4 +59,3 @@ Analyze `.claude/` artifacts — skills, agents, settings — to identify opport
 - [Patterns or insights worth noting]
 ```
 
-File protocol: See /team.
