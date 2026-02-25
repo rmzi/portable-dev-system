@@ -25,9 +25,9 @@ PDS is project-level configuration. Everything lives inside the repo so `git pul
 | Path | Purpose |
 |------|---------|
 | `CLAUDE.md` | Project rules — always loaded into context |
-| `.claude/skills/*.md` | Workflow skills — commit, review, debug, etc. |
-| `.claude/agents/*.md` | Agent definitions — roles, constraints, output formats |
-| `.claude/settings.json` | Permissions, hooks, environment — shared defaults |
+| `skills/*/SKILL.md` | Workflow skills (via PDS plugin) |
+| `agents/*.md` | Agent definitions (via PDS plugin) |
+| `.claude/settings.json` | Permissions and environment — project overrides |
 | `.claude/.pds-version` | Tracks installed PDS version for auto-update |
 
 ### Not committed (user-local)
@@ -66,7 +66,7 @@ That's it. No separate PDS install step. The skills, agents, settings, and hooks
 ### First session checklist
 
 On first use, Claude will:
-1. Read `CLAUDE.md` and scan `.claude/skills/`
+1. Read `CLAUDE.md` and load PDS plugin skills
 2. Check `.claude/.pds-version` against the remote VERSION (SessionStart hook)
 3. Follow PDS conventions for commits, reviews, debugging, etc.
 
@@ -86,7 +86,8 @@ git commit -m "feat: add PDS configuration"
 Add team-specific skills without modifying PDS core:
 
 ```bash
-# Create team-specific skills
+# Create team-specific skills in .claude/skills/ (project-level)
+mkdir -p .claude/skills
 cat > .claude/skills/deploy.md << 'EOF'
 ---
 description: Team deploy process
@@ -99,7 +100,7 @@ EOF
 # Edit .claude/settings.json permissions.deny array
 ```
 
-PDS core skills and team-specific skills coexist in `.claude/skills/`. When PDS updates, re-running the install script only touches PDS-managed files.
+PDS plugin skills and project-level skills coexist. Plugin skills use the `pds:` namespace (e.g., `/pds:swarm`). Project skills use their own names (e.g., `/deploy`).
 
 ---
 
@@ -151,7 +152,7 @@ See `/swarm` and `/team` skills for full workflow details.
 
 ## Customizing Skills
 
-Add your own skills to `.claude/skills/`:
+Add your own project-level skills to `.claude/skills/`:
 
 ```
 .claude/skills/
@@ -161,6 +162,8 @@ Add your own skills to `.claude/skills/`:
 ├── api.md         # API design guidelines
 └── ...
 ```
+
+These coexist with PDS plugin skills (`/pds:*`). Project skills are invoked without a namespace prefix.
 
 ### Skill Template
 

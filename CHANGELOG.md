@@ -2,6 +2,38 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.0.0] - 2026-02-25
+
+### Added
+- **Claude Code plugin architecture** — PDS is now a native plugin at `~/.claude/plugins/pds/`
+  - `.claude-plugin/plugin.json` — plugin manifest with name, version, description
+  - `agents/` — 8 agent definitions at plugin root (moved from `.claude/agents/`)
+  - `skills/` — 16 skills in directory format (`skills/X/SKILL.md`, was `.claude/skills/X.md`)
+  - `hooks/hooks.json` — SessionStart + PermissionRequest hooks (extracted from settings.json)
+- **Skill namespace** — all skills now prefixed: `/pds:swarm`, `/pds:grill`, `/pds:verify`, etc.
+- **`install.sh --plugin-dir`** — dev mode: symlinks local checkout as the plugin
+- **`install.sh --project`** — project-level settings only (team overrides, no plugin copy)
+
+### Changed
+- **Default install mode** — installs plugin to `~/.claude/plugins/pds/` (was project-level `.claude/`)
+- **Settings.json slimmed** — hooks extracted to plugin `hooks/hooks.json`; settings.json now contains only security config (sandbox, permissions, deny rules)
+- **Agent skill references** — all 8 agents updated to `pds:` prefixed skills
+- **Makefile** — `make install` now runs `./install.sh --plugin-dir .` for dev workflow
+
+### Removed
+- **`/test` skill** — 100% standard testing knowledge, zero behavioral delta over Claude's built-in capabilities
+- **`/commit` skill** — conventional commit format folded into `/pds:finish` (pre-push rebase step, commit format section)
+- **`/debug` skill** — "write hypothesis before investigating" folded into `/pds:grill` and `/pds:bugfix`
+- **`/design` skill** — ADR convention folded into `/pds:contribute` as a 3-line note
+- **`/quickref` skill** — agent roster already in `/pds:team`, skill table in CLAUDE.md
+- **`/review` skill** — anti-sycophancy note folded into reviewer agent body, review integrity section in `/pds:finish`
+- **`/merge-main` skill** — worktree-context check folded into `/pds:merge` "Merge to Main" section
+- **`.claude/skills/` directory** — skills now live at plugin root `skills/`
+- **`.claude/agents/` directory** — agents now live at plugin root `agents/`
+
+### Migration
+See `docs/migration-v4.md` for step-by-step migration from v3.x.
+
 ## [3.0.1] - 2026-02-25
 
 ### Fixed

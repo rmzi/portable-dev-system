@@ -124,29 +124,5 @@
       "Write(**/*secret*key*)",
       "Write(**/*token*.json)"
     ]
-  },
-  "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "LOCAL=$(cat .claude/.pds-version 2>/dev/null || echo 'unknown'); REMOTE=$(curl -sf --max-time 5 https://raw.githubusercontent.com/rmzi/portable-dev-system/main/VERSION 2>/dev/null || echo ''); if [ -n \"$REMOTE\" ] && [ \"$LOCAL\" != \"$REMOTE\" ]; then NEWER=$(printf '%s\\n%s' \"$LOCAL\" \"$REMOTE\" | sort -V | tail -1); if [ \"$NEWER\" = \"$REMOTE\" ] && [ \"$NEWER\" != \"$LOCAL\" ]; then echo \"⚠️ PDS update available: $LOCAL → $REMOTE. Run pds-update to upgrade.\"; fi; fi; if [ \"$(uname)\" = \"Linux\" ]; then for dep in bwrap socat; do command -v $dep >/dev/null 2>&1 || echo \"Sandbox dep missing: $dep. Install: sudo apt install bubblewrap socat\"; done; fi",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
-    "PermissionRequest": [
-      {
-        "hooks": [
-          {
-            "type": "prompt",
-            "prompt": "You are a permission evaluator for a velocity-focused dev environment. Evaluate this permission request: $ARGUMENTS\n\nALLOW routine dev operations: reading/writing source code, running tests, installing deps, git operations on feature branches, linters, formatters, builds, file search, web search/fetch.\n\nDENY: credential file access (~/.aws, ~/.ssh, ~/.gnupg, ~/.kube, ~/.azure, ~/.config/gcloud, ~/.config/gh, ~/.npmrc, ~/.pypirc, ~/.docker/config.json, ~/.gem/credentials, ~/.cargo/credentials, ~/.netrc, .pem files, .git-credentials, id_rsa/id_ed25519 keys, *secret*key*, *token*.json), production patterns (PROD, prod.*, --profile prod), remote access (ssh, scp, sftp), push to protected branches (main/master/dev/develop), force push, .env files, secrets directories.\n\nWhen in doubt, ALLOW — explicit deny rules above are the guardrails.\n\nRespond with JSON: {\"ok\": true} to allow, or {\"ok\": false, \"reason\": \"brief reason\"} to deny.",
-            "timeout": 15
-          }
-        ]
-      }
-    ]
   }
 }

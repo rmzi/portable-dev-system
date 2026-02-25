@@ -1,16 +1,18 @@
 #!/bin/sh
-# PDS Install Script — two-mode, zero-duplication
+# PDS Install Script — Plugin-based architecture
 # https://github.com/rmzi/portable-dev-system
 #
-# Project install (default, for teams):
+# Default (plugin install):
 #   curl -sfL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash
 #
-# User install (personal, all projects):
-#   curl -sfL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash -s -- --user
+# Project-level settings only (team overrides):
+#   curl -sfL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash -s -- --project
+#
+# Dev mode (link local checkout as plugin):
+#   ./install.sh --plugin-dir /path/to/pds
 #
 # Force reinstall:
 #   curl -sfL ... | bash -s -- --force
-#   curl -sfL ... | bash -s -- --user --force
 
 set -e
 
@@ -19,8 +21,9 @@ TARBALL_URL="${REPO_URL}/archive/refs/heads/main.tar.gz"
 REMOTE_VERSION_URL="https://raw.githubusercontent.com/rmzi/portable-dev-system/main/VERSION"
 
 # --- Defaults ---
-MODE="project"
+MODE="plugin"
 FORCE=0
+PLUGIN_DIR=""
 
 # --- Helpers ---
 info()  { printf '  \033[1;34m>\033[0m %s\n' "$1"; }
@@ -33,28 +36,29 @@ usage() {
   cat <<'EOF'
 Usage: install.sh [OPTIONS]
 
-Install PDS (Portable Development System) into a project or at the user level.
+Install PDS (Portable Development System) as a Claude Code plugin.
 
 Options:
-  --user    Install to ~/.claude/ (personal, all projects)
-  --force   Reinstall even if already up to date
-  --test    Run smoke tests in a temp directory (no network)
-  --help    Show this help message
+  --project     Install project-level settings only (team overrides)
+  --plugin-dir  Link a local PDS checkout as the plugin (dev mode)
+  --force       Reinstall even if already up to date
+  --test        Run smoke tests in a temp directory (no network)
+  --help        Show this help message
 
 Modes:
-  Project (default):  Installs skills, agents, settings into .claude/ and CLAUDE.md
-  User (--user):      Installs skills and settings into ~/.claude/ for all projects
+  Plugin (default):   Downloads PDS as a plugin to ~/.claude/plugins/pds/
+                      Installs security settings to ~/.claude/settings.json
+  Project (--project): Installs project-level settings.json and CLAUDE.md only
 
 Examples:
-  # Project install (for teams)
+  # Plugin install (default — recommended)
   curl -sfL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash
 
-  # User install (personal)
-  curl -sfL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash -s -- --user
+  # Project-level settings for team overrides
+  curl -sfL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash -s -- --project
 
-  # Force reinstall
-  curl -sfL ... | bash -s -- --force
-  curl -sfL ... | bash -s -- --user --force
+  # Dev mode — symlink local checkout
+  ./install.sh --plugin-dir .
 EOF
   exit 0
 }
@@ -82,7 +86,6 @@ install_claude_md() {
   fi
 
   if grep -q "$PDS_START_MARKER" "$dest_file" 2>/dev/null; then
-    # Has markers — replace the PDS block
     before=$(sed -n "1,/$PDS_START_MARKER/{ /$PDS_START_MARKER/d; p; }" "$dest_file")
     after=$(sed -n "/$PDS_END_MARKER/,\${ /$PDS_END_MARKER/d; p; }" "$dest_file")
 
@@ -93,7 +96,6 @@ install_claude_md() {
     } > "$dest_file"
     ok "Updated PDS block in $dest_file"
   else
-    # No markers — backup and install
     if [ ! -f "${dest_file}.pre-pds" ]; then
       cp "$dest_file" "${dest_file}.pre-pds"
       warn "Backed up existing $dest_file → ${dest_file}.pre-pds"
@@ -103,88 +105,113 @@ install_claude_md() {
   fi
 }
 
-install_user_claude_md() {
-  dest_file="$TARGET_DIR/CLAUDE.md"
-  user_pds_block="$PDS_START_MARKER
-# Portable Development System (User)
+# --- Install security settings ---
 
-## Rules
+install_security_settings() {
+  target_settings="$1"
 
-- **Never clone repos** — use git worktrees for branch isolation
-- **Never use /tmp for code** — worktrees are managed natively by Claude Code
-- **Create a PR after pushing** — don't wait to be asked
-
-## Skills
-
-If this project has \`.claude/skills/\`, read and follow those skills before performing actions.
-Otherwise, scan \`~/.claude/skills/\` for available workflow patterns.
-$PDS_END_MARKER"
-
-  if [ ! -f "$dest_file" ]; then
-    printf '%s\n' "$user_pds_block" > "$dest_file"
-    ok "Created $dest_file"
-    return
+  if [ -f "$target_settings" ] && [ ! -f "${target_settings}.pre-pds" ]; then
+    cp "$target_settings" "${target_settings}.pre-pds"
+    warn "Backed up existing settings → ${target_settings}.pre-pds"
   fi
-
-  if grep -q "$PDS_START_MARKER" "$dest_file" 2>/dev/null; then
-    before=$(sed -n "1,/$PDS_START_MARKER/{ /$PDS_START_MARKER/d; p; }" "$dest_file")
-    after=$(sed -n "/$PDS_END_MARKER/,\${ /$PDS_END_MARKER/d; p; }" "$dest_file")
-
-    {
-      [ -n "$before" ] && printf '%s\n' "$before"
-      printf '%s\n' "$user_pds_block"
-      [ -n "$after" ] && printf '%s\n' "$after"
-    } > "$dest_file"
-    ok "Updated PDS block in $dest_file"
-  else
-    # No markers — prepend PDS block, keep existing content
-    existing=$(cat "$dest_file")
-    {
-      printf '%s\n\n' "$user_pds_block"
-      printf '%s\n' "$existing"
-    } > "$dest_file"
-    ok "Added PDS block to $dest_file (existing content preserved)"
-  fi
+  cp "$SRC_DIR/.claude/settings.json" "$target_settings"
+  ok "Installed security settings → $target_settings"
 }
 
 # --- Install modes ---
 
+install_plugin() {
+  PLUGIN_TARGET="$HOME/.claude/plugins/pds"
+  SETTINGS_TARGET="$HOME/.claude/settings.json"
+
+  mkdir -p "$PLUGIN_TARGET"
+
+  # Copy plugin structure
+  if [ -d "$SRC_DIR/.claude-plugin" ]; then
+    cp -R "$SRC_DIR/.claude-plugin" "$PLUGIN_TARGET/.claude-plugin"
+    ok "Installed plugin manifest"
+  fi
+
+  if [ -d "$SRC_DIR/agents" ]; then
+    rm -rf "$PLUGIN_TARGET/agents"
+    cp -R "$SRC_DIR/agents" "$PLUGIN_TARGET/agents"
+    ok "Installed agents → $PLUGIN_TARGET/agents/"
+  fi
+
+  if [ -d "$SRC_DIR/skills" ]; then
+    rm -rf "$PLUGIN_TARGET/skills"
+    cp -R "$SRC_DIR/skills" "$PLUGIN_TARGET/skills"
+    ok "Installed skills → $PLUGIN_TARGET/skills/"
+  fi
+
+  if [ -d "$SRC_DIR/hooks" ]; then
+    rm -rf "$PLUGIN_TARGET/hooks"
+    cp -R "$SRC_DIR/hooks" "$PLUGIN_TARGET/hooks"
+    ok "Installed hooks → $PLUGIN_TARGET/hooks/"
+  fi
+
+  # Security settings go to user-level settings.json (can't be in plugin)
+  install_security_settings "$SETTINGS_TARGET"
+
+  # Copy instincts seed file if not present
+  if [ -f "$SRC_DIR/.claude/instincts.md" ] && [ ! -f "$HOME/.claude/instincts.md" ]; then
+    cp "$SRC_DIR/.claude/instincts.md" "$HOME/.claude/instincts.md"
+    ok "Installed instincts → ~/.claude/instincts.md"
+  fi
+
+  # Write version
+  printf '%s\n' "$REMOTE_VERSION" > "$HOME/.claude/.pds-version"
+  ok "Version: $REMOTE_VERSION"
+
+  echo ""
+  ok "PDS v4 plugin installed!"
+  echo "    Plugin: ~/.claude/plugins/pds/"
+  echo "    Settings: ~/.claude/settings.json"
+  echo "    Skills: /pds:swarm, /pds:grill, /pds:verify, etc."
+  echo "    Agents: orchestrator, worker, validator, etc."
+
+  # Check for sandbox dependencies on Linux
+  if [ "$(uname)" = "Linux" ]; then
+    for dep in bwrap socat; do
+      command -v "$dep" >/dev/null 2>&1 || warn "Sandbox dependency missing: $dep. Install with: sudo apt install bubblewrap socat"
+    done
+  fi
+}
+
+install_plugin_dir() {
+  PLUGIN_TARGET="$HOME/.claude/plugins/pds"
+
+  # Remove existing plugin dir if it exists
+  if [ -d "$PLUGIN_TARGET" ] || [ -L "$PLUGIN_TARGET" ]; then
+    rm -rf "$PLUGIN_TARGET"
+  fi
+
+  mkdir -p "$(dirname "$PLUGIN_TARGET")"
+  ln -s "$(cd "$PLUGIN_DIR" && pwd)" "$PLUGIN_TARGET"
+  ok "Linked plugin: $PLUGIN_TARGET → $(cd "$PLUGIN_DIR" && pwd)"
+
+  # Security settings
+  SRC_DIR="$PLUGIN_DIR"
+  install_security_settings "$HOME/.claude/settings.json"
+
+  echo ""
+  ok "PDS dev plugin linked!"
+  echo "    Plugin: $PLUGIN_TARGET → $(cd "$PLUGIN_DIR" && pwd)"
+  echo "    Changes to the source dir are immediately active."
+}
+
 install_project() {
-  mkdir -p "$TARGET_DIR/skills" "$TARGET_DIR/agents"
+  TARGET_DIR=".claude"
+  mkdir -p "$TARGET_DIR"
 
-  # Copy skills
-  if [ -d "$SRC_DIR/.claude/skills" ]; then
-    cp "$SRC_DIR/.claude/skills/"*.md "$TARGET_DIR/skills/" 2>/dev/null || true
-    ok "Installed skills → $TARGET_DIR/skills/"
-  fi
-
-  # Copy agents
-  if [ -d "$SRC_DIR/.claude/agents" ]; then
-    cp "$SRC_DIR/.claude/agents/"*.md "$TARGET_DIR/agents/" 2>/dev/null || true
-    ok "Installed agents → $TARGET_DIR/agents/"
-  fi
-
-  # Copy instincts.md (seed file if not present)
-  if [ -f "$SRC_DIR/.claude/instincts.md" ] && [ ! -f "$TARGET_DIR/instincts.md" ]; then
-    cp "$SRC_DIR/.claude/instincts.md" "$TARGET_DIR/instincts.md"
-    ok "Installed instincts → $TARGET_DIR/instincts.md"
-  fi
-
-  # Copy settings.json
-  if [ -f "$SRC_DIR/.claude/settings.json" ]; then
-    if [ -f "$TARGET_DIR/settings.json" ] && [ ! -f "$TARGET_DIR/settings.json.pre-pds" ]; then
-      cp "$TARGET_DIR/settings.json" "$TARGET_DIR/settings.json.pre-pds"
-      warn "Backed up existing settings → $TARGET_DIR/settings.json.pre-pds"
-    fi
-    cp "$SRC_DIR/.claude/settings.json" "$TARGET_DIR/settings.json"
-    ok "Installed settings → $TARGET_DIR/settings.json"
-  fi
+  # Install project-level settings (team can override deny rules, domains, etc.)
+  install_security_settings "$TARGET_DIR/settings.json"
 
   # Handle CLAUDE.md with PDS markers
   install_claude_md "$SRC_DIR/CLAUDE.md" "CLAUDE.md"
 
   # Write version
-  printf '%s\n' "$REMOTE_VERSION" > "$VERSION_FILE"
+  printf '%s\n' "$REMOTE_VERSION" > "$TARGET_DIR/.pds-version"
   ok "Version: $REMOTE_VERSION"
 
   # Add .worktrees/ to .gitignore if not present
@@ -199,59 +226,11 @@ install_project() {
   fi
 
   echo ""
-  ok "PDS installed! Next steps:"
-  echo "    git add .claude CLAUDE.md .gitignore"
-  echo "    git commit -m \"feat: add PDS\""
-
-  # Check for sandbox dependencies on Linux
-  if [ "$(uname)" = "Linux" ]; then
-    for dep in bwrap socat; do
-      command -v "$dep" >/dev/null 2>&1 || warn "Sandbox dependency missing: $dep. Install with: sudo apt install bubblewrap socat"
-    done
-  fi
-}
-
-install_user() {
-  mkdir -p "$TARGET_DIR/skills"
-
-  # Copy skills (fallback for non-PDS projects)
-  if [ -d "$SRC_DIR/.claude/skills" ]; then
-    cp "$SRC_DIR/.claude/skills/"*.md "$TARGET_DIR/skills/" 2>/dev/null || true
-    ok "Installed skills → $TARGET_DIR/skills/"
-  fi
-
-  # Copy settings.json (security guardrails for all projects)
-  if [ -f "$SRC_DIR/.claude/settings.json" ]; then
-    if [ -f "$TARGET_DIR/settings.json" ] && [ ! -f "$TARGET_DIR/settings.json.pre-pds" ]; then
-      cp "$TARGET_DIR/settings.json" "$TARGET_DIR/settings.json.pre-pds"
-      warn "Backed up existing settings → $TARGET_DIR/settings.json.pre-pds"
-      warn "Review and merge your settings: diff $TARGET_DIR/settings.json.pre-pds $TARGET_DIR/settings.json"
-    fi
-    cp "$SRC_DIR/.claude/settings.json" "$TARGET_DIR/settings.json"
-    ok "Installed settings → $TARGET_DIR/settings.json"
-  fi
-
-  # Do NOT install agents (Task tool only reads project .claude/agents/)
-
-  # Install user-level CLAUDE.md with conditional skill reference
-  install_user_claude_md
-
-  # Write version
-  printf '%s\n' "$REMOTE_VERSION" > "$VERSION_FILE"
-  ok "Version: $REMOTE_VERSION"
-
-  echo ""
-  ok "PDS installed at user level!"
-  echo "    Skills in ~/.claude/skills/ are used when projects don't have their own."
-  echo "    Settings in ~/.claude/settings.json apply security guardrails everywhere."
-  echo "    Agents are project-only — add PDS to a project for agent support."
-
-  # Check for sandbox dependencies on Linux
-  if [ "$(uname)" = "Linux" ]; then
-    for dep in bwrap socat; do
-      command -v "$dep" >/dev/null 2>&1 || warn "Sandbox dependency missing: $dep. Install with: sudo apt install bubblewrap socat"
-    done
-  fi
+  ok "PDS project settings installed!"
+  echo "    Settings: .claude/settings.json (team overrides)"
+  echo "    CLAUDE.md updated with PDS block"
+  echo "    The PDS plugin provides skills and agents — install it with:"
+  echo "    curl -sfL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash"
 }
 
 # --- Self-test ---
@@ -277,105 +256,80 @@ run_tests() {
   assert_contains() { assert "$1 contains '$2'" grep -q "$2" "$3"; }
   assert_not_dir() { assert "$1 does not exist" test ! -d "$2"; }
 
-  info "Running PDS install smoke tests (offline, temp dirs)"
+  info "Running PDS v4 plugin install smoke tests (offline, temp dirs)"
   echo ""
 
-  # --- Test 1: Project install ---
-  info "Test: project install"
+  # --- Test 1: Plugin structure ---
+  info "Test: plugin structure"
+  SRC_DIR="$SCRIPT_DIR"
+
+  assert_dir  ".claude-plugin"     "$SRC_DIR/.claude-plugin"
+  assert_file "plugin.json"        "$SRC_DIR/.claude-plugin/plugin.json"
+  assert_dir  "agents"             "$SRC_DIR/agents"
+  assert_dir  "skills"             "$SRC_DIR/skills"
+  assert_dir  "hooks"              "$SRC_DIR/hooks"
+
+  # Count agents (should be 8)
+  agent_count=$(ls "$SRC_DIR/agents/"*.md 2>/dev/null | wc -l | tr -d ' ')
+  assert "agents count = 8 (got $agent_count)" test "$agent_count" -eq 8
+
+  # Count skills (should be 16 directories)
+  skill_count=$(ls -d "$SRC_DIR/skills/"*/SKILL.md 2>/dev/null | wc -l | tr -d ' ')
+  assert "skills count = 16 (got $skill_count)" test "$skill_count" -eq 16
+
+  # Validate JSON
+  assert "plugin.json is valid JSON" python3 -c "import json; json.load(open('$SRC_DIR/.claude-plugin/plugin.json'))"
+  assert "hooks.json is valid JSON" python3 -c "import json; json.load(open('$SRC_DIR/hooks/hooks.json'))"
+  assert "settings.json is valid JSON" python3 -c "import json; json.load(open('$SRC_DIR/.claude/settings.json'))"
+
+  echo ""
+
+  # --- Test 2: Skill namespace ---
+  info "Test: skill namespace (pds: prefix in agents)"
+  for agent_file in "$SRC_DIR/agents/"*.md; do
+    agent_name=$(basename "$agent_file" .md)
+    if grep -q 'skills:' "$agent_file"; then
+      # Check that all skill references use pds: prefix
+      if grep -A 10 'skills:' "$agent_file" | grep -E '^\s+- [a-z]' | grep -v 'pds:' >/dev/null 2>&1; then
+        err "FAIL: $agent_name has non-prefixed skills"
+        FAIL=$((FAIL + 1))
+      else
+        ok "PASS: $agent_name skills use pds: prefix"
+        PASS=$((PASS + 1))
+      fi
+    fi
+  done
+
+  echo ""
+
+  # --- Test 3: No demoted skills ---
+  info "Test: demoted skills removed"
+  for removed in test commit debug design quickref review merge-main; do
+    assert_not_dir "no $removed skill dir" "$SRC_DIR/skills/$removed"
+  done
+
+  echo ""
+
+  # --- Test 4: Hooks extracted ---
+  info "Test: hooks in plugin, not in settings"
+  assert_contains "hooks.json" "SessionStart" "$SRC_DIR/hooks/hooks.json"
+  assert_contains "hooks.json" "PermissionRequest" "$SRC_DIR/hooks/hooks.json"
+  # settings.json should NOT have hooks
+  if grep -q '"hooks"' "$SRC_DIR/.claude/settings.json" 2>/dev/null; then
+    err "FAIL: settings.json still has hooks (should be in plugin)"
+    FAIL=$((FAIL + 1))
+  else
+    ok "PASS: settings.json has no hooks"
+    PASS=$((PASS + 1))
+  fi
+
+  echo ""
+
+  # --- Test 5: PDS marker replacement ---
+  info "Test: PDS marker replacement"
   testdir=$(mktemp -d)
   trap 'rm -rf "$testdir"' EXIT
 
-  # Simulate what the real install does, using local repo as source
-  SRC_DIR="$SCRIPT_DIR"
-  TARGET_DIR="$testdir/.claude"
-  VERSION_FILE="$TARGET_DIR/.pds-version"
-  REMOTE_VERSION="test-0.0.0"
-  mkdir -p "$TARGET_DIR/skills" "$TARGET_DIR/agents"
-  cp "$SRC_DIR/.claude/skills/"*.md "$TARGET_DIR/skills/" 2>/dev/null || true
-  cp "$SRC_DIR/.claude/agents/"*.md "$TARGET_DIR/agents/" 2>/dev/null || true
-  cp "$SRC_DIR/.claude/settings.json" "$TARGET_DIR/settings.json"
-  [ -f "$SRC_DIR/.claude/instincts.md" ] && cp "$SRC_DIR/.claude/instincts.md" "$TARGET_DIR/instincts.md"
-  cp "$SRC_DIR/CLAUDE.md" "$testdir/CLAUDE.md"
-  printf '%s\n' "$REMOTE_VERSION" > "$VERSION_FILE"
-  printf '.worktrees/\n' > "$testdir/.gitignore"
-
-  assert_dir  ".claude/skills"    "$TARGET_DIR/skills"
-  assert_dir  ".claude/agents"    "$TARGET_DIR/agents"
-  assert_file "settings.json"     "$TARGET_DIR/settings.json"
-  assert_file "CLAUDE.md"         "$testdir/CLAUDE.md"
-  assert_file ".pds-version"      "$VERSION_FILE"
-  assert_file ".gitignore"        "$testdir/.gitignore"
-  assert_contains "CLAUDE.md"     "PDS:START"  "$testdir/CLAUDE.md"
-  assert_contains "CLAUDE.md"     "PDS:END"    "$testdir/CLAUDE.md"
-  assert_contains ".gitignore"    ".worktrees" "$testdir/.gitignore"
-  assert_file "instincts.md"     "$TARGET_DIR/instincts.md"
-  assert_contains "instincts.md" "Lifecycle"  "$TARGET_DIR/instincts.md"
-
-  # Count skills and agents
-  skill_count=$(ls "$TARGET_DIR/skills/"*.md 2>/dev/null | wc -l | tr -d ' ')
-  agent_count=$(ls "$TARGET_DIR/agents/"*.md 2>/dev/null | wc -l | tr -d ' ')
-  assert "skills count > 10 (got $skill_count)" test "$skill_count" -gt 10
-  assert "agents count = 8 (got $agent_count)"   test "$agent_count" -eq 8
-
-  # Validate JSON
-  assert "settings.json is valid JSON" python3 -c "import json; json.load(open('$TARGET_DIR/settings.json'))"
-
-  echo ""
-
-  # --- Test 2: User install ---
-  info "Test: user install"
-  userhome=$(mktemp -d)
-  USER_TARGET="$userhome/.claude"
-  mkdir -p "$USER_TARGET/skills"
-  cp "$SRC_DIR/.claude/skills/"*.md "$USER_TARGET/skills/" 2>/dev/null || true
-  cp "$SRC_DIR/.claude/settings.json" "$USER_TARGET/settings.json"
-  printf '%s\n' "$REMOTE_VERSION" > "$USER_TARGET/.pds-version"
-
-  # Write user-level CLAUDE.md
-  cat > "$USER_TARGET/CLAUDE.md" <<'USEREOF'
-<!-- PDS:START -->
-# Portable Development System (User)
-
-## Rules
-
-- **Never clone repos** — use `git worktree add` for branch isolation
-- **Never use /tmp for code** — worktrees go in `.worktrees/` inside the repo
-- **Create a PR after pushing** — don't wait to be asked
-
-## Skills
-
-If this project has `.claude/skills/`, read and follow those skills before performing actions.
-Otherwise, scan `~/.claude/skills/` for available workflow patterns.
-<!-- PDS:END -->
-USEREOF
-
-  assert_dir  "~/.claude/skills"   "$USER_TARGET/skills"
-  assert_file "user settings.json" "$USER_TARGET/settings.json"
-  assert_file "user CLAUDE.md"     "$USER_TARGET/CLAUDE.md"
-  assert_file "user .pds-version"  "$USER_TARGET/.pds-version"
-  assert_not_dir "no agents dir"   "$USER_TARGET/agents"
-
-  # User CLAUDE.md should be small
-  user_lines=$(wc -l < "$USER_TARGET/CLAUDE.md" | tr -d ' ')
-  assert "user CLAUDE.md is small (<20 lines, got $user_lines)" test "$user_lines" -lt 20
-
-  assert_contains "user CLAUDE.md" "PDS:START" "$USER_TARGET/CLAUDE.md"
-  assert_contains "user CLAUDE.md" "PDS:END"   "$USER_TARGET/CLAUDE.md"
-  assert_contains "user CLAUDE.md" "Otherwise, scan" "$USER_TARGET/CLAUDE.md"
-
-  echo ""
-
-  # --- Test 3: Idempotent re-run ---
-  info "Test: idempotent re-run"
-  settings_before=$(cat "$TARGET_DIR/settings.json")
-  cp "$SRC_DIR/.claude/settings.json" "$TARGET_DIR/settings.json"
-  settings_after=$(cat "$TARGET_DIR/settings.json")
-  assert "settings.json unchanged on re-install" test "$settings_before" = "$settings_after"
-
-  echo ""
-
-  # --- Test 4: PDS marker replacement ---
-  info "Test: PDS marker replacement"
   cat > "$testdir/marker-test.md" <<'MARKEREOF'
 # My custom header
 
@@ -387,14 +341,10 @@ old PDS content here
 MARKEREOF
   install_claude_md "$SRC_DIR/CLAUDE.md" "$testdir/marker-test.md"
   assert_contains "marker-test.md" "PDS:START"       "$testdir/marker-test.md"
-  assert_contains "marker-test.md" "Skills System"   "$testdir/marker-test.md"
   assert_contains "marker-test.md" "My custom header" "$testdir/marker-test.md"
   assert_contains "marker-test.md" "My custom footer" "$testdir/marker-test.md"
 
   echo ""
-
-  # --- Cleanup ---
-  rm -rf "$userhome"
 
   # --- Summary ---
   TOTAL=$((PASS + FAIL))
@@ -414,10 +364,11 @@ MARKEREOF
 # --- Parse args ---
 while [ $# -gt 0 ]; do
   case "$1" in
-    --user)  MODE="user"; shift ;;
-    --force) FORCE=1; shift ;;
-    --test)  MODE="test"; shift ;;
-    --help)  usage ;;
+    --project)    MODE="project"; shift ;;
+    --plugin-dir) MODE="plugin-dir"; PLUGIN_DIR="$2"; shift 2 ;;
+    --force)      FORCE=1; shift ;;
+    --test)       MODE="test"; shift ;;
+    --help)       usage ;;
     *)
       echo "Unknown option: $1"
       usage
@@ -431,6 +382,16 @@ if [ "$MODE" = "test" ]; then
   exit $?
 fi
 
+# --- Dev plugin-dir mode ---
+if [ "$MODE" = "plugin-dir" ]; then
+  if [ -z "$PLUGIN_DIR" ]; then
+    err "--plugin-dir requires a path argument"
+    exit 1
+  fi
+  install_plugin_dir
+  exit 0
+fi
+
 # --- Check dependencies ---
 for cmd in curl tar mktemp; do
   if ! command -v "$cmd" >/dev/null 2>&1; then
@@ -439,18 +400,8 @@ for cmd in curl tar mktemp; do
   fi
 done
 
-# --- Determine target directory ---
-if [ "$MODE" = "user" ]; then
-  TARGET_DIR="$HOME/.claude"
-  VERSION_FILE="$TARGET_DIR/.pds-version"
-  info "User-level install → $TARGET_DIR"
-else
-  TARGET_DIR=".claude"
-  VERSION_FILE="$TARGET_DIR/.pds-version"
-  info "Project-level install → $(pwd)/$TARGET_DIR"
-fi
-
 # --- Version check ---
+VERSION_FILE="$HOME/.claude/.pds-version"
 LOCAL_VERSION=""
 if [ -f "$VERSION_FILE" ]; then
   LOCAL_VERSION=$(cat "$VERSION_FILE")
@@ -491,8 +442,8 @@ if [ ! -d "$SRC_DIR" ]; then
 fi
 
 # --- Dispatch ---
-if [ "$MODE" = "user" ]; then
-  install_user
-else
+if [ "$MODE" = "project" ]; then
   install_project
+else
+  install_plugin
 fi

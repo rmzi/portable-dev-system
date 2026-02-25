@@ -1,81 +1,68 @@
 # Portable Development System
 
-[![Claude Code](https://img.shields.io/badge/Claude%20Code-compatible-blueviolet)](https://claude.ai/claude-code)
+[![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-blueviolet)](https://claude.ai/claude-code)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
-**Software for Claude.** Not a library. Not a framework. Configuration files and workflow patterns that make Claude Code sessions consistent, efficient, and team-ready.
+**A Claude Code plugin.** Skills for consistency. Agents for scale. Install once, works across all projects.
 
-> PDS is deployed as Claude Code config — `CLAUDE.md`, `.claude/skills/`, `.claude/agents/`, `.claude/settings.json`. Install it into any project. Claude reads it, follows it, improves it.
-
----
-
-## What PDS Is
-
-PDS is a Claude Code configuration package — skills, agents, settings, and hooks that make Claude effective at software development.
-
-- **Skills** — Encoded workflows: commit conventions, code review checklists, debugging protocols, test strategies
-- **Agents** — 8 specialized roles: orchestrator, researcher, worker, validator, reviewer, documenter, scout, auditor
-- **Settings** — Velocity-focused permissions with security guardrails
-- **Hooks** — Automated quality gates on tool usage
-
-**Why both CLAUDE.md and skills?** [Vercel's agent evals](https://vercel.com/blog/agents-md-outperforms-skills-in-our-agent-evals) found that passive context (AGENTS.md) achieves 100% pass rates for horizontal framework knowledge, while skills excel for vertical workflows users explicitly trigger. PDS uses both: `CLAUDE.md` carries always-on rules and context, skills encode opt-in workflows like `/commit` and `/review`.
-
-PDS is **editor-agnostic**. It works with any tool that runs Claude Code — terminal, Cursor, VS Code, or [Zaku](https://github.com/rmzi/zaku).
+> PDS is deployed as a Claude Code plugin — skills, agents, hooks, and security settings. Install it to `~/.claude/plugins/pds/`. Claude reads it, follows it, improves it.
 
 ---
 
 ## Quick Start
 
-### For teams (project-level)
+### Install (recommended)
+
+```bash
+curl -sfL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash
+```
+
+Installs the PDS plugin to `~/.claude/plugins/pds/` and security settings to `~/.claude/settings.json`. Works across all projects.
+
+### Project-level settings (for teams)
 
 ```bash
 cd ~/your-project
-curl -sfL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash
-git add .claude CLAUDE.md .gitignore && git commit -m "feat: add PDS"
+curl -sfL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash -s -- --project
+git add .claude CLAUDE.md .gitignore && git commit -m "feat: add PDS project settings"
 ```
 
-### For personal use (user-level)
+Installs project-level `settings.json` and `CLAUDE.md` for team-specific overrides. The plugin provides skills and agents.
+
+### Dev mode
 
 ```bash
-curl -sfL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash -s -- --user
+git clone https://github.com/rmzi/portable-dev-system.git
+cd portable-dev-system
+make install    # symlinks this checkout as the plugin
 ```
-
-Installs skills and security settings to `~/.claude/` — works across all projects. When a project has its own `.claude/skills/`, those take priority. No context duplication.
 
 ---
 
-## Skills
+## Skills (16)
 
 | Skill | Purpose |
 |-------|---------|
-| `/ethos` | Development principles, MECE |
-| `/commit` | Semantic commit format |
-| `/review` | Code review checklist |
-| `/debug` | Systematic troubleshooting |
-| `/test` | Test strategy and patterns |
-| `/design` | Architecture decision records |
-| `/merge` | Merging subtask branches back |
-| `/swarm` | Multi-agent team workflow |
-| `/team` | Agent roster and coordination |
-| `/grill` | Requirement interrogation |
-| `/instinct` | Pattern capture and lifecycle |
-| `/contribute` | Contributing to PDS itself |
-| `/audit-config` | Verify PDS config security |
-| `/trim` | Context efficiency maintenance |
-| `/bump` | Version and changelog |
-| `/permission-router` | Permission hook policy |
-| `/sandbox` | OS-level sandbox configuration |
-| `/quickref` | PDS skills, agents, conventions |
-| `/bugfix` | Test-first bug fix loop |
-| `/verify` | Completion self-check |
-| `/finish` | Branch completion protocol |
-| `/merge-main` | Merge approved PRs to main |
-
-[Full skills catalog →](docs/skills.md)
+| `/pds:ethos` | Development principles, MECE |
+| `/pds:swarm` | Multi-agent team workflow (6-phase Agentic SDLC) |
+| `/pds:team` | Agent roster and coordination |
+| `/pds:grill` | Requirement interrogation |
+| `/pds:verify` | Completion self-check |
+| `/pds:finish` | Branch completion protocol |
+| `/pds:merge` | Merging subtask worktrees back |
+| `/pds:worktree` | Git worktree workflow |
+| `/pds:instinct` | Pattern capture and lifecycle |
+| `/pds:sandbox` | OS-level sandbox configuration |
+| `/pds:permission-router` | Permission hook policy |
+| `/pds:audit-config` | Verify PDS config security |
+| `/pds:trim` | Context efficiency maintenance |
+| `/pds:contribute` | Contributing to PDS itself |
+| `/pds:bugfix` | Test-first bug fix loop |
+| `/pds:bump` | Version and changelog |
 
 ---
 
-## Agents
+## Agents (8)
 
 | Agent | Role | Model | Mode |
 |-------|------|-------|------|
@@ -92,9 +79,22 @@ Installs skills and security settings to `~/.claude/` — works across all proje
 
 ---
 
-## Worktrees
+## Plugin Structure
 
-PDS uses git worktrees for branch isolation — no stashing, no context switching. Worktrees are managed natively by Claude Code via `--worktree` (interactive) or `isolation: "worktree"` (agents). Path resolution, cleanup, and lifecycle are handled automatically.
+```
+portable-dev-system/
+├── .claude-plugin/plugin.json     # Plugin manifest
+├── agents/                        # 8 agent definitions
+├── skills/                        # 16 skills (dir/SKILL.md format)
+│   ├── swarm/SKILL.md
+│   ├── team/SKILL.md
+│   └── ...
+├── hooks/hooks.json               # SessionStart + PermissionRequest
+├── .claude/settings.json          # Security settings (installed separately)
+├── install.sh                     # Plugin installer
+├── VERSION
+└── CHANGELOG.md
+```
 
 ---
 
@@ -113,31 +113,17 @@ Blocked:
 
 ## For Teams
 
-### Adding PDS to your project
+### What's in the repo vs what's in the plugin
 
-```bash
-cd ~/your-project
-curl -sfL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash
-git add .claude CLAUDE.md .gitignore && git commit -m "feat: add PDS"
-```
+| Plugin (shared via `~/.claude/plugins/pds/`) | Project (committed to repo) | User (local) |
+|---|---|---|
+| Skills, agents, hooks | `.claude/settings.json` (team overrides), `CLAUDE.md` | `~/.claude/settings.json` |
 
-### New team member onboarding
+Project settings provide team-specific overrides. Plugin provides skills and agents. Deny rules are additive.
 
-```bash
-git clone <repo> && cd <repo> && claude
-```
+### Migration from v3.x
 
-That's it. PDS config is in the repo — no separate install. Claude reads the skills, agents, and settings on session start.
-
-### What's in the repo vs what's local
-
-| Committed (shared) | Local (per user) |
-|---|---|
-| `CLAUDE.md`, `.claude/skills/`, `.claude/agents/`, `.claude/settings.json` | `~/.claude/settings.json`, `~/.claude/CLAUDE.md`, `.worktrees/` |
-
-Project settings provide the shared baseline. User settings add personal overrides. Deny rules are additive — users can add stricter rules but can't remove project-level ones.
-
-[Full team setup guide →](docs/teams.md)
+See [Migration Guide](docs/migration-v4.md) for step-by-step instructions.
 
 ---
 
@@ -145,18 +131,16 @@ Project settings provide the shared baseline. User settings add personal overrid
 
 | Doc | Purpose |
 |-----|---------|
+| [Migration Guide](docs/migration-v4.md) | Upgrading from v3.x |
 | [Philosophy](docs/philosophy.md) | Principles and motivation |
-| [Skills Catalog](docs/skills.md) | Full skill descriptions |
 | [Team Setup](docs/teams.md) | Agent roster, permissions, team onboarding |
-| [Proposal](docs/proposal.md) | Shareable overview of the agentic SDLC |
 | [Whitepaper](docs/whitepaper.md) | Full technical depth — phases, isolation, governance |
-| [Agent Tooling](docs/agent-tooling.md) | Subtask + Ralph Wiggum execution patterns |
 
 ---
 
 ## Contributing
 
-PRs welcome. The knowledge phase of the agentic SDLC contributes improvements back to PDS automatically.
+PRs welcome. Read `/pds:contribute` first. The knowledge phase of the agentic SDLC contributes improvements back to PDS automatically.
 
 ---
 
