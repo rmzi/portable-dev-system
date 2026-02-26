@@ -64,6 +64,7 @@ Installs skills and security settings to `~/.claude/` — works across all proje
 | `/trim` | Context efficiency maintenance |
 | `/bump` | Version and changelog |
 | `/permission-router` | Permission hook policy |
+| `/sandbox` | OS-level sandbox configuration |
 | `/quickref` | PDS skills, agents, conventions |
 | `/bugfix` | Test-first bug fix loop |
 | `/verify` | Completion self-check |
@@ -99,7 +100,7 @@ PDS uses git worktrees for branch isolation — no stashing, no context switchin
 
 ## Permissions
 
-Auto-allowed: all tools, bash, MCP, web fetches
+Auto-allowed: all tools, bash (sandboxed — writes confined to CWD, network restricted to allowlist), MCP, web fetches
 
 Blocked:
 - Credential paths (`~/.aws`, `~/.ssh`, `~/.gnupg`, `~/.kube`, `~/.azure`, `~/.config/gh`, `~/.npmrc`, and more)

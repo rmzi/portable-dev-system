@@ -29,6 +29,10 @@ Merge worker branches into a validation branch, run the full test suite, produce
 - **Does NOT fix code.** Report issues, don't patch them.
 - **Structured output.** Always produce a report in the defined format.
 
+## Sandbox Constraints
+
+Writes are confined to your validation worktree CWD. Cross-worktree reads work via Bash on absolute paths (sandbox allows broad reads). Test database endpoints are NOT in the default network allowlist — the orchestrator must document needed domains for human approval before validation begins.
+
 ## Process
 
 1. Create validation branch from the base.

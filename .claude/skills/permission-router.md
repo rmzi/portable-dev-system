@@ -50,3 +50,18 @@ jq '.hooks.PermissionRequest' .claude/settings.json
 ## Relationship to Static Permissions
 
 The static `permissions.allow` and `permissions.deny` lists in `settings.json` still apply. The prompt hook handles cases where static rules don't cover the request — it acts as a dynamic second layer for subagent permission routing.
+
+## Sandbox Interaction
+
+With the sandbox enabled and `Bash(*)` removed from the static allow list, the PermissionRequest hook is the primary gate for non-sandboxed Bash commands. The flow:
+
+1. **Sandboxed Bash** (npm, pip, ls, etc.) — `autoAllowBashIfSandboxed` auto-approves. The hook never fires.
+2. **Excluded commands** (git, docker) — bypass the sandbox entirely. The PermissionRequest hook evaluates them. This means `git commit`, `git push origin feature`, and `docker build` all flow through the hook.
+3. **Unsandboxed commands** — Commands using `dangerouslyDisableSandbox: true` also go through the hook.
+4. **Non-Bash tools** — MCP tools not covered by `mcp__*`, Read/Write on paths not in the allow list, etc.
+
+Deny rules always fire before the hook. A `git push origin main` is blocked by the static deny rule and never reaches the hook.
+
+### Why Bash(*) was removed
+
+Previously `Bash(*)` in the allow list auto-approved all Bash commands including git and docker, making the PermissionRequest hook unreachable. With the sandbox handling routine Bash safety, `Bash(*)` was redundant — and it prevented the hook from meaningfully evaluating git/docker operations. Removing it restores the hook as an active gate for excluded commands while the sandbox continues to auto-approve everything else.

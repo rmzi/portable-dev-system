@@ -37,6 +37,7 @@ AI-assisted development methodology. Skills for consistency. Agents for scale.
 | `/merge` | Merging subtask branches back to coordinator |
 | `/bump` | Version bump and changelog update |
 | `/permission-router` | Permission hook policy, subagent routing |
+| `/sandbox` | OS-level sandbox config, network allowlist, platform support |
 | `/team` | Agent roster, roles, capabilities |
 | `/swarm` | Launch agent team for parallel work |
 | `/quickref` | PDS skills, agents, and conventions reference |

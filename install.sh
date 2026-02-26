@@ -202,6 +202,13 @@ install_project() {
   ok "PDS installed! Next steps:"
   echo "    git add .claude CLAUDE.md .gitignore"
   echo "    git commit -m \"feat: add PDS\""
+
+  # Check for sandbox dependencies on Linux
+  if [ "$(uname)" = "Linux" ]; then
+    for dep in bwrap socat; do
+      command -v "$dep" >/dev/null 2>&1 || warn "Sandbox dependency missing: $dep. Install with: sudo apt install bubblewrap socat"
+    done
+  fi
 }
 
 install_user() {
@@ -238,6 +245,13 @@ install_user() {
   echo "    Skills in ~/.claude/skills/ are used when projects don't have their own."
   echo "    Settings in ~/.claude/settings.json apply security guardrails everywhere."
   echo "    Agents are project-only — add PDS to a project for agent support."
+
+  # Check for sandbox dependencies on Linux
+  if [ "$(uname)" = "Linux" ]; then
+    for dep in bwrap socat; do
+      command -v "$dep" >/dev/null 2>&1 || warn "Sandbox dependency missing: $dep. Install with: sudo apt install bubblewrap socat"
+    done
+  fi
 }
 
 # --- Self-test ---

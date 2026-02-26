@@ -2,6 +2,38 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.1] - 2026-02-25
+
+### Fixed
+- **SessionStart hook semver comparison** — no longer warns to "downgrade" when local version is ahead of published remote (uses `sort -V` for proper semver ordering)
+- **Permission flow: removed `Bash(*)` from allow list** — was making the PermissionRequest hook unreachable for git/docker commands. Sandbox handles routine Bash via `autoAllowBashIfSandboxed`; git/docker now properly flow through the PermissionRequest hook
+- **Removed PostToolUse test reminder hook** — fired on every Edit/Write creating noise; agents have `/test` and `/verify` skills instead
+
+### Changed
+- **`/swarm` rewritten** — each of the 6 phases now shows concrete tool calls (TeamCreate, TaskCreate, Task, SendMessage, TaskUpdate, TaskList) instead of one-sentence summaries. Self-contained enough to execute the full Agentic SDLC without reading other files
+- **`/sandbox` adds Permission Flow section** — documents the full decision tree for how Bash commands flow through deny rules → sandbox → PermissionRequest hook
+- **`/permission-router` updated** — reflects `Bash(*)` removal and documents why; the hook now actively gates git/docker commands
+- **Orchestrator agent adds Swarm Tools section** — lists TeamCreate, TaskCreate, Task, SendMessage for quick reference
+
+## [3.0.0] - 2026-02-20T11:04:15-05:00
+
+### Added
+- **Native OS-level sandbox** — Claude Code sandbox (Seatbelt on macOS, bubblewrap on Linux) enabled by default for all Bash commands
+  - Filesystem writes confined to current working directory
+  - Network restricted to allowlist: GitHub, npm, PyPI
+  - `git` and `docker` excluded from sandbox (guarded by deny rules instead)
+  - `autoAllowBashIfSandboxed: true` — sandboxed Bash runs without permission prompts
+- **`/sandbox` skill** — documents the 6-layer security model, default configuration, customization guide, platform support, and troubleshooting
+- **Sandbox sections in all 8 agents** — each agent documents how the sandbox interacts with its role
+- **Linux dependency detection** — SessionStart hook and `install.sh` warn when `bwrap`/`socat` are missing on Linux
+- **Sandbox audit section** — `/audit-config` gains Section 6 (10 bonus points) for sandbox verification, A+ grade for 100+
+
+### Changed
+- **`additionalDirectories: [".."]` removed** — parent directory write access no longer granted; sandbox confines writes to CWD, cross-worktree reads use absolute paths via Bash
+- **Whitepaper updated** — "Agent Isolation" section rewritten with 6-layer defense-in-depth model; "Isolation Boundaries" section updated with sandbox as first boundary; Permission Tiers table gains "Sandbox" column
+- **`/permission-router` updated** — documents sandbox interaction: `autoAllowBashIfSandboxed` bypasses the hook for sandboxed Bash, excluded commands and unsandboxed commands still go through the hook
+- **`docs/teams.md` updated** — new "Sandbox" section, "What's Auto-Allowed" notes sandboxed Bash, `mcp__*` risk documented
+
 ## [2.9.0] - 2026-02-23T18:41:52-05:00
 
 ### Changed
