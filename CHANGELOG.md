@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.0.2] - 2026-02-27T15:22:28-05:00
+
+### Fixed
+- **`install_security_settings()` no longer overwrites user settings** — merges PDS security keys (`sandbox`, `permissions`) into existing `settings.json`, preserving user-specific config (`env`, `enabledPlugins`, custom keys)
+
 ## [4.0.1] - 2026-02-27
 
 ### Added

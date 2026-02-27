@@ -233,13 +233,54 @@ with open(path, 'w') as f:
 
 install_security_settings() {
   target_settings="$1"
+  pds_settings="$SRC_DIR/.claude/settings.json"
 
-  if [ -f "$target_settings" ] && [ ! -f "${target_settings}.pre-pds" ]; then
-    cp "$target_settings" "${target_settings}.pre-pds"
-    warn "Backed up existing settings → ${target_settings}.pre-pds"
+  if [ ! -f "$pds_settings" ]; then
+    warn "PDS settings.json not found — skipping"
+    return
   fi
-  cp "$SRC_DIR/.claude/settings.json" "$target_settings"
-  ok "Installed security settings → $target_settings"
+
+  if [ ! -f "$target_settings" ]; then
+    cp "$pds_settings" "$target_settings"
+    ok "Installed security settings → $target_settings"
+    return
+  fi
+
+  # Merge PDS security keys into existing settings, preserving user config
+  if ! command -v python3 >/dev/null 2>&1; then
+    warn "python3 not found — copying PDS settings (backup at ${target_settings}.pre-pds)"
+    if [ ! -f "${target_settings}.pre-pds" ]; then
+      cp "$target_settings" "${target_settings}.pre-pds"
+    fi
+    cp "$pds_settings" "$target_settings"
+    ok "Installed security settings → $target_settings"
+    return
+  fi
+
+  python3 -c "
+import json, sys
+
+pds_path, target_path = sys.argv[1], sys.argv[2]
+with open(pds_path) as f:
+    pds = json.load(f)
+with open(target_path) as f:
+    user = json.load(f)
+
+# Merge env: PDS defaults, user overrides
+if 'env' in pds or 'env' in user:
+    merged_env = {**pds.get('env', {}), **user.get('env', {})}
+    user['env'] = merged_env
+
+# PDS security keys overwrite (these are the guardrails)
+for key in ['sandbox', 'permissions']:
+    if key in pds:
+        user[key] = pds[key]
+
+with open(target_path, 'w') as f:
+    json.dump(user, f, indent=2)
+    f.write('\n')
+" "$pds_settings" "$target_settings"
+  ok "Merged PDS security settings into $target_settings"
 }
 
 # --- Install modes ---
