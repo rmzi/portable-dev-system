@@ -1,0 +1,23 @@
+{
+  "name": "pds-marketplace",
+  "owner": {
+    "name": "rmzi"
+  },
+  "metadata": {
+    "description": "Portable Development System — AI-assisted development methodology"
+  },
+  "plugins": [
+    {
+      "name": "pds",
+      "source": ".",
+      "description": "Portable Development System — skills for consistency, agents for scale.",
+      "version": "4.0.0",
+      "author": {
+        "name": "rmzi"
+      },
+      "repository": "https://github.com/rmzi/portable-dev-system",
+      "keywords": ["sdlc", "agents", "skills", "development"],
+      "category": "productivity"
+    }
+  ]
+}
