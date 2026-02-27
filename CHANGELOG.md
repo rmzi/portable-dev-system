@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.0.1] - 2026-02-27
+
+### Added
+- **`cleanup_claude_md()`** — strips `<!-- PDS:START -->` / `<!-- PDS:END -->` markers from CLAUDE.md, restores `.pre-pds` backup if file was entirely PDS-managed (#45)
+- **`cleanup_hooks()`** — surgically removes PDS-managed hooks (`SessionStart`, `PostToolUse`, `PermissionRequest`) from settings.json while preserving custom hooks (#46)
+- **`--cleanup --user`** — new mode to remove user-level PDS artifacts (plugin, settings hooks, CLAUDE.md markers)
+- **Cleanup tests** — 17 new test cases for CLAUDE.md stripping (4 scenarios) and hooks removal (3 scenarios)
+
+### Fixed
+- **BSD sed `1,/pattern/` range bug** — `install_claude_md()` marker replacement now uses explicit line numbers via `_pds_before()` / `_pds_after()` helpers, fixing silent data loss on macOS when PDS markers appear on line 1
+- **Test brittleness** — agent/skill count assertions now use `> 0` instead of hardcoded values; marker test uses self-contained fixture instead of repo's CLAUDE.md
+
 ## [4.0.0] - 2026-02-25
 
 ### Added
