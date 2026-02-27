@@ -160,10 +160,6 @@ install_plugin() {
     ok "Installed instincts → ~/.claude/instincts.md"
   fi
 
-  # Write version
-  printf '%s\n' "$REMOTE_VERSION" > "$HOME/.claude/.pds-version"
-  ok "Version: $REMOTE_VERSION"
-
   echo ""
   ok "PDS v4 plugin installed!"
   echo "    Plugin: ~/.claude/plugins/pds/"
@@ -210,10 +206,6 @@ install_project() {
 
   # Handle CLAUDE.md with PDS markers
   install_claude_md "$SRC_DIR/CLAUDE.md" "CLAUDE.md"
-
-  # Write version
-  printf '%s\n' "$REMOTE_VERSION" > "$TARGET_DIR/.pds-version"
-  ok "Version: $REMOTE_VERSION"
 
   # Add .worktrees/ to .gitignore if not present
   if [ -f .gitignore ]; then
@@ -467,10 +459,10 @@ for cmd in curl tar mktemp; do
 done
 
 # --- Version check ---
-VERSION_FILE="$HOME/.claude/.pds-version"
 LOCAL_VERSION=""
-if [ -f "$VERSION_FILE" ]; then
-  LOCAL_VERSION=$(cat "$VERSION_FILE")
+PLUGIN_JSON="$HOME/.claude/plugins/pds/.claude-plugin/plugin.json"
+if [ -f "$PLUGIN_JSON" ] && command -v python3 >/dev/null 2>&1; then
+  LOCAL_VERSION=$(python3 -c "import json; print(json.load(open('$PLUGIN_JSON')).get('version',''))" 2>/dev/null || echo "")
 fi
 
 REMOTE_VERSION=$(curl -sf --max-time 10 "$REMOTE_VERSION_URL" 2>/dev/null || echo "")

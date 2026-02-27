@@ -9,7 +9,7 @@ PDS is a Claude Code plugin. Skills and agents are distributed via the plugin sy
 
 ### Workflow
 
-1. **At session start**: The SessionStart hook checks for PDS updates automatically
+1. **At session start**: PDS plugin loads automatically (skills, agents, hooks)
 2. **Before any task**: Check if a PDS skill exists for it — if so, read it first
 3. **During work**: Follow skill documentation before performing actions
 4. **When stuck**: Read `/pds:ethos` for principles, `/pds:grill` for structured thinking
@@ -50,7 +50,7 @@ See `/pds:team` for the 8-agent roster (orchestrator, researcher, worker, valida
 agents/            — 8 agent definitions
 skills/            — 16 workflow skills (dir/SKILL.md format)
 hooks/             — SessionStart + PermissionRequest hooks
-.claude/           — Security settings (deny rules, sandbox config)
+.claude/           — Security settings (deny rules, sandbox config) — optional per-project
 docs/              — Philosophy, whitepaper, team setup
 install.sh         — Plugin installer + security settings
 VERSION            — Current version (semver)

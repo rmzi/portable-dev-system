@@ -28,7 +28,7 @@ PDS is project-level configuration. Everything lives inside the repo so `git pul
 | `skills/*/SKILL.md` | Workflow skills (via PDS plugin) |
 | `agents/*.md` | Agent definitions (via PDS plugin) |
 | `.claude/settings.json` | Permissions and environment — project overrides |
-| `.claude/.pds-version` | Tracks installed PDS version for auto-update |
+| Plugin `plugin.json` | Tracks PDS version (managed by marketplace) |
 
 ### Not committed (user-local)
 
@@ -67,7 +67,7 @@ That's it. No separate PDS install step. The skills, agents, settings, and hooks
 
 On first use, Claude will:
 1. Read `CLAUDE.md` and load PDS plugin skills
-2. Check `.claude/.pds-version` against the remote VERSION (SessionStart hook)
+2. Load PDS plugin (skills, agents, hooks)
 3. Follow PDS conventions for commits, reviews, debugging, etc.
 
 ### Adding PDS to an existing project
