@@ -1,33 +1,27 @@
 # Skills Catalog
 
-Skills encode team knowledge and workflows. Claude reads and follows them automatically.
+Skills encode team knowledge and workflows. Claude reads and follows them automatically. PDS skills are namespaced with `pds:` prefix.
 
-## Core Skills
+## Plugin Skills (16)
 
 | Skill | Purpose | When to Use |
 |-------|---------|-------------|
-| `/ethos` | Development principles, MECE | Starting work, when stuck, design decisions |
-| `/commit` | Semantic commit format | Before any git commit |
-| `/review` | Code review checklist | Before submitting or reviewing PRs |
-| `/debug` | Systematic debugging process | Troubleshooting issues |
-| `/test` | Test strategy and patterns | Writing or running tests |
-| `/design` | Architecture decision records | New features, significant changes |
-| `/merge` | Merging subtask branches back | After subtask branches are ready to consolidate |
-| `/permission-router` | Permission hook routing policy | Subagent permission requests, hook configuration |
-| `/sandbox` | OS-level sandbox configuration | Filesystem confinement, network restrictions, platform support |
-| `/quickref` | PDS skills, agents, conventions | Quick reference |
-| `/swarm` | Multi-agent team workflow with native coordination | Launching multi-agent parallel work |
-| `/team` | Agent roster and coordination | Agent roles, permissions, coordination model |
-| `/trim` | Context efficiency maintenance | Reducing skill/agent token footprint |
-| `/instinct` | Pattern capture and lifecycle | Recording, reviewing, and promoting engineering patterns |
-| `/audit-config` | Configuration security audit | After install, periodic review, team onboarding |
-| `/bump` | Version and changelog updates | Releasing new versions |
-| `/contribute` | PDS contribution workflow | Before modifying PDS artifacts |
-| `/grill` | Requirement interrogation | Before decomposition, ambiguous features |
-| `/bugfix` | Test-first bug fix loop | When a bug is reported and needs a verified fix |
-| `/verify` | Completion self-check | Before declaring tasks done, creating PRs |
-| `/finish` | Branch completion protocol | When branch needs preparation for merge |
-| `/merge-main` | Merge approved PRs to main | When PRs are approved and ready to land |
+| `/pds:ethos` | Development principles, MECE | Starting work, when stuck, design decisions |
+| `/pds:swarm` | Multi-agent team workflow (6-phase Agentic SDLC) | Launching multi-agent parallel work |
+| `/pds:team` | Agent roster and coordination | Agent roles, permissions, file protocol |
+| `/pds:grill` | Requirement interrogation | Before decomposition, ambiguous features |
+| `/pds:verify` | Completion self-check | Before declaring tasks done, creating PRs |
+| `/pds:finish` | Branch completion protocol | When branch needs preparation for merge |
+| `/pds:merge` | Merging subtask worktrees back | After subtask branches are ready to consolidate |
+| `/pds:worktree` | Git worktree workflow | Branch isolation, parallel work |
+| `/pds:instinct` | Pattern capture and lifecycle | Recording, reviewing, and promoting engineering patterns |
+| `/pds:sandbox` | OS-level sandbox configuration | Filesystem confinement, network restrictions |
+| `/pds:permission-router` | Permission hook routing policy | Subagent permission requests |
+| `/pds:audit-config` | Configuration security audit | After install, periodic review |
+| `/pds:trim` | Context efficiency maintenance | Reducing skill/agent token footprint |
+| `/pds:contribute` | PDS contribution workflow | Before modifying PDS artifacts |
+| `/pds:bugfix` | Test-first bug fix loop | When a bug needs a verified fix |
+| `/pds:bump` | Version and changelog updates | Releasing new versions |
 
 ---
 
