@@ -27,28 +27,20 @@ This installs:
 
 ### 2. Remove project-level PDS files
 
-If your project was using PDS v3.x with project-level installation:
-
 ```bash
-# Remove skills (now in plugin)
-rm -rf .claude/skills/
-
-# Remove agents (now in plugin)
-rm -rf .claude/agents/
-
-# Remove hooks from settings.json (now in plugin)
-# Edit .claude/settings.json and remove the "hooks" key
-# Keep: sandbox, permissions, env sections
+cd ~/your-project
+curl -sfL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash -s -- --cleanup
 ```
 
-### 3. Keep project-level files
+This removes `.claude/skills/`, `.claude/agents/`, hooks from `settings.json`, and `.pds-version`. It keeps `CLAUDE.md`, `instincts.md`, and any custom settings.
 
-These stay at project level — they are team/project-specific:
+### 3. Keep project-level files (optional)
 
+These stay at project level only if your team needs them:
+
+- `CLAUDE.md` — project rules, agent zones
 - `.claude/settings.json` — team-specific deny rules, domain overrides
 - `.claude/instincts.md` — project-learned patterns
-- `CLAUDE.md` — project rules, agent zones
-- `.claude/.pds-version` — version tracking
 
 ### 4. Update CLAUDE.md skill references
 
