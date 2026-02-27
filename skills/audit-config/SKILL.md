@@ -29,7 +29,7 @@ Read `.claude/settings.json` and verify:
 
 ### 2. Hooks Configuration (10 points)
 
-- [ ] **SessionStart hook exists** (5 pts) — Version check against remote VERSION (in plugin `hooks/hooks.json`)
+- [ ] **SessionStart hook exists** (5 pts) — Linux sandbox dependency check (in plugin `hooks/hooks.json`)
 - [ ] **PermissionRequest hook exists** (5 pts) — LLM-based policy evaluation (in plugin `hooks/hooks.json`)
 
 ### 3. Structure Completeness (20 points)

@@ -1,5 +1,5 @@
 ---
-description: Referencing the agent roster, roles, and coordination model. Use when spawning agents, checking permissions, or understanding the file protocol.
+description: Referencing the agent roster, roles, and coordination model. Use when spawning agents or checking permissions.
 ---
 # /team — Agent Team Reference
 
