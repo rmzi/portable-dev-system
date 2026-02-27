@@ -42,6 +42,7 @@ Options:
   --project     Install project-level settings only (team overrides)
   --plugin-dir  Link a local PDS checkout as the plugin (dev mode)
   --force       Reinstall even if already up to date
+  --cleanup     Remove old v3.x project-level PDS files (skills, agents, hooks)
   --test        Run smoke tests in a temp directory (no network)
   --help        Show this help message
 
@@ -233,6 +234,64 @@ install_project() {
   echo "    curl -sfL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash"
 }
 
+# --- Cleanup old v3.x project files ---
+
+cleanup_project() {
+  removed=0
+
+  if [ -d ".claude/skills" ]; then
+    rm -rf ".claude/skills"
+    ok "Removed .claude/skills/ (now in plugin)"
+    removed=$((removed + 1))
+  fi
+
+  if [ -d ".claude/agents" ]; then
+    rm -rf ".claude/agents"
+    ok "Removed .claude/agents/ (now in plugin)"
+    removed=$((removed + 1))
+  fi
+
+  if [ -f ".claude/settings.json" ] && grep -q '"hooks"' ".claude/settings.json" 2>/dev/null; then
+    # Remove hooks key from settings.json (now in plugin hooks/hooks.json)
+    if command -v python3 >/dev/null 2>&1; then
+      python3 -c "
+import json, sys
+with open('.claude/settings.json') as f: d = json.load(f)
+d.pop('hooks', None)
+with open('.claude/settings.json', 'w') as f: json.dump(d, f, indent=2); f.write('\n')
+"
+      ok "Removed hooks from .claude/settings.json (now in plugin)"
+      removed=$((removed + 1))
+    else
+      warn "Found hooks in .claude/settings.json — remove manually (python3 not available)"
+    fi
+  fi
+
+  if [ -f ".claude/.pds-version" ]; then
+    rm -f ".claude/.pds-version"
+    ok "Removed .claude/.pds-version (plugin tracks its own version)"
+    removed=$((removed + 1))
+  fi
+
+  # Check if .claude/ is now empty (only settings.json and instincts.md may remain)
+  remaining=$(ls -A .claude/ 2>/dev/null | grep -v 'settings.json' | grep -v 'instincts.md' | grep -v 'agent-memory' | wc -l | tr -d ' ')
+  if [ "$remaining" -eq 0 ] && [ ! -f ".claude/settings.json" ] && [ ! -f ".claude/instincts.md" ]; then
+    rm -rf .claude
+    ok "Removed empty .claude/ directory"
+  fi
+
+  echo ""
+  if [ "$removed" -gt 0 ]; then
+    ok "Cleaned up $removed old PDS artifacts"
+    echo "    Remaining project files (if any):"
+    echo "      .claude/settings.json — team-specific deny rules (keep if customized)"
+    echo "      .claude/instincts.md — project-learned patterns (keep)"
+    echo "      CLAUDE.md — project rules (keep)"
+  else
+    ok "Nothing to clean up — project is already clean"
+  fi
+}
+
 # --- Self-test ---
 
 run_tests() {
@@ -366,6 +425,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --project)    MODE="project"; shift ;;
     --plugin-dir) MODE="plugin-dir"; PLUGIN_DIR="$2"; shift 2 ;;
+    --cleanup)    MODE="cleanup"; shift ;;
     --force)      FORCE=1; shift ;;
     --test)       MODE="test"; shift ;;
     --help)       usage ;;
@@ -380,6 +440,12 @@ done
 if [ "$MODE" = "test" ]; then
   run_tests
   exit $?
+fi
+
+# --- Cleanup mode ---
+if [ "$MODE" = "cleanup" ]; then
+  cleanup_project
+  exit 0
 fi
 
 # --- Dev plugin-dir mode ---

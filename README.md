@@ -11,23 +11,34 @@
 
 ## Quick Start
 
-### Install (recommended)
+### Install via marketplace (recommended)
+
+Inside Claude Code:
+```
+/plugin marketplace add rmzi/portable-dev-system
+/plugin install pds@pds-marketplace
+```
+
+Restart Claude Code. PDS skills and agents are now available across all projects.
+
+### Install via script
 
 ```bash
 curl -sfL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash
 ```
 
-Installs the PDS plugin to `~/.claude/plugins/pds/` and security settings to `~/.claude/settings.json`. Works across all projects.
+Installs the plugin to `~/.claude/plugins/pds/` and security settings to `~/.claude/settings.json`.
 
-### Project-level settings (for teams)
+### Upgrading from v3.x?
+
+Clean up old project-level files:
 
 ```bash
 cd ~/your-project
-curl -sfL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash -s -- --project
-git add .claude CLAUDE.md .gitignore && git commit -m "feat: add PDS project settings"
+curl -sfL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash -s -- --cleanup
 ```
 
-Installs project-level `settings.json` and `CLAUDE.md` for team-specific overrides. The plugin provides skills and agents.
+See [Migration Guide](docs/migration-v4.md) for details.
 
 ### Dev mode
 
@@ -111,19 +122,15 @@ Blocked:
 
 ---
 
-## For Teams
+## What Lives Where
 
-### What's in the repo vs what's in the plugin
+| Source | What | Example |
+|--------|------|---------|
+| **Plugin** (user-level) | Skills, agents, hooks | `/pds:swarm`, `orchestrator` agent |
+| **Project** (optional) | Team overrides, project rules | `.claude/settings.json`, `CLAUDE.md` |
+| **Project** (optional) | Learned patterns | `.claude/instincts.md` |
 
-| Plugin (shared via `~/.claude/plugins/pds/`) | Project (committed to repo) | User (local) |
-|---|---|---|
-| Skills, agents, hooks | `.claude/settings.json` (team overrides), `CLAUDE.md` | `~/.claude/settings.json` |
-
-Project settings provide team-specific overrides. Plugin provides skills and agents. Deny rules are additive.
-
-### Migration from v3.x
-
-See [Migration Guide](docs/migration-v4.md) for step-by-step instructions.
+Most projects need **zero local PDS files**. The plugin provides everything. Add project-level files only when your team needs custom deny rules or project-specific `CLAUDE.md` rules.
 
 ---
 
