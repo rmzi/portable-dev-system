@@ -15,16 +15,34 @@ Bump the project version and update the changelog in one atomic operation.
 /bump          # Interactive - asks which type
 ```
 
+## Version File Detection
+
+Auto-detect the primary version source (first match wins):
+
+| File | Field |
+|------|-------|
+| `VERSION` | Entire file content |
+| `package.json` | `"version"` |
+| `pyproject.toml` | `[project] version` |
+| `Cargo.toml` | `[package] version` |
+| `.claude-plugin/plugin.json` | `"version"` |
+
+**Additional version files:** After bumping the primary, scan for co-located version fields and update them too (e.g., `plugin.json`, `marketplace.json`). Keep all versions in sync.
+
+**Changelog:** `CHANGELOG.md` in repo root.
+
 ## Workflow
 
-1. **Read current version** from `VERSION` file
-2. **Determine new version** based on bump type
-3. **Update VERSION** file
-4. **Update CHANGELOG.md** with new section:
+1. **Detect version file** using the priority table above
+2. **Read current version** from the detected file
+3. **Determine new version** based on bump type
+4. **Update primary version file**
+5. **Update co-located version files** (if any)
+6. **Update CHANGELOG.md** with new section:
    - Add `## [X.Y.Z] - YYYY-MM-DDTHH:MM:SS±HH:MM` header (use current local time)
    - Summarize changes since last version
    - Use `### Added`, `### Changed`, `### Fixed`, `### Removed` subsections
-5. **Commit** with message: `chore: bump version to X.Y.Z`
+7. **Commit** with message: `chore: bump version to X.Y.Z`
 
 ## Changelog Format
 
@@ -67,9 +85,11 @@ Bump the project version and update the changelog in one atomic operation.
 User: /bump patch
 
 Claude:
+- Detects VERSION file as primary version source
 - Reads VERSION: 0.7.1
 - Calculates new version: 0.7.2
 - Updates VERSION to 0.7.2
+- Scans for co-located version files (e.g., plugin.json) — updates if found
 - Adds ## [0.7.2] - 2026-02-04T14:32:07-05:00 section to CHANGELOG.md
 - Commits: "chore: bump version to 0.7.2"
 ```

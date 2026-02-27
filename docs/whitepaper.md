@@ -156,7 +156,7 @@ Agent effectiveness depends on how instructions reach the model. [Vercel's agent
 PDS uses a dual-layer approach informed by these findings:
 
 - **Passive context** (`CLAUDE.md`) — Always loaded. Carries rules, the skills table, and conventions that apply across all tasks. This is the horizontal layer.
-- **Explicit skills** (`.claude/skills/`) — User-triggered vertical workflows (`/commit`, `/review`, `/grill`). Loaded on demand when the user or orchestrator invokes them. These encode multi-step protocols that would bloat passive context if always present.
+- **Explicit skills** (plugin `skills/` directory) — User-triggered vertical workflows (`/pds:swarm`, `/pds:grill`, `/pds:finish`). Loaded on demand when the user or orchestrator invokes them. These encode multi-step protocols that would bloat passive context if always present.
 
 The passive layer tells the agent *what skills exist and when to use them*. The skills themselves contain the detailed protocol. This avoids the failure mode identified in Vercel's research — agents not discovering skills during general tasks — while keeping context lean.
 
@@ -377,23 +377,23 @@ Before cutting a line, ask: "Would an agent behave differently without this?" If
 
 PDS encodes two complementary layers of engineering guidance, designed to be MECE (mutually exclusive, collectively exhaustive):
 
-**Principles** (`/ethos`) define *why* — the philosophy that grounds decisions. Understand before acting. Small reversible steps. Tests as specification. Explicit over implicit. Optimize for change. Fail fast. Automation as documentation.
+**Principles** (`/pds:ethos`) define *why* — the philosophy that grounds decisions. Understand before acting. Small reversible steps. Tests as specification. Explicit over implicit. Optimize for change. Fail fast. Automation as documentation.
 
 **Techniques** (encoded across skills) define *how* — the concrete methods that implement principles:
 
-| Technique | Skill | Principle it implements |
-|-----------|-------|------------------------|
-| Hypothesis-driven debugging | `/debug` | Understand before you act |
-| git bisect for regression hunting | `/debug` | Automation as documentation |
-| Rubber duck protocol | `/debug` | Explicit over implicit |
-| TDD (RED/GREEN/REFACTOR) | `/test` | Tests as specification |
-| Behavior-based test naming | `/test` | Explicit over implicit |
-| Atomic commits | `/commit` | Small, reversible steps |
-| Severity-categorized review | `/review` | Fail fast, recover gracefully |
-| Rebasing-first merge coordination | `/merge` | Optimize for change |
-| Requirement interrogation | `/grill` | Understand before you act |
-| Completion verification | `/verify` | Explicit over implicit |
-| Branch preparation for merge | `/finish` | Small, reversible steps |
+| Technique | Skill / Agent | Principle it implements |
+|-----------|---------------|------------------------|
+| Hypothesis-driven debugging | `/pds:bugfix` | Understand before you act |
+| git bisect for regression hunting | `/pds:bugfix` | Automation as documentation |
+| Rubber duck protocol | `/pds:grill` | Explicit over implicit |
+| TDD (RED/GREEN/REFACTOR) | native (Claude) | Tests as specification |
+| Behavior-based test naming | native (Claude) | Explicit over implicit |
+| Atomic commits | `/pds:finish` | Small, reversible steps |
+| Severity-categorized review | reviewer agent | Fail fast, recover gracefully |
+| Rebasing-first merge coordination | `/pds:merge` | Optimize for change |
+| Requirement interrogation | `/pds:grill` | Understand before you act |
+| Completion verification | `/pds:verify` | Explicit over implicit |
+| Branch preparation for merge | `/pds:finish` | Small, reversible steps |
 
 This separation matters: principles are stable across projects and technologies, while techniques evolve with tooling and practice. An agent grounded in principles makes better judgment calls when no specific technique applies.
 

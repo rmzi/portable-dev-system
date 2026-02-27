@@ -13,7 +13,7 @@ Landscape scan of opinionated Claude Code SDLC approaches, multi-agent orchestra
 Battle-tested configs from an Anthropic hackathon winner. 12 agents, 24 commands, 16 skills, 20+ hook event types, 3 native custom tools (run-tests, check-coverage, security-audit).
 
 **Differentiators vs PDS:**
-- Plugin-based distribution via OpenCode marketplace (PDS uses curl install)
+- Plugin-based distribution via OpenCode marketplace (PDS uses plugin marketplace)
 - Security scanning tool that grades your CLAUDE.md/settings.json (A-F)
 - "Instinct-based learning" — commands for viewing, importing, exporting instincts that evolve into skills
 - Python/Django and Java Spring Boot skill packs (domain-specific)
@@ -56,7 +56,7 @@ Persistent context layer that sits above coding agents. Auto-manages and syncs c
 
 **Key idea:** Every new agent session inherits full project memory without manual context loading. Shared context via links for team collaboration.
 
-**Relevance to PDS:** PDS solves this with CLAUDE.md + agent memory files + `.pds-version` auto-update. OneContext is more ambitious (cross-device, cross-tool sync) but adds a dependency. Worth watching for ideas on cross-session memory.
+**Relevance to PDS:** PDS solves this with CLAUDE.md + agent memory files + plugin marketplace. OneContext is more ambitious (cross-device, cross-tool sync) but adds a dependency. Worth watching for ideas on cross-session memory.
 
 ### Vercel agent-skills
 
@@ -72,7 +72,7 @@ Vercel's official agent skills collection + AGENTS.md. Their [eval blog post](ht
 
 Discussion of Vercel eval implications for personal AI infrastructure. Debating passive context vs active skill retrieval at the personal/user level.
 
-**Relevance:** PDS's user-level install (`--user`) with conditional skill fallback is a direct answer to this question.
+**Relevance:** PDS's marketplace install with plugin distribution is a direct answer to this question.
 
 ---
 

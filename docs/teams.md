@@ -3,32 +3,32 @@
 ## Quick Start
 
 ```bash
-# 1. Install PDS into your project
-cd ~/your-project
-curl -sfL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash
+# 1. Install the PDS plugin (once per machine)
+claude mcp install-marketplace pds
 
-# 2. Commit the configuration
+# 2. (Optional) For team-shared project configuration:
+cd ~/your-project
+pds install --project
 git add .claude CLAUDE.md .gitignore
 git commit -m "feat: add PDS"
 ```
 
-Now every team member gets the same skills, agents, and conventions.
+For individual use, the marketplace install is all you need — PDS skills and agents are available in every Claude session. For teams, `--project` commits shared configuration to the repo so `git pull` is the only onboarding step.
 
 ---
 
 ## What Gets Committed
 
-PDS is project-level configuration. Everything lives inside the repo so `git pull` is the only onboarding step.
+Most projects need zero PDS files — the plugin provides all skills, agents, and conventions. Only commit project-specific overrides.
 
-### Committed (shared with team)
+### Committed (shared with team, optional)
 
 | Path | Purpose |
 |------|---------|
 | `CLAUDE.md` | Project rules — always loaded into context |
-| `skills/*/SKILL.md` | Workflow skills (via PDS plugin) |
-| `agents/*.md` | Agent definitions (via PDS plugin) |
 | `.claude/settings.json` | Permissions and environment — project overrides |
-| Plugin `plugin.json` | Tracks PDS version (managed by marketplace) |
+
+PDS core skills and agents are provided by the plugin and do not need to be committed. Only commit project-specific overrides.
 
 ### Not committed (user-local)
 
@@ -49,34 +49,39 @@ Claude Code merges settings from multiple levels. Project `.claude/settings.json
 ### Prerequisites
 
 - [Claude Code](https://claude.ai/claude-code) installed and authenticated
+- PDS plugin installed: `claude mcp install-marketplace pds`
 - Git access to the repository
 
 ### Steps
 
 ```bash
-# 1. Clone the repo (PDS config is already committed)
+# 1. Clone the repo
 git clone <repo-url> && cd <repo>
 
 # 2. Start Claude Code — PDS is active immediately
 claude
 ```
 
-That's it. No separate PDS install step. The skills, agents, settings, and hooks are all in the repo. Claude reads them on session start.
+The plugin provides all PDS skills and agents. Project-specific settings (if any) are in the repo. Claude reads them on session start.
 
 ### First session checklist
 
 On first use, Claude will:
 1. Read `CLAUDE.md` and load PDS plugin skills
-2. Load PDS plugin (skills, agents, hooks)
+2. Check Linux sandbox dependencies (SessionStart hook)
 3. Follow PDS conventions for commits, reviews, debugging, etc.
 
 ### Adding PDS to an existing project
 
-If the repo doesn't have PDS yet:
+If the repo doesn't have PDS configuration yet:
 
 ```bash
+# Install the plugin (if not already installed)
+claude mcp install-marketplace pds
+
+# (Optional) Commit project-specific settings
 cd ~/your-project
-curl -sfL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash
+pds install --project
 git add .claude CLAUDE.md .gitignore
 git commit -m "feat: add PDS configuration"
 ```
@@ -146,7 +151,7 @@ Plan → Decompose → Dispatch → Validate → Consolidate → Knowledge
  human gate                                human gate
 ```
 
-See `/swarm` and `/team` skills for full workflow details.
+See `/pds:swarm` and `/pds:team` skills for full workflow details.
 
 ---
 
@@ -246,7 +251,7 @@ PDS enables Claude Code's native OS-level sandbox for all Bash commands. The san
 
 **`mcp__*` wildcard risk:** The default `mcp__*` permission auto-approves all MCP tools from any configured server. For security-sensitive environments, replace with explicit allowlists per MCP server (e.g., `mcp__github__create_pull_request`).
 
-See `/sandbox` skill for full configuration reference and customization guide.
+See `/pds:sandbox` skill for full configuration reference and customization guide.
 
 ---
 
