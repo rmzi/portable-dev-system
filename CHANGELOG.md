@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 - **`cleanup_claude_md()`** — strips `<!-- PDS:START -->` / `<!-- PDS:END -->` markers from CLAUDE.md, restores `.pre-pds` backup if file was entirely PDS-managed (#45)
 - **`cleanup_hooks()`** — surgically removes PDS-managed hooks (`SessionStart`, `PostToolUse`, `PermissionRequest`) from settings.json while preserving custom hooks (#46)
 - **`--cleanup --user`** — new mode to remove user-level PDS artifacts (plugin, settings hooks, CLAUDE.md markers)
+- **`--cleanup --all`** — removes both project and user-level PDS artifacts in one command
 - **Cleanup tests** — 17 new test cases for CLAUDE.md stripping (4 scenarios) and hooks removal (3 scenarios)
 
 ### Fixed

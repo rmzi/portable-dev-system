@@ -25,6 +25,7 @@ MODE="plugin"
 FORCE=0
 CLEANUP=0
 USER_LEVEL=0
+ALL_LEVEL=0
 PLUGIN_DIR=""
 
 # --- Helpers ---
@@ -46,6 +47,7 @@ Options:
   --force       Reinstall even if already up to date
   --cleanup     Remove PDS artifacts (strips CLAUDE.md markers, hooks, v3.x files)
   --user        With --cleanup: remove user-level PDS (plugin, settings, hooks)
+  --all         With --cleanup: remove both project and user-level PDS
   --test        Run smoke tests in a temp directory (no network)
   --help        Show this help message
 
@@ -57,6 +59,7 @@ Modes:
 Cleanup:
   --cleanup           Remove PDS from the current project
   --cleanup --user    Remove PDS from user level (~/.claude/)
+  --cleanup --all     Remove PDS from both project and user level
 
 Examples:
   # Plugin install (default — recommended)
@@ -73,6 +76,9 @@ Examples:
 
   # Remove PDS from user level
   curl -sfL ... | bash -s -- --cleanup --user
+
+  # Remove PDS from both project and user level
+  curl -sfL ... | bash -s -- --cleanup --all
 EOF
   exit 0
 }
@@ -207,10 +213,16 @@ with open(path) as f:
     data = json.load(f)
 if 'hooks' not in data:
     sys.exit(0)
+changed = False
 for event in ['SessionStart', 'PostToolUse', 'PermissionRequest']:
-    data.get('hooks', {}).pop(event, None)
+    if event in data.get('hooks', {}):
+        data['hooks'].pop(event)
+        changed = True
 if not data.get('hooks'):
     data.pop('hooks', None)
+    changed = True
+if not changed:
+    sys.exit(0)
 with open(path, 'w') as f:
     json.dump(data, f, indent=2)
     f.write('\n')
@@ -680,6 +692,7 @@ while [ $# -gt 0 ]; do
     --plugin-dir) MODE="plugin-dir"; PLUGIN_DIR="$2"; shift 2 ;;
     --cleanup)    CLEANUP=1; shift ;;
     --user)       USER_LEVEL=1; shift ;;
+    --all)        ALL_LEVEL=1; shift ;;
     --force)      FORCE=1; shift ;;
     --test)       MODE="test"; shift ;;
     --help)       usage ;;
@@ -698,7 +711,11 @@ fi
 
 # --- Cleanup mode (no download needed) ---
 if [ "$CLEANUP" -eq 1 ]; then
-  if [ "$USER_LEVEL" -eq 1 ]; then
+  if [ "$ALL_LEVEL" -eq 1 ]; then
+    cleanup_project
+    echo ""
+    cleanup_user
+  elif [ "$USER_LEVEL" -eq 1 ]; then
     cleanup_user
   else
     cleanup_project
