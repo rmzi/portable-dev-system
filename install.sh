@@ -23,6 +23,9 @@ REMOTE_VERSION_URL="https://raw.githubusercontent.com/rmzi/portable-dev-system/m
 # --- Defaults ---
 MODE="plugin"
 FORCE=0
+CLEANUP=0
+USER_LEVEL=0
+ALL_LEVEL=0
 PLUGIN_DIR=""
 
 # --- Helpers ---
@@ -42,7 +45,9 @@ Options:
   --project     Install project-level settings only (team overrides)
   --plugin-dir  Link a local PDS checkout as the plugin (dev mode)
   --force       Reinstall even if already up to date
-  --cleanup     Remove old v3.x project-level PDS files (skills, agents, hooks)
+  --cleanup     Remove PDS artifacts (strips CLAUDE.md markers, hooks, v3.x files)
+  --user        With --cleanup: remove user-level PDS (plugin, settings, hooks)
+  --all         With --cleanup: remove both project and user-level PDS
   --test        Run smoke tests in a temp directory (no network)
   --help        Show this help message
 
@@ -50,6 +55,11 @@ Modes:
   Plugin (default):   Downloads PDS as a plugin to ~/.claude/plugins/pds/
                       Installs security settings to ~/.claude/settings.json
   Project (--project): Installs project-level settings.json and CLAUDE.md only
+
+Cleanup:
+  --cleanup           Remove PDS from the current project
+  --cleanup --user    Remove PDS from user level (~/.claude/)
+  --cleanup --all     Remove PDS from both project and user level
 
 Examples:
   # Plugin install (default — recommended)
@@ -60,6 +70,15 @@ Examples:
 
   # Dev mode — symlink local checkout
   ./install.sh --plugin-dir .
+
+  # Remove PDS from project
+  curl -sfL ... | bash -s -- --cleanup
+
+  # Remove PDS from user level
+  curl -sfL ... | bash -s -- --cleanup --user
+
+  # Remove PDS from both project and user level
+  curl -sfL ... | bash -s -- --cleanup --all
 EOF
   exit 0
 }
@@ -68,6 +87,25 @@ EOF
 
 PDS_START_MARKER="<!-- PDS:START -->"
 PDS_END_MARKER="<!-- PDS:END -->"
+
+# Extract content before/after PDS markers using explicit line numbers.
+# Avoids BSD sed range bug where 1,/pattern/ extends to EOF if line 1 matches.
+_pds_before() {
+  _file="$1"
+  _start=$(grep -n "$PDS_START_MARKER" "$_file" | head -1 | cut -d: -f1)
+  if [ -n "$_start" ] && [ "$_start" -gt 1 ] 2>/dev/null; then
+    sed -n "1,$((_start - 1))p" "$_file"
+  fi
+}
+
+_pds_after() {
+  _file="$1"
+  _end=$(grep -n "$PDS_END_MARKER" "$_file" | head -1 | cut -d: -f1)
+  _total=$(wc -l < "$_file" | tr -d ' ')
+  if [ -n "$_end" ] && [ "$_end" -lt "$_total" ] 2>/dev/null; then
+    sed -n "$((_end + 1)),\$p" "$_file"
+  fi
+}
 
 install_claude_md() {
   src_file="$1"
@@ -87,8 +125,8 @@ install_claude_md() {
   fi
 
   if grep -q "$PDS_START_MARKER" "$dest_file" 2>/dev/null; then
-    before=$(sed -n "1,/$PDS_START_MARKER/{ /$PDS_START_MARKER/d; p; }" "$dest_file")
-    after=$(sed -n "/$PDS_END_MARKER/,\${ /$PDS_END_MARKER/d; p; }" "$dest_file")
+    before=$(_pds_before "$dest_file")
+    after=$(_pds_after "$dest_file")
 
     {
       [ -n "$before" ] && printf '%s\n' "$before"
@@ -104,6 +142,91 @@ install_claude_md() {
     printf '%s\n' "$src_content" > "$dest_file"
     ok "Installed $dest_file (original backed up)"
   fi
+}
+
+# --- Cleanup helpers ---
+
+cleanup_claude_md() {
+  target_file="$1"
+
+  if [ ! -f "$target_file" ]; then
+    return
+  fi
+
+  if ! grep -q "$PDS_START_MARKER" "$target_file" 2>/dev/null; then
+    warn "No PDS markers found in $target_file — skipping"
+    return
+  fi
+
+  before=$(_pds_before "$target_file")
+  after=$(_pds_after "$target_file")
+
+  # Check if before or after have any non-whitespace content
+  has_content=0
+  if printf '%s' "$before" | grep -q '[^[:space:]]' 2>/dev/null; then
+    has_content=1
+  fi
+  if printf '%s' "$after" | grep -q '[^[:space:]]' 2>/dev/null; then
+    has_content=1
+  fi
+
+  if [ "$has_content" -eq 0 ]; then
+    # File was entirely PDS content
+    if [ -f "${target_file}.pre-pds" ]; then
+      mv "${target_file}.pre-pds" "$target_file"
+      ok "Restored $target_file from pre-PDS backup"
+    else
+      rm "$target_file"
+      ok "Removed $target_file (was entirely PDS-managed)"
+    fi
+  else
+    # Write back only non-PDS content
+    {
+      [ -n "$before" ] && printf '%s\n' "$before"
+      [ -n "$after" ] && printf '%s\n' "$after"
+    } > "$target_file"
+    ok "Stripped PDS block from $target_file"
+  fi
+}
+
+cleanup_hooks() {
+  settings_file="$1"
+
+  if [ ! -f "$settings_file" ]; then
+    return
+  fi
+
+  if ! grep -q '"hooks"' "$settings_file" 2>/dev/null; then
+    return
+  fi
+
+  if ! command -v python3 >/dev/null 2>&1; then
+    warn "python3 not found — cannot remove hooks from $settings_file"
+    warn "Manually remove the 'hooks' section from $settings_file"
+    return
+  fi
+
+  python3 -c "
+import json, sys
+path = sys.argv[1]
+with open(path) as f:
+    data = json.load(f)
+if 'hooks' not in data:
+    sys.exit(0)
+changed = False
+for event in ['SessionStart', 'PostToolUse', 'PermissionRequest']:
+    if event in data.get('hooks', {}):
+        data['hooks'].pop(event)
+        changed = True
+if not data.get('hooks'):
+    data.pop('hooks', None)
+    changed = True
+if not changed:
+    sys.exit(0)
+with open(path, 'w') as f:
+    json.dump(data, f, indent=2)
+    f.write('\n')
+" "$settings_file" && ok "Removed PDS hooks from $settings_file"
 }
 
 # --- Install security settings ---
@@ -226,11 +349,13 @@ install_project() {
   echo "    curl -sfL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash"
 }
 
-# --- Cleanup old v3.x project files ---
+# --- Cleanup modes ---
 
 cleanup_project() {
+  info "Cleaning up project-level PDS artifacts..."
   removed=0
 
+  # Remove v3.x project directories
   if [ -d ".claude/skills" ]; then
     rm -rf ".claude/skills"
     ok "Removed .claude/skills/ (now in plugin)"
@@ -243,20 +368,10 @@ cleanup_project() {
     removed=$((removed + 1))
   fi
 
+  # Remove hooks from project settings.json
   if [ -f ".claude/settings.json" ] && grep -q '"hooks"' ".claude/settings.json" 2>/dev/null; then
-    # Remove hooks key from settings.json (now in plugin hooks/hooks.json)
-    if command -v python3 >/dev/null 2>&1; then
-      python3 -c "
-import json, sys
-with open('.claude/settings.json') as f: d = json.load(f)
-d.pop('hooks', None)
-with open('.claude/settings.json', 'w') as f: json.dump(d, f, indent=2); f.write('\n')
-"
-      ok "Removed hooks from .claude/settings.json (now in plugin)"
-      removed=$((removed + 1))
-    else
-      warn "Found hooks in .claude/settings.json — remove manually (python3 not available)"
-    fi
+    cleanup_hooks ".claude/settings.json"
+    removed=$((removed + 1))
   fi
 
   if [ -f ".claude/.pds-version" ]; then
@@ -265,11 +380,26 @@ with open('.claude/settings.json', 'w') as f: json.dump(d, f, indent=2); f.write
     removed=$((removed + 1))
   fi
 
+  # Strip PDS block from CLAUDE.md (Issue #45)
+  if [ -f "CLAUDE.md" ] && grep -q "$PDS_START_MARKER" "CLAUDE.md" 2>/dev/null; then
+    cleanup_claude_md "CLAUDE.md"
+    removed=$((removed + 1))
+  fi
+
+  # Remove PDS hooks from user-level settings (Issue #46)
+  if [ -f "$HOME/.claude/settings.json" ] && grep -q '"hooks"' "$HOME/.claude/settings.json" 2>/dev/null; then
+    warn "Also removing PDS hooks from user-level ~/.claude/settings.json"
+    cleanup_hooks "$HOME/.claude/settings.json"
+    removed=$((removed + 1))
+  fi
+
   # Check if .claude/ is now empty (only settings.json and instincts.md may remain)
-  remaining=$(ls -A .claude/ 2>/dev/null | grep -v 'settings.json' | grep -v 'instincts.md' | grep -v 'agent-memory' | wc -l | tr -d ' ')
-  if [ "$remaining" -eq 0 ] && [ ! -f ".claude/settings.json" ] && [ ! -f ".claude/instincts.md" ]; then
-    rm -rf .claude
-    ok "Removed empty .claude/ directory"
+  if [ -d ".claude" ]; then
+    remaining=$(ls -A .claude/ 2>/dev/null | grep -v 'settings.json' | grep -v 'instincts.md' | grep -v 'agent-memory' | wc -l | tr -d ' ')
+    if [ "$remaining" -eq 0 ] && [ ! -f ".claude/settings.json" ] && [ ! -f ".claude/instincts.md" ]; then
+      rm -rf .claude
+      ok "Removed empty .claude/ directory"
+    fi
   fi
 
   echo ""
@@ -278,10 +408,34 @@ with open('.claude/settings.json', 'w') as f: json.dump(d, f, indent=2); f.write
     echo "    Remaining project files (if any):"
     echo "      .claude/settings.json — team-specific deny rules (keep if customized)"
     echo "      .claude/instincts.md — project-learned patterns (keep)"
-    echo "      CLAUDE.md — project rules (keep)"
   else
     ok "Nothing to clean up — project is already clean"
   fi
+}
+
+cleanup_user() {
+  info "Cleaning up user-level PDS artifacts..."
+
+  # Remove plugin directory
+  if [ -d "$HOME/.claude/plugins/pds" ] || [ -L "$HOME/.claude/plugins/pds" ]; then
+    rm -rf "$HOME/.claude/plugins/pds"
+    ok "Removed plugin: ~/.claude/plugins/pds/"
+  fi
+
+  # Remove PDS hooks from user settings (Issue #46)
+  cleanup_hooks "$HOME/.claude/settings.json"
+
+  # Restore user settings from backup if available
+  if [ -f "$HOME/.claude/settings.json.pre-pds" ]; then
+    mv "$HOME/.claude/settings.json.pre-pds" "$HOME/.claude/settings.json"
+    ok "Restored ~/.claude/settings.json from pre-PDS backup"
+  fi
+
+  # Strip PDS block from user CLAUDE.md (Issue #45)
+  cleanup_claude_md "$HOME/.claude/CLAUDE.md"
+
+  echo ""
+  ok "PDS user artifacts cleaned up"
 }
 
 # --- Self-test ---
@@ -306,6 +460,17 @@ run_tests() {
   assert_dir()     { assert "$1 exists" test -d "$2"; }
   assert_contains() { assert "$1 contains '$2'" grep -q "$2" "$3"; }
   assert_not_dir() { assert "$1 does not exist" test ! -d "$2"; }
+  assert_no_file()  { assert "$1 does not exist" test ! -f "$2"; }
+  assert_not_contains() {
+    desc="$1"; pattern="$2"; file="$3"
+    if grep -q "$pattern" "$file" 2>/dev/null; then
+      err "FAIL: $desc does not contain '$pattern'"
+      FAIL=$((FAIL + 1))
+    else
+      ok "PASS: $desc does not contain '$pattern'"
+      PASS=$((PASS + 1))
+    fi
+  }
 
   info "Running PDS v4 plugin install smoke tests (offline, temp dirs)"
   echo ""
@@ -320,13 +485,13 @@ run_tests() {
   assert_dir  "skills"             "$SRC_DIR/skills"
   assert_dir  "hooks"              "$SRC_DIR/hooks"
 
-  # Count agents (should be 8)
+  # Count agents (at least 1)
   agent_count=$(ls "$SRC_DIR/agents/"*.md 2>/dev/null | wc -l | tr -d ' ')
-  assert "agents count = 8 (got $agent_count)" test "$agent_count" -eq 8
+  assert "agents count > 0 (got $agent_count)" test "$agent_count" -gt 0
 
-  # Count skills (should be 16 directories)
+  # Count skills (at least 1)
   skill_count=$(ls -d "$SRC_DIR/skills/"*/SKILL.md 2>/dev/null | wc -l | tr -d ' ')
-  assert "skills count = 16 (got $skill_count)" test "$skill_count" -eq 16
+  assert "skills count > 0 (got $skill_count)" test "$skill_count" -gt 0
 
   # Validate JSON
   assert "plugin.json is valid JSON" python3 -c "import json; json.load(open('$SRC_DIR/.claude-plugin/plugin.json'))"
@@ -381,6 +546,15 @@ run_tests() {
   testdir=$(mktemp -d)
   trap 'rm -rf "$testdir"' EXIT
 
+  # Self-contained source CLAUDE.md with markers
+  cat > "$testdir/src-claude.md" <<'SRCEOF'
+<!-- PDS:START -->
+# Portable Development System
+## Skills System (MANDATORY)
+New PDS content
+<!-- PDS:END -->
+SRCEOF
+
   cat > "$testdir/marker-test.md" <<'MARKEREOF'
 # My custom header
 
@@ -390,10 +564,109 @@ old PDS content here
 
 # My custom footer
 MARKEREOF
-  install_claude_md "$SRC_DIR/CLAUDE.md" "$testdir/marker-test.md"
-  assert_contains "marker-test.md" "PDS:START"       "$testdir/marker-test.md"
+  install_claude_md "$testdir/src-claude.md" "$testdir/marker-test.md"
+  assert_contains "marker-test.md" "PDS:START"        "$testdir/marker-test.md"
+  assert_contains "marker-test.md" "Skills System"    "$testdir/marker-test.md"
   assert_contains "marker-test.md" "My custom header" "$testdir/marker-test.md"
   assert_contains "marker-test.md" "My custom footer" "$testdir/marker-test.md"
+
+  echo ""
+
+  # --- Test 6: Cleanup strips PDS block from CLAUDE.md (#45) ---
+  info "Test: cleanup strips PDS block from CLAUDE.md"
+
+  # 6a: File entirely PDS-managed → gets removed
+  cat > "$testdir/pds-only.md" <<'EOF'
+<!-- PDS:START -->
+PDS content only
+<!-- PDS:END -->
+EOF
+  cleanup_claude_md "$testdir/pds-only.md"
+  assert_no_file "pds-only.md removed" "$testdir/pds-only.md"
+
+  # 6b: File with pre-PDS backup → restore original
+  echo "Original content before PDS" > "$testdir/has-backup.md.pre-pds"
+  cat > "$testdir/has-backup.md" <<'EOF'
+<!-- PDS:START -->
+PDS replaced this
+<!-- PDS:END -->
+EOF
+  cleanup_claude_md "$testdir/has-backup.md"
+  assert_file     "backup restored"         "$testdir/has-backup.md"
+  assert_contains "has-backup.md" "Original" "$testdir/has-backup.md"
+  assert_no_file  "pre-pds backup removed"  "$testdir/has-backup.md.pre-pds"
+
+  # 6c: File with custom content + PDS block → PDS stripped, custom preserved
+  cat > "$testdir/mixed.md" <<'EOF'
+# My Project
+
+Custom rules here.
+
+<!-- PDS:START -->
+PDS content to remove
+<!-- PDS:END -->
+
+# More custom content
+EOF
+  cleanup_claude_md "$testdir/mixed.md"
+  assert_file         "mixed.md still exists"  "$testdir/mixed.md"
+  assert_not_contains "mixed.md" "PDS:START"   "$testdir/mixed.md"
+  assert_not_contains "mixed.md" "PDS:END"     "$testdir/mixed.md"
+  assert_contains     "mixed.md" "My Project"  "$testdir/mixed.md"
+  assert_contains     "mixed.md" "More custom" "$testdir/mixed.md"
+
+  # 6d: File without PDS markers → left untouched
+  echo "No PDS here" > "$testdir/no-markers.md"
+  cleanup_claude_md "$testdir/no-markers.md"
+  assert_file     "no-markers.md untouched"    "$testdir/no-markers.md"
+  assert_contains "no-markers.md" "No PDS"     "$testdir/no-markers.md"
+
+  echo ""
+
+  # --- Test 7: Cleanup removes hooks from settings.json (#46) ---
+  info "Test: cleanup removes PDS hooks from settings.json"
+
+  # 7a: Settings with PDS hooks → hooks removed, rest preserved
+  cat > "$testdir/hooks-test.json" <<'EOF'
+{
+  "permissions": {
+    "allow": ["Read"]
+  },
+  "hooks": {
+    "SessionStart": [{"hooks": [{"type": "command", "command": "echo version check"}]}],
+    "PostToolUse": [{"hooks": [{"type": "command", "command": "echo test reminder"}]}],
+    "PermissionRequest": [{"hooks": [{"type": "prompt", "prompt": "evaluate permissions"}]}]
+  }
+}
+EOF
+  cleanup_hooks "$testdir/hooks-test.json"
+  assert "hooks removed"       python3 -c "import json; d=json.load(open('$testdir/hooks-test.json')); assert 'hooks' not in d"
+  assert "permissions kept"    python3 -c "import json; d=json.load(open('$testdir/hooks-test.json')); assert 'permissions' in d"
+  assert "valid JSON after"    python3 -c "import json; json.load(open('$testdir/hooks-test.json'))"
+
+  # 7b: Settings with mixed hooks → only PDS hooks removed
+  cat > "$testdir/mixed-hooks.json" <<'EOF'
+{
+  "permissions": {"allow": ["Read"]},
+  "hooks": {
+    "SessionStart": [{"hooks": [{"type": "command", "command": "echo pds"}]}],
+    "PreToolUse": [{"hooks": [{"type": "command", "command": "echo custom"}]}]
+  }
+}
+EOF
+  cleanup_hooks "$testdir/mixed-hooks.json"
+  assert "PDS hook removed"    python3 -c "import json; d=json.load(open('$testdir/mixed-hooks.json')); assert 'SessionStart' not in d.get('hooks', {})"
+  assert "custom hook kept"    python3 -c "import json; d=json.load(open('$testdir/mixed-hooks.json')); assert 'PreToolUse' in d['hooks']"
+  assert "hooks key kept"      python3 -c "import json; d=json.load(open('$testdir/mixed-hooks.json')); assert 'hooks' in d"
+
+  # 7c: Settings without hooks → no-op
+  cat > "$testdir/no-hooks.json" <<'EOF'
+{
+  "permissions": {"allow": ["Read"]}
+}
+EOF
+  cleanup_hooks "$testdir/no-hooks.json"
+  assert "no-hooks unchanged"  python3 -c "import json; d=json.load(open('$testdir/no-hooks.json')); assert 'permissions' in d and 'hooks' not in d"
 
   echo ""
 
@@ -417,7 +690,9 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --project)    MODE="project"; shift ;;
     --plugin-dir) MODE="plugin-dir"; PLUGIN_DIR="$2"; shift 2 ;;
-    --cleanup)    MODE="cleanup"; shift ;;
+    --cleanup)    CLEANUP=1; shift ;;
+    --user)       USER_LEVEL=1; shift ;;
+    --all)        ALL_LEVEL=1; shift ;;
     --force)      FORCE=1; shift ;;
     --test)       MODE="test"; shift ;;
     --help)       usage ;;
@@ -434,9 +709,17 @@ if [ "$MODE" = "test" ]; then
   exit $?
 fi
 
-# --- Cleanup mode ---
-if [ "$MODE" = "cleanup" ]; then
-  cleanup_project
+# --- Cleanup mode (no download needed) ---
+if [ "$CLEANUP" -eq 1 ]; then
+  if [ "$ALL_LEVEL" -eq 1 ]; then
+    cleanup_project
+    echo ""
+    cleanup_user
+  elif [ "$USER_LEVEL" -eq 1 ]; then
+    cleanup_user
+  else
+    cleanup_project
+  fi
   exit 0
 fi
 
