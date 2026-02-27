@@ -9,7 +9,11 @@
   "plugins": [
     {
       "name": "pds",
-      "source": ".",
+      "source": {
+        "source": "github",
+        "repo": "rmzi/portable-dev-system",
+        "ref": "main"
+      },
       "description": "Portable Development System — skills for consistency, agents for scale.",
       "version": "4.0.0",
       "author": {
