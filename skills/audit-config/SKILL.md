@@ -37,7 +37,7 @@ Read `.claude/settings.json` and verify:
 - [ ] **CLAUDE.md exists with PDS markers** (5 pts) — `<!-- PDS:START -->` and `<!-- PDS:END -->` present
 - [ ] **Skills directory populated** (5 pts) — `skills/*/SKILL.md` exists with YAML frontmatter (via plugin)
 - [ ] **Agents directory populated** (5 pts) — `agents/*.md` exists with YAML frontmatter (via plugin)
-- [ ] **Version file exists** (2 pts) — `.claude/.pds-version` present and non-empty
+- [ ] **Plugin installed** (2 pts) — `plugin.json` has version field
 - [ ] **.gitignore has .worktrees/** (3 pts) — Worktree directory excluded from version control
 
 ### 4. Sensitive File Scan (15 points)
@@ -84,7 +84,7 @@ Grade: [A-F] ([score]/100)
 Findings:
 1. [CRITICAL] Missing deny rule for ~/.docker/config.json via $HOME
 2. [INFO] Hooks loaded from plugin hooks/hooks.json
-3. [INFO] .pds-version is 2.1.0, latest is 2.6.0
+3. [INFO] PDS plugin version: 4.0.0
 
 Recommendation: [one-line summary]
 ```

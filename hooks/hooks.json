@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "LOCAL=$(cat .claude/.pds-version 2>/dev/null || echo 'unknown'); REMOTE=$(curl -sf --max-time 5 https://raw.githubusercontent.com/rmzi/portable-dev-system/main/VERSION 2>/dev/null || echo ''); if [ -n \"$REMOTE\" ] && [ \"$LOCAL\" != \"$REMOTE\" ]; then NEWER=$(printf '%s\\n%s' \"$LOCAL\" \"$REMOTE\" | sort -V | tail -1); if [ \"$NEWER\" = \"$REMOTE\" ] && [ \"$NEWER\" != \"$LOCAL\" ]; then echo \"⚠️ PDS update available: $LOCAL → $REMOTE. Run pds-update to upgrade.\"; fi; fi; if [ \"$(uname)\" = \"Linux\" ]; then for dep in bwrap socat; do command -v $dep >/dev/null 2>&1 || echo \"Sandbox dep missing: $dep. Install: sudo apt install bubblewrap socat\"; done; fi",
+            "command": "if [ \"$(uname)\" = \"Linux\" ]; then for dep in bwrap socat; do command -v $dep >/dev/null 2>&1 || echo \"Sandbox dep missing: $dep. Install: sudo apt install bubblewrap socat\"; done; fi",
             "timeout": 10
           }
         ]
