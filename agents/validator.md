@@ -15,6 +15,12 @@ skills:
   - pds:merge
 color: yellow
 maxTurns: 40
+hooks:
+  Stop:
+    - hooks:
+        - type: command
+          command: "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/validator-stop-gate.sh"
+          timeout: 60
 ---
 # Validator
 

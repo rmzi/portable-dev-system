@@ -196,13 +196,9 @@ cleanup_hooks() {
     return
   fi
 
-  if ! grep -q '"hooks"' "$settings_file" 2>/dev/null; then
-    return
-  fi
-
   if ! command -v python3 >/dev/null 2>&1; then
-    warn "python3 not found — cannot remove hooks from $settings_file"
-    warn "Manually remove the 'hooks' section from $settings_file"
+    warn "python3 not found — cannot clean PDS settings from $settings_file"
+    warn "Manually remove PDS hooks, spinnerTipsOverride, and attribution from $settings_file"
     return
   fi
 
@@ -211,22 +207,26 @@ import json, sys
 path = sys.argv[1]
 with open(path) as f:
     data = json.load(f)
-if 'hooks' not in data:
-    sys.exit(0)
 changed = False
-for event in ['SessionStart', 'PostToolUse', 'PermissionRequest']:
+# Remove PDS hook events
+for event in ['SessionStart', 'PostToolUse', 'PermissionRequest', 'Stop', 'TaskCompleted', 'TeammateIdle']:
     if event in data.get('hooks', {}):
         data['hooks'].pop(event)
         changed = True
 if not data.get('hooks'):
     data.pop('hooks', None)
     changed = True
+# Remove PDS UX keys
+for key in ['spinnerTipsOverride', 'attribution']:
+    if key in data:
+        data.pop(key)
+        changed = True
 if not changed:
     sys.exit(0)
 with open(path, 'w') as f:
     json.dump(data, f, indent=2)
     f.write('\n')
-" "$settings_file" && ok "Removed PDS hooks from $settings_file"
+" "$settings_file" && ok "Removed PDS settings from $settings_file"
 }
 
 # --- Install security settings ---
@@ -271,8 +271,8 @@ if 'env' in pds or 'env' in user:
     merged_env = {**pds.get('env', {}), **user.get('env', {})}
     user['env'] = merged_env
 
-# PDS security keys overwrite (these are the guardrails)
-for key in ['sandbox', 'permissions']:
+# PDS-managed keys overwrite (security guardrails + UX)
+for key in ['sandbox', 'permissions', 'spinnerTipsOverride', 'attribution']:
     if key in pds:
         user[key] = pds[key]
 
@@ -525,6 +525,7 @@ run_tests() {
   assert_dir  "agents"             "$SRC_DIR/agents"
   assert_dir  "skills"             "$SRC_DIR/skills"
   assert_dir  "hooks"              "$SRC_DIR/hooks"
+  assert_file "settings.json"      "$SRC_DIR/settings.json"
 
   # Count agents (at least 1)
   agent_count=$(ls "$SRC_DIR/agents/"*.md 2>/dev/null | wc -l | tr -d ' ')
@@ -537,7 +538,10 @@ run_tests() {
   # Validate JSON
   assert "plugin.json is valid JSON" python3 -c "import json; json.load(open('$SRC_DIR/.claude-plugin/plugin.json'))"
   assert "hooks.json is valid JSON" python3 -c "import json; json.load(open('$SRC_DIR/hooks/hooks.json'))"
+  assert "plugin settings.json valid" python3 -c "import json; d=json.load(open('$SRC_DIR/settings.json')); assert d.get('agent') == 'orchestrator', 'missing agent key'"
   assert "settings.json is valid JSON" python3 -c "import json; json.load(open('$SRC_DIR/.claude/settings.json'))"
+  assert "settings has spinnerTips"    python3 -c "import json; d=json.load(open('$SRC_DIR/.claude/settings.json')); assert 'spinnerTipsOverride' in d"
+  assert "settings has attribution"    python3 -c "import json; d=json.load(open('$SRC_DIR/.claude/settings.json')); assert 'attribution' in d"
 
   echo ""
 
@@ -546,8 +550,8 @@ run_tests() {
   for agent_file in "$SRC_DIR/agents/"*.md; do
     agent_name=$(basename "$agent_file" .md)
     if grep -q 'skills:' "$agent_file"; then
-      # Check that all skill references use pds: prefix
-      if grep -A 10 'skills:' "$agent_file" | grep -E '^\s+- [a-z]' | grep -v 'pds:' >/dev/null 2>&1; then
+      # Check that all skill references use pds: prefix (stop at next YAML key)
+      if sed -n '/^skills:/,/^[a-z]/p' "$agent_file" | grep -E '^\s+- [a-z]' | grep -v 'pds:' >/dev/null 2>&1; then
         err "FAIL: $agent_name has non-prefixed skills"
         FAIL=$((FAIL + 1))
       else
@@ -571,6 +575,24 @@ run_tests() {
   info "Test: hooks in plugin, not in settings"
   assert_contains "hooks.json" "SessionStart" "$SRC_DIR/hooks/hooks.json"
   assert_contains "hooks.json" "PermissionRequest" "$SRC_DIR/hooks/hooks.json"
+  assert_contains "hooks.json" "Stop" "$SRC_DIR/hooks/hooks.json"
+  assert_contains "hooks.json" "TaskCompleted" "$SRC_DIR/hooks/hooks.json"
+  assert_contains "hooks.json" "TeammateIdle" "$SRC_DIR/hooks/hooks.json"
+  # Hook scripts exist and are executable
+  assert_file "task-completed-gate.sh" "$SRC_DIR/hooks/scripts/task-completed-gate.sh"
+  assert_file "teammate-idle-gate.sh" "$SRC_DIR/hooks/scripts/teammate-idle-gate.sh"
+  assert "task-completed-gate.sh is executable" test -x "$SRC_DIR/hooks/scripts/task-completed-gate.sh"
+  assert "teammate-idle-gate.sh is executable" test -x "$SRC_DIR/hooks/scripts/teammate-idle-gate.sh"
+  assert_file "session-start.sh" "$SRC_DIR/hooks/scripts/session-start.sh"
+  assert "session-start.sh is executable" test -x "$SRC_DIR/hooks/scripts/session-start.sh"
+  assert "session-start.sh outputs JSON" bash -c "'$SRC_DIR/hooks/scripts/session-start.sh' | python3 -c 'import json,sys; d=json.load(sys.stdin); assert \"additionalContext\" in d.get(\"hookSpecificOutput\", {})'"
+  assert_file "post-write-check.sh" "$SRC_DIR/hooks/scripts/post-write-check.sh"
+  assert "post-write-check.sh is executable" test -x "$SRC_DIR/hooks/scripts/post-write-check.sh"
+  assert_file "validator-stop-gate.sh" "$SRC_DIR/hooks/scripts/validator-stop-gate.sh"
+  assert "validator-stop-gate.sh is executable" test -x "$SRC_DIR/hooks/scripts/validator-stop-gate.sh"
+  # Agent frontmatter hooks
+  assert_contains "worker hooks" "PostToolUse" "$SRC_DIR/agents/worker.md"
+  assert_contains "validator hooks" "Stop" "$SRC_DIR/agents/validator.md"
   # settings.json should NOT have hooks
   if grep -q '"hooks"' "$SRC_DIR/.claude/settings.json" 2>/dev/null; then
     err "FAIL: settings.json still has hooks (should be in plugin)"
@@ -667,7 +689,7 @@ EOF
   # --- Test 7: Cleanup removes hooks from settings.json (#46) ---
   info "Test: cleanup removes PDS hooks from settings.json"
 
-  # 7a: Settings with PDS hooks → hooks removed, rest preserved
+  # 7a: Settings with PDS hooks + UX keys → all PDS keys removed, rest preserved
   cat > "$testdir/hooks-test.json" <<'EOF'
 {
   "permissions": {
@@ -676,12 +698,19 @@ EOF
   "hooks": {
     "SessionStart": [{"hooks": [{"type": "command", "command": "echo version check"}]}],
     "PostToolUse": [{"hooks": [{"type": "command", "command": "echo test reminder"}]}],
-    "PermissionRequest": [{"hooks": [{"type": "prompt", "prompt": "evaluate permissions"}]}]
-  }
+    "PermissionRequest": [{"hooks": [{"type": "prompt", "prompt": "evaluate permissions"}]}],
+    "Stop": [{"hooks": [{"type": "prompt", "prompt": "check completion"}]}],
+    "TaskCompleted": [{"hooks": [{"type": "command", "command": "echo gate"}]}],
+    "TeammateIdle": [{"hooks": [{"type": "command", "command": "echo gate"}]}]
+  },
+  "spinnerTipsOverride": {"tips": ["test tip"]},
+  "attribution": {"pr": "test"}
 }
 EOF
   cleanup_hooks "$testdir/hooks-test.json"
   assert "hooks removed"       python3 -c "import json; d=json.load(open('$testdir/hooks-test.json')); assert 'hooks' not in d"
+  assert "spinnerTips removed" python3 -c "import json; d=json.load(open('$testdir/hooks-test.json')); assert 'spinnerTipsOverride' not in d"
+  assert "attribution removed" python3 -c "import json; d=json.load(open('$testdir/hooks-test.json')); assert 'attribution' not in d"
   assert "permissions kept"    python3 -c "import json; d=json.load(open('$testdir/hooks-test.json')); assert 'permissions' in d"
   assert "valid JSON after"    python3 -c "import json; json.load(open('$testdir/hooks-test.json'))"
 
@@ -691,12 +720,14 @@ EOF
   "permissions": {"allow": ["Read"]},
   "hooks": {
     "SessionStart": [{"hooks": [{"type": "command", "command": "echo pds"}]}],
+    "Stop": [{"hooks": [{"type": "prompt", "prompt": "check"}]}],
     "PreToolUse": [{"hooks": [{"type": "command", "command": "echo custom"}]}]
   }
 }
 EOF
   cleanup_hooks "$testdir/mixed-hooks.json"
   assert "PDS hook removed"    python3 -c "import json; d=json.load(open('$testdir/mixed-hooks.json')); assert 'SessionStart' not in d.get('hooks', {})"
+  assert "Stop hook removed"   python3 -c "import json; d=json.load(open('$testdir/mixed-hooks.json')); assert 'Stop' not in d.get('hooks', {})"
   assert "custom hook kept"    python3 -c "import json; d=json.load(open('$testdir/mixed-hooks.json')); assert 'PreToolUse' in d['hooks']"
   assert "hooks key kept"      python3 -c "import json; d=json.load(open('$testdir/mixed-hooks.json')); assert 'hooks' in d"
 

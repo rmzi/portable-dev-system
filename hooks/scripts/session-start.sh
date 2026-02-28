@@ -1,0 +1,51 @@
+#!/bin/bash
+# PDS SessionStart hook — injects PDS context and sets env vars.
+# Outputs JSON with additionalContext for Claude's context window.
+# Writes PDS_VERSION and PDS_PLUGIN_ROOT to CLAUDE_ENV_FILE.
+
+# --- Linux sandbox dependency check (preserved from inline hook) ---
+if [ "$(uname)" = "Linux" ]; then
+  for dep in bwrap socat; do
+    command -v "$dep" >/dev/null 2>&1 || echo "Sandbox dep missing: $dep. Install: sudo apt install bubblewrap socat" >&2
+  done
+fi
+
+# --- Resolve PDS version ---
+PDS_VERSION="unknown"
+if [ -n "$CLAUDE_PLUGIN_ROOT" ] && [ -f "$CLAUDE_PLUGIN_ROOT/.claude-plugin/plugin.json" ]; then
+  PDS_VERSION=$(python3 -c "import json; print(json.load(open('$CLAUDE_PLUGIN_ROOT/.claude-plugin/plugin.json')).get('version', 'unknown'))" 2>/dev/null || echo "unknown")
+fi
+
+# --- Detect worktree ---
+WORKTREE_INFO=""
+if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  GIT_DIR=$(git rev-parse --git-dir 2>/dev/null)
+  if echo "$GIT_DIR" | grep -q "worktrees"; then
+    WT_NAME=$(basename "$(pwd)")
+    MAIN_REPO=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null | sed 's|/.git$||')
+    WORKTREE_INFO=" Worktree: $WT_NAME (repo: $MAIN_REPO)."
+  fi
+fi
+
+# --- Write persistent env vars ---
+if [ -n "$CLAUDE_ENV_FILE" ]; then
+  echo "export PDS_VERSION=\"$PDS_VERSION\"" >> "$CLAUDE_ENV_FILE"
+  if [ -n "$CLAUDE_PLUGIN_ROOT" ]; then
+    echo "export PDS_PLUGIN_ROOT=\"$CLAUDE_PLUGIN_ROOT\"" >> "$CLAUDE_ENV_FILE"
+  fi
+fi
+
+# --- Output additionalContext ---
+CONTEXT="PDS v${PDS_VERSION} active. Key skills: /pds:swarm (parallel work), /pds:grill (requirements), /pds:verify (completion check), /pds:bugfix (test-first fixes).${WORKTREE_INFO}"
+
+# Use python3 for safe JSON encoding
+python3 -c "
+import json, sys
+ctx = sys.argv[1]
+print(json.dumps({
+    'hookSpecificOutput': {
+        'hookEventName': 'SessionStart',
+        'additionalContext': ctx
+    }
+}))
+" "$CONTEXT" 2>/dev/null || exit 0

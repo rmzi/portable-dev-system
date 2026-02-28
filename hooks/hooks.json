@@ -5,8 +5,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if [ \"$(uname)\" = \"Linux\" ]; then for dep in bwrap socat; do command -v $dep >/dev/null 2>&1 || echo \"Sandbox dep missing: $dep. Install: sudo apt install bubblewrap socat\"; done; fi",
-            "timeout": 10
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/session-start.sh",
+            "timeout": 15
           }
         ]
       }
@@ -17,6 +17,39 @@
           {
             "type": "prompt",
             "prompt": "You are a permission evaluator for a velocity-focused dev environment. Evaluate this permission request: $ARGUMENTS\n\nALLOW routine dev operations: reading/writing source code, running tests, installing deps, git operations on feature branches, linters, formatters, builds, file search, web search/fetch.\n\nDENY: credential file access (~/.aws, ~/.ssh, ~/.gnupg, ~/.kube, ~/.azure, ~/.config/gcloud, ~/.config/gh, ~/.npmrc, ~/.pypirc, ~/.docker/config.json, ~/.gem/credentials, ~/.cargo/credentials, ~/.netrc, .pem files, .git-credentials, id_rsa/id_ed25519 keys, *secret*key*, *token*.json), production patterns (PROD, prod.*, --profile prod), remote access (ssh, scp, sftp), push to protected branches (main/master/dev/develop), force push, .env files, secrets directories.\n\nWhen in doubt, ALLOW — explicit deny rules above are the guardrails.\n\nRespond with JSON: {\"ok\": true} to allow, or {\"ok\": false, \"reason\": \"brief reason\"} to deny.",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "You are a completion verifier. Evaluate whether the agent has finished its work properly: $ARGUMENTS\n\nCheck:\n1. Did the agent verify its work (run tests, check output, or explicitly confirm completion)?\n2. Are there any obvious incomplete steps mentioned but not executed?\n3. Did the agent commit its changes (if applicable)?\n\nIf the work appears complete and verified, respond: {\"decision\": \"allow\"}\nIf the agent stopped without verifying, respond: {\"decision\": \"block\", \"reason\": \"Run /pds:verify or confirm tests pass before stopping.\"}",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "TaskCompleted": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/task-completed-gate.sh",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "TeammateIdle": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/teammate-idle-gate.sh",
             "timeout": 15
           }
         ]

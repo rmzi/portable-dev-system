@@ -124,5 +124,18 @@
       "Write(**/*secret*key*)",
       "Write(**/*token*.json)"
     ]
+  },
+  "spinnerTipsOverride": {
+    "excludeDefault": false,
+    "tips": [
+      "Use /pds:swarm to launch a parallel agent team",
+      "Use /pds:grill to validate requirements before building",
+      "Use /pds:verify before marking tasks complete",
+      "Use /pds:bugfix for test-first bug fixing",
+      "Use /pds:team to see available agents and roles"
+    ]
+  },
+  "attribution": {
+    "pr": "\n\nGenerated with [PDS](https://github.com/rmzi/portable-dev-system)"
   }
 }

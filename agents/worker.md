@@ -15,6 +15,13 @@ skills:
   - pds:verify
 color: green
 maxTurns: 50
+hooks:
+  PostToolUse:
+    - matcher: "Write|Edit"
+      hooks:
+        - type: command
+          command: "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/post-write-check.sh"
+          timeout: 30
 ---
 # Worker
 

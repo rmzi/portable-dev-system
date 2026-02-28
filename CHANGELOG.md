@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.1.0] - 2026-02-27
+
+### Added
+- **Quality gate hooks** — `Stop` (prompt), `TaskCompleted` (command), `TeammateIdle` (command) in `hooks/hooks.json` — programmatic enforcement replacing instruction-only quality gates (#49)
+- **Default orchestrator agent** — `settings.json` at plugin root sets `{"agent": "orchestrator"}` so PDS-enabled sessions use the orchestrator persona by default (#50)
+- **Agent frontmatter hooks** — `worker.md` gets `PostToolUse` hook (lint/format after Write|Edit), `validator.md` gets `Stop` hook (auto-converts to SubagentStop, enforces test pass before finishing) (#51)
+- **SessionStart `additionalContext`** — `hooks/scripts/session-start.sh` injects PDS version, key skills, and worktree info into Claude's context; writes `PDS_VERSION` and `PDS_PLUGIN_ROOT` to `CLAUDE_ENV_FILE` (#52)
+- **Spinner tips** — `spinnerTipsOverride` in PDS settings surfaces key skills (/pds:swarm, /pds:grill, /pds:verify, /pds:bugfix, /pds:team) during Claude's thinking spinner (#53)
+- **PR attribution** — `attribution.pr` appends PDS credit line to pull request descriptions (#53)
+- **Hook scripts** — `hooks/scripts/` directory with 5 executable scripts: `session-start.sh`, `task-completed-gate.sh`, `teammate-idle-gate.sh`, `post-write-check.sh`, `validator-stop-gate.sh`
+
+### Changed
+- **`cleanup_hooks()` expanded** — now removes `Stop`, `TaskCompleted`, `TeammateIdle` hook events plus `spinnerTipsOverride` and `attribution` keys from settings.json
+- **`install_security_settings()` merge expanded** — now merges `spinnerTipsOverride` and `attribution` alongside `sandbox` and `permissions`
+- **SessionStart hook** — replaced inline Linux dep-check command with `session-start.sh` script (dep check preserved inside script)
+- **Skill namespace test** — fixed false positive when agent frontmatter has `hooks:` section after `skills:` (uses `sed` range instead of `grep -A`)
+
 ## [4.0.2] - 2026-02-27T15:22:28-05:00
 
 ### Fixed
