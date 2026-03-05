@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.2.0] - 2026-03-04
+
+### Added
+- **SDLC phase gates** — Mechanical enforcement of phase transitions via PreToolUse hooks on the orchestrator agent:
+  - `orchestrator-pr-gate.sh` — blocks `gh pr create` unless `.claude/swarm/validation-report.md` and `review-report.md` exist
+  - `orchestrator-teardown-gate.sh` — blocks `TeamDelete` unless all 3 phase reports exist (validation, review, scout)
+- **Swarm artifact directory** — `.claude/swarm/` stores phase artifacts (plan, contracts, validation/review/scout reports); added to `.gitignore`
+- **Validator LLM evaluator** — prompt-based Stop hook replaces command-based `validator-stop-gate.sh`; evaluates report completeness semantically
+- **Scout write access** — scout agent upgraded from `plan` to `acceptEdits` mode with Write tool; writes scoped to `.claude/swarm/scout-report.md` and `.claude/instincts.md`
+- **Scout claude-mem integration** — scout can access cross-session memory via `smart_search`, `timeline`, `get_observations` MCP tools (graceful skip if unavailable)
+- **Grill swarm decision** — `/pds:grill` step 9 evaluates swarm vs. no-swarm with explicit criteria and rationale
+- **Phase gates reference table** — `/pds:swarm` documents all mechanical enforcement points and swarm artifact inventory
+
+### Changed
+- **Orchestrator dispatch** — Phase 3 now runs `mkdir -p .claude/swarm`; Phase 5 writes reviewer report to `.claude/swarm/review-report.md`
+- **Validator process** — step 5 now writes report to `.claude/swarm/validation-report.md`
+- **Scout process** — step 9 now writes report to `.claude/swarm/scout-report.md`
+- **Swarm Phase 2** — contracts and plans written to `.claude/swarm/` instead of `.swarm/`
+- **Team skill** — scout row updated (permissionMode: acceptEdits, scoped write access documented)
+- **Whitepaper** — Phase 4/5/6 descriptions updated with artifact requirements; defense-in-depth model gains PreToolUse phase gates (layer 4); glossary adds Phase Gate and Swarm Artifacts entries
+- **install.sh** — `install_project()` adds `.claude/swarm/` to `.gitignore`; `cleanup_project()` removes `.claude/swarm/`; test assertions updated for new hook scripts and orchestrator frontmatter
+
+### Removed
+- **`hooks/scripts/validator-stop-gate.sh`** — replaced by prompt-based LLM evaluator in validator agent frontmatter
+
 ## [4.1.0] - 2026-02-27
 
 ### Added

@@ -18,9 +18,20 @@ maxTurns: 40
 hooks:
   Stop:
     - hooks:
-        - type: command
-          command: "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/validator-stop-gate.sh"
-          timeout: 60
+        - type: prompt
+          prompt: |
+            You are a validation quality evaluator. The validator is attempting to stop.
+            Evaluate whether it produced a complete validation report: $ARGUMENTS
+
+            Check: (1) structured report with merge status, test results, acceptance criteria verdicts
+            (2) each criterion has pass/fail with evidence (3) failures include test name, location,
+            error, and fix hint (4) report written to .claude/swarm/validation-report.md
+            (5) clear overall verdict
+
+            Respond with JSON:
+            - Complete: {"decision": "allow"}
+            - Incomplete: {"decision": "block", "reason": "what is missing and where to write it"}
+          timeout: 30
 ---
 # Validator
 
@@ -45,7 +56,7 @@ Writes are confined to your validation worktree CWD. Cross-worktree reads work v
 2. Merge worker branches one at a time. Record conflicts.
 3. Run full test suite + static analysis.
 4. Check each acceptance criterion against code evidence.
-5. Produce structured validation report.
+5. Produce structured validation report. Write report to `.claude/swarm/validation-report.md`.
 
 ## Output Format
 

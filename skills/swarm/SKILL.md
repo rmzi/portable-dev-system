@@ -17,6 +17,11 @@ Six-phase workflow for decomposing, dispatching, and validating parallel work ac
 
 ## Phase 2: Decompose
 
+Initialize the swarm artifact directory:
+```bash
+mkdir -p .claude/swarm
+```
+
 Split along architecture boundaries. If CLAUDE.md defines **Agent Zones** (a table mapping zones to paths and merge order), use them to guide decomposition — one task per zone, foundation-first merge order.
 
 Use TaskCreate for each work unit. Put acceptance criteria in the `description` field — this is what workers and the validator check against:
@@ -29,7 +34,7 @@ TaskCreate(
 )
 ```
 
-Use TaskUpdate to set dependencies between tasks (`addBlockedBy`, `addBlocks`). When zones cross a boundary (e.g., backend <-> frontend), write a **contract** to `.swarm/contracts.md` defining the interface before dispatching. Write decomposition plan to `.swarm/plan.md`.
+Use TaskUpdate to set dependencies between tasks (`addBlockedBy`, `addBlocks`). When zones cross a boundary (e.g., backend <-> frontend), write a **contract** to `.claude/swarm/contracts.md` defining the interface before dispatching. Write decomposition plan to `.claude/swarm/plan.md`.
 
 ## Phase 3: Dispatch
 
@@ -59,9 +64,9 @@ Use TaskUpdate to set dependencies between tasks (`addBlockedBy`, `addBlocks`). 
 2. Spawn a validator in its own worktree:
    ```
    Task(subagent_type="validator", team_name="project-name", name="validator",
-        prompt="Merge all task branches, run full test suite, produce structured pass/fail report.")
+        prompt="Merge all task branches, run full test suite, produce structured pass/fail report. Write report to .claude/swarm/validation-report.md.")
    ```
-3. Validator merges branches, runs tests, produces a structured report
+3. Validator merges branches, runs tests, writes structured report to `.claude/swarm/validation-report.md` **(required — PR gate checks for this file)**
 4. If issues found:
    - Update tasks: `TaskUpdate(taskId="1", status="in_progress", description="Fix: ...")`
    - Dispatch targeted workers to fix specific failures
@@ -75,24 +80,52 @@ Use TaskUpdate to set dependencies between tasks (`addBlockedBy`, `addBlocks`). 
    ```
    Task(subagent_type="reviewer", prompt="Review the diff against acceptance criteria from Phase 1.")
    ```
-3. Spawn a documenter if user-facing docs are affected:
+3. Write reviewer report to `.claude/swarm/review-report.md` after receiving it via SendMessage **(required — PR gate checks for this file)**
+4. Spawn a documenter if user-facing docs are affected:
    ```
    Task(subagent_type="documenter", prompt="Update docs for the changes in this PR.")
    ```
-4. Create PR with full context:
+5. Create PR with full context:
    ```bash
    gh pr create --title "feat: ..." --body "## Summary\n...\n## Acceptance Criteria\n...\n## Validation\n...\n## Issues\n..."
    ```
-5. **Get human approval before merge.**
+   **Note:** The PR gate (`orchestrator-pr-gate.sh`) blocks `gh pr create` unless both `validation-report.md` and `review-report.md` exist in `.claude/swarm/`.
+6. **Get human approval before merge.**
 
 ## Phase 6: Knowledge
 
 1. Spawn scout for PDS meta-improvements:
    ```
-   Task(subagent_type="scout", prompt="Read .claude/instincts.md. Update counts for re-observed patterns. Propose new instincts. Flag high-confidence patterns for skill promotion.")
+   Task(subagent_type="scout", prompt="Read .claude/instincts.md. Update counts for re-observed patterns. Propose new instincts. Flag high-confidence patterns for skill promotion. Write report to .claude/swarm/scout-report.md.")
    ```
-2. Scout updates observation counts, proposes new patterns, flags promotions (human-gated — new skill = new file = PR review)
-3. Clean up: `TeamDelete`
+2. Scout writes report to `.claude/swarm/scout-report.md` **(required — TeamDelete gate checks for this file)**
+3. Scout updates observation counts, proposes new patterns, flags promotions (human-gated — new skill = new file = PR review)
+4. Clean up: `TeamDelete`
+   **Note:** The teardown gate (`orchestrator-teardown-gate.sh`) blocks `TeamDelete` unless all 3 phase reports exist in `.claude/swarm/` (validation, review, scout).
+
+## Phase Gates
+
+Mechanical enforcement of phase transitions via PreToolUse hooks on the orchestrator:
+
+| Gate | Hook Script | Trigger | Blocks Unless |
+|------|-------------|---------|---------------|
+| PR gate | `orchestrator-pr-gate.sh` | `gh pr create` in Bash | `validation-report.md` + `review-report.md` exist |
+| Teardown gate | `orchestrator-teardown-gate.sh` | `TeamDelete` | All 3 reports exist (validation + review + scout) |
+| Validator stop | Prompt hook in validator.md | Validator Stop | Structured report written to `.claude/swarm/validation-report.md` |
+
+All gates are no-ops when `.claude/swarm/` doesn't exist (non-swarm tasks pass through).
+
+### Swarm Artifacts
+
+All phase artifacts are written to `.claude/swarm/`:
+
+| File | Phase | Producer | Required By |
+|------|-------|----------|-------------|
+| `plan.md` | 2 | orchestrator | — |
+| `contracts.md` | 2 | orchestrator | — |
+| `validation-report.md` | 4 | validator | PR gate, teardown gate |
+| `review-report.md` | 5 | orchestrator (from reviewer) | PR gate, teardown gate |
+| `scout-report.md` | 6 | scout | Teardown gate |
 
 ## Monitoring
 

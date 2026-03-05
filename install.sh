@@ -371,15 +371,19 @@ install_project() {
   # Handle CLAUDE.md with PDS markers
   install_claude_md "$SRC_DIR/CLAUDE.md" "CLAUDE.md"
 
-  # Add .worktrees/ to .gitignore if not present
+  # Add .worktrees/ and .claude/swarm/ to .gitignore if not present
   if [ -f .gitignore ]; then
     if ! grep -q '^\.worktrees/' .gitignore 2>/dev/null; then
       printf '\n.worktrees/\n' >> .gitignore
       ok "Added .worktrees/ to .gitignore"
     fi
+    if ! grep -q '^\.claude/swarm/' .gitignore 2>/dev/null; then
+      printf '.claude/swarm/\n' >> .gitignore
+      ok "Added .claude/swarm/ to .gitignore"
+    fi
   else
-    printf '.worktrees/\n' > .gitignore
-    ok "Created .gitignore with .worktrees/"
+    printf '.worktrees/\n.claude/swarm/\n' > .gitignore
+    ok "Created .gitignore with .worktrees/ and .claude/swarm/"
   fi
 
   echo ""
@@ -431,6 +435,13 @@ cleanup_project() {
   if [ -f "$HOME/.claude/settings.json" ] && grep -q '"hooks"' "$HOME/.claude/settings.json" 2>/dev/null; then
     warn "Also removing PDS hooks from user-level ~/.claude/settings.json"
     cleanup_hooks "$HOME/.claude/settings.json"
+    removed=$((removed + 1))
+  fi
+
+  # Remove swarm artifacts
+  if [ -d ".claude/swarm" ]; then
+    rm -rf ".claude/swarm"
+    ok "Removed .claude/swarm/ (ephemeral swarm artifacts)"
     removed=$((removed + 1))
   fi
 
@@ -588,11 +599,14 @@ run_tests() {
   assert "session-start.sh outputs JSON" bash -c "'$SRC_DIR/hooks/scripts/session-start.sh' | python3 -c 'import json,sys; d=json.load(sys.stdin); assert \"additionalContext\" in d.get(\"hookSpecificOutput\", {})'"
   assert_file "post-write-check.sh" "$SRC_DIR/hooks/scripts/post-write-check.sh"
   assert "post-write-check.sh is executable" test -x "$SRC_DIR/hooks/scripts/post-write-check.sh"
-  assert_file "validator-stop-gate.sh" "$SRC_DIR/hooks/scripts/validator-stop-gate.sh"
-  assert "validator-stop-gate.sh is executable" test -x "$SRC_DIR/hooks/scripts/validator-stop-gate.sh"
+  assert_file "orchestrator-pr-gate.sh" "$SRC_DIR/hooks/scripts/orchestrator-pr-gate.sh"
+  assert "orchestrator-pr-gate.sh is executable" test -x "$SRC_DIR/hooks/scripts/orchestrator-pr-gate.sh"
+  assert_file "orchestrator-teardown-gate.sh" "$SRC_DIR/hooks/scripts/orchestrator-teardown-gate.sh"
+  assert "orchestrator-teardown-gate.sh is executable" test -x "$SRC_DIR/hooks/scripts/orchestrator-teardown-gate.sh"
   # Agent frontmatter hooks
   assert_contains "worker hooks" "PostToolUse" "$SRC_DIR/agents/worker.md"
   assert_contains "validator hooks" "Stop" "$SRC_DIR/agents/validator.md"
+  assert_contains "orchestrator hooks" "PreToolUse" "$SRC_DIR/agents/orchestrator.md"
   # settings.json should NOT have hooks
   if grep -q '"hooks"' "$SRC_DIR/.claude/settings.json" 2>/dev/null; then
     err "FAIL: settings.json still has hooks (should be in plugin)"

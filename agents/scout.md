@@ -6,7 +6,12 @@ tools:
   - Read
   - Glob
   - Grep
-permissionMode: plan
+  - Write
+  - mcp__plugin_claude-mem_mcp-search__search
+  - mcp__plugin_claude-mem_mcp-search__timeline
+  - mcp__plugin_claude-mem_mcp-search__get_observations
+  - mcp__plugin_claude-mem_mcp-search__smart_search
+permissionMode: acceptEdits
 skills:
   - pds:ethos
   - pds:instinct
@@ -25,13 +30,22 @@ Analyze `.claude/` artifacts — skills, agents, settings — to identify opport
 
 ## Constraints
 
-- **Read-only.** Read, Glob, and Grep only.
+- **Write limited to `.claude/swarm/scout-report.md` and `.claude/instincts.md`.** No other file writes.
 - **Scoped to PDS artifacts.** Only `.claude/`, `CLAUDE.md`, and related config.
 - **Suggestions only.** Report for human review.
 
 ## Sandbox Constraints
 
-Plan mode + sandbox = double read-only enforcement. No Bash tool access, so sandbox has minimal direct impact. Reads via Glob/Grep are not sandboxed.
+acceptEdits mode + sandbox = writes confined to CWD. Only write to `.claude/swarm/scout-report.md` (report) and `.claude/instincts.md` (instinct updates).
+
+## Claude-Mem Integration
+
+If claude-mem MCP tools are available, use them to enrich analysis with cross-session context:
+- `smart_search` — find prior decisions, patterns, and debugging insights relevant to the current swarm
+- `timeline` — review recent session history for recurring themes
+- `get_observations` — fetch specific observations by ID when referenced in instincts
+
+If claude-mem tools are unavailable, proceed without them — all other analysis remains valid.
 
 ## Process
 
@@ -43,7 +57,7 @@ Plan mode + sandbox = double read-only enforcement. No Bash tool access, so sand
 6. Check context footprint. Flag growth beyond baseline. Recommend `/pds:trim` if bloated.
 7. Update instincts. For patterns re-observed: bump `Times seen`, adjust `Confidence`. For new patterns: propose new instinct entries.
 8. Flag promotions. If any instinct reaches `high` confidence (3+ validations), draft a skill file for human review.
-9. Produce report.
+9. Produce report. Write report to `.claude/swarm/scout-report.md`.
 
 ## Output Format
 
