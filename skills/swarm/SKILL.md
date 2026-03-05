@@ -89,9 +89,9 @@ Use TaskUpdate to set dependencies between tasks (`addBlockedBy`, `addBlocks`). 
 
 1. Spawn scout for PDS meta-improvements:
    ```
-   Task(subagent_type="scout", prompt="Read .claude/instincts.md. Update counts for re-observed patterns. Propose new instincts. Flag high-confidence patterns for skill promotion.")
+   Task(subagent_type="scout", prompt="Read .claude/instincts.md. Update counts for re-observed patterns. Propose new instincts. Flag high-confidence patterns for skill promotion. Run /pds:eval on skills exercised in this swarm.")
    ```
-2. Scout updates observation counts, proposes new patterns, flags promotions (human-gated — new skill = new file = PR review)
+2. Scout updates observation counts, proposes new patterns, flags promotions (human-gated — new skill = new file = PR review). Scout also runs skill evals per `/pds:eval`.
 3. Clean up: `TeamDelete`
 
 ## Monitoring

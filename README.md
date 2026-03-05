@@ -50,7 +50,7 @@ make install    # symlinks this checkout as the plugin
 
 ---
 
-## Skills (16)
+## Skills (17)
 
 | Skill | Purpose |
 |-------|---------|
@@ -70,6 +70,7 @@ make install    # symlinks this checkout as the plugin
 | `/pds:contribute` | Contributing to PDS itself |
 | `/pds:bugfix` | Test-first bug fix loop |
 | `/pds:bump` | Version and changelog |
+| `/pds:eval` | Skill evaluation and testing |
 
 ---
 

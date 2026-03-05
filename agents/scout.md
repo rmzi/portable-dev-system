@@ -11,6 +11,7 @@ skills:
   - pds:ethos
   - pds:instinct
   - pds:trim
+  - pds:eval
 color: red
 maxTurns: 15
 memory: project
@@ -43,7 +44,8 @@ Plan mode + sandbox = double read-only enforcement. No Bash tool access, so sand
 6. Check context footprint. Flag growth beyond baseline. Recommend `/pds:trim` if bloated.
 7. Update instincts. For patterns re-observed: bump `Times seen`, adjust `Confidence`. For new patterns: propose new instinct entries.
 8. Flag promotions. If any instinct reaches `high` confidence (3+ validations), draft a skill file for human review.
-9. Produce report.
+9. Run evals. For skills exercised in this swarm, read their `EVAL.md` and grade observed agent behavior against the rubric. Record results in `.claude/eval-results.md`.
+10. Produce report.
 
 ## Output Format
 
@@ -60,6 +62,10 @@ Plan mode + sandbox = double read-only enforcement. No Bash tool access, so sand
 - **New**: [instinct title] — [pattern summary]
 - **Promote**: [instinct title] — reached high confidence, skill draft: [path]
 - **Retire**: [instinct title] — [reason]
+### Evals
+- **Passed**: [skill] — all scenarios pass
+- **Regressed**: [skill] — [scenario] failed, was passing
+- **New**: [skill] — first eval run, results: [summary]
 ### Observations
 - [Patterns or insights worth noting]
 ```

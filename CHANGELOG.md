@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.2.0] - 2026-03-04
+
+### Added
+- **Skill evaluation framework** — new `/pds:eval` skill defines how to write, run, and report skill evals. Skills now have testable acceptance criteria via companion `EVAL.md` files.
+- **EVAL.md files** — evaluation scenarios for `/verify`, `/grill`, `/bugfix`, and `/finish` skills. Each defines structured scenarios with expected behaviors, anti-patterns, and baseline comparisons.
+- **Scout eval responsibilities** — scout agent now runs skill evals during Phase 6 (Knowledge), grading observed agent behavior against EVAL.md rubrics and recording results.
+
+### Changed
+- **Scout agent** — added `pds:eval` to skills list, new eval step in process, `Evals` section in output format
+- **Swarm Phase 6** — scout prompt now includes eval execution for exercised skills
+- **Contribute checklist** — step 4 (cross-references) now includes `EVAL.md` maintenance when modifying skills
+
 ## [4.1.0] - 2026-02-27
 
 ### Added

@@ -41,6 +41,7 @@ When adding a skill or agent, update all reference points:
 - `/pds:team` — if agent changes
 - `/pds:swarm` — if workflow phase changes
 - `docs/skills.md` — skills catalog
+- `skills/*/EVAL.md` — if modifying a skill with an eval, update scenarios if behavior changed
 - Glossary in `docs/whitepaper.md` — if new terms introduced
 
 ### 5. Architecture Decision Records
