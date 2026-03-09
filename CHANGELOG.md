@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.3.0] - 2026-03-09
+
+### Added
+- **`/pds:bcp` skill** — single exit path for shipping: bump version, commit, push, create PR. `/finish` handles preparation, `/bcp` handles delivery.
+- **Native worktree isolation** — worker agent declares `isolation: worktree` in frontmatter; Claude Code (2.1.50) provisions worktrees automatically, replacing manual setup
+- **Typed agent spawning** — swarm uses `Task(agent_type)` syntax throughout (e.g., `Task(worker)`, `Task(validator)`) to enforce spawn restrictions
+- **WorktreeCreate hook** — logs worktree provisioning events to `.claude/swarm/worktree-events.log` for lifecycle auditing
+- **InstructionsLoaded hook** — logs rule file loading to `.claude/swarm/audit.log` for compliance auditing
+- **Pytest support in TaskCompleted gate** — detects `pytest.ini`, `conftest.py`, or `pyproject.toml` pytest config; resolves pytest binary automatically
+
+### Changed
+- **Orchestrator phases** — reviewer moved from Phase 4 (Validate) to Phase 5 (Consolidate), matching the SDLC phase model
+- **TeammateIdle gate** — now catches both staged and unstaged uncommitted changes (was staged-only)
+- **Scout write constraint** — added `.claude/eval-results.md` to allowed write paths (needed for eval execution)
+- **Reviewer agent** — explicit SendMessage step to deliver review report to orchestrator
+- **Worker agent** — explicit `/pds:verify` before declaring done; removed manual worktree instructions (now declarative)
+- **`/finish` skill** — step 5 explicitly forwards bump type to `/bcp`; added "When to Use" comparison table
+- **Whitepaper defense-in-depth** — "six" → "seven" enforcement mechanisms; layers 3/4/6 expanded with `agent_id`/`agent_type` in hooks, `WorktreeCreate`/`InstructionsLoaded` events, HTTP hooks, `Task(agent_type)` restrictions
+- **Whitepaper Phase 3** — documents native `isolation: worktree` replacing manual worktree setup
+- **Whitepaper Phase 5** — clarifies reviewer spawns after validation completes
+- **Hook descriptions** — CLAUDE.md, README.md updated from "2 event types" to full list of 6+ hook events
+- **Scout mode** — fixed stale `plan` → `acceptEdits` in README.md and docs/teams.md
+- **Session-start tips** — added `/pds:bcp` and `/pds:finish` to key skills
+- **Sandbox skill** — new Hook Events section documenting all lifecycle events; HTTP hooks noted
+- **Team skill** — new Agent Capabilities section documenting `isolation: worktree`, `Task(agent_type)`, `agent_id`/`agent_type` in hooks
+
 ## [4.2.0] - 2026-03-04
 
 ### Added
