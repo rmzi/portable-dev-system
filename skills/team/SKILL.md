@@ -54,6 +54,14 @@ Specialists add value in specific situations but aren't needed every swarm. The 
 
 Agents coordinate via TaskCreate/TaskUpdate for status and SendMessage for communication. TeamCreate establishes the team and shared task list.
 
+## New Agent Capabilities (Claude Code 2.1.50+)
+
+| Feature | Description |
+|---------|-------------|
+| `isolation: worktree` | Declared in worker frontmatter — Claude Code provisions the worktree automatically. No manual `git worktree add` needed. |
+| `Task(agent_type)` | Typed spawn syntax (e.g., `Task(worker)`, `Task(validator)`) — restricts which agent definitions can fulfill the spawn. Use this instead of `subagent_type=`. |
+| `agent_id` / `agent_type` in hooks | Hook events expose these fields, enabling agent-aware routing in the PermissionRequest hook. |
+
 ## Core Principles
 
 - **Progress in commits and task updates.** Commits and TaskUpdate are durable. Context is ephemeral.

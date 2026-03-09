@@ -51,11 +51,13 @@ npm test    # or equivalent
 Rebasing can introduce subtle breakage — verify.
 
 ### 5. Ship
-Run `/pds:bcp` with the bump type to finalize:
+Run `/pds:bcp` with the bump type to finalize. Forward the exact bump type from the `/finish` invocation — do not choose a different one:
 
 ```
-/bcp patch    # or minor, major — matching the /finish invocation
+/bcp <bump-type>    # Forward the same bump type from /finish invocation
 ```
+
+Example: `/finish minor` → `/bcp minor`.
 
 This commits any remaining changes, bumps the version, pushes, and creates/updates the PR.
 

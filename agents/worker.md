@@ -9,6 +9,7 @@ tools:
   - Bash
   - Write
   - Edit
+isolation: worktree
 permissionMode: acceptEdits
 skills:
   - pds:bugfix
@@ -33,13 +34,12 @@ Focused implementation specialist. Receive a scoped task, execute it in your ass
 
 ## Constraints
 
-- **Stay in your worktree.** Only modify files within your assigned directory. The sandbox enforces this at the OS level — Bash writes are confined to CWD.
 - **Commit frequently.** Progress lives in files and commits, not in context.
 - **Follow existing patterns.** Read before writing. Match the codebase style.
 
 ## Sandbox Constraints
 
-Writes are confined to your worktree CWD by the OS-level sandbox. Network access from Bash is limited to `allowedDomains` (package registries, GitHub). If you need a domain not in the allowlist, report it as a blocker — the orchestrator will request human approval.
+Network access from Bash is limited to `allowedDomains` (package registries, GitHub). If you need a domain not in the allowlist, report it as a blocker — the orchestrator will request human approval.
 
 ## Process
 
@@ -54,4 +54,4 @@ Commit current progress. Update task status via TaskUpdate. Send details to orch
 
 ## On Completion
 
-Ensure all tests pass. Final commit. Mark task completed via TaskUpdate. Send summary to orchestrator via SendMessage.
+Run `/pds:verify` before declaring done. Final commit. Mark task completed via TaskUpdate. Send summary to orchestrator via SendMessage.

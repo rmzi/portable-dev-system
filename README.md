@@ -85,7 +85,7 @@ make install    # symlinks this checkout as the plugin
 | validator | Merge, test, verify acceptance criteria | sonnet | acceptEdits |
 | reviewer | Code review — quality, security | sonnet | plan |
 | documenter | Documentation updates | sonnet | acceptEdits |
-| scout | PDS meta-improvements | haiku | plan |
+| scout | PDS meta-improvements | haiku | acceptEdits |
 | auditor | Codebase quality → GitHub issues | sonnet | plan |
 
 [Full agent docs →](docs/teams.md)
@@ -102,7 +102,7 @@ portable-dev-system/
 │   ├── swarm/SKILL.md
 │   ├── team/SKILL.md
 │   └── ...
-├── hooks/hooks.json               # SessionStart + PermissionRequest
+├── hooks/hooks.json               # SessionStart, Stop, TaskCompleted, TeammateIdle, WorktreeCreate, InstructionsLoaded hooks + PermissionRequest routing
 ├── .claude/settings.json          # Security settings (installed separately)
 ├── install.sh                     # Plugin installer
 ├── VERSION

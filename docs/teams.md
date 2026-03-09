@@ -123,7 +123,7 @@ PDS includes 8 specialized agents for multi-agent orchestration. Each agent has 
 | validator | Merge branches, run tests, report | sonnet | acceptEdits |
 | reviewer | Code review — quality, security | sonnet | plan |
 | documenter | Documentation updates | sonnet | acceptEdits |
-| scout | PDS meta-improvements | haiku | plan |
+| scout | PDS meta-improvements | haiku | acceptEdits |
 | auditor | Codebase analysis → GitHub issues | sonnet | plan |
 
 ### Permission Modes
@@ -131,8 +131,8 @@ PDS includes 8 specialized agents for multi-agent orchestration. Each agent has 
 | Mode | Agents | Behavior |
 |------|--------|----------|
 | **delegate** | orchestrator | Coordination only — cannot implement, must delegate |
-| **acceptEdits** | worker, validator, documenter | Auto-accept file edits, full implementation access |
-| **plan** | researcher, reviewer, scout, auditor | Read-only exploration, no file modifications |
+| **acceptEdits** | worker, validator, documenter, scout | Auto-accept file edits, full implementation access |
+| **plan** | researcher, reviewer, auditor | Read-only exploration, no file modifications |
 
 ### Coordination
 

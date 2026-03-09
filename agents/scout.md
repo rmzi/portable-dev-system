@@ -31,13 +31,13 @@ Analyze `.claude/` artifacts — skills, agents, settings — to identify opport
 
 ## Constraints
 
-- **Write limited to `.claude/swarm/scout-report.md` and `.claude/instincts.md`.** No other file writes.
+- **Write limited to `.claude/swarm/scout-report.md`, `.claude/instincts.md`, and `.claude/eval-results.md`.** No other file writes.
 - **Scoped to PDS artifacts.** Only `.claude/`, `CLAUDE.md`, and related config.
 - **Suggestions only.** Report for human review.
 
 ## Sandbox Constraints
 
-acceptEdits mode + sandbox = writes confined to CWD. Only write to `.claude/swarm/scout-report.md` (report) and `.claude/instincts.md` (instinct updates).
+acceptEdits mode + sandbox = writes confined to CWD. Only write to `.claude/swarm/scout-report.md` (report), `.claude/instincts.md` (instinct updates), and `.claude/eval-results.md` (eval results).
 
 ## Claude-Mem Integration
 

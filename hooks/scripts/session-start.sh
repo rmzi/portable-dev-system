@@ -36,7 +36,7 @@ if [ -n "$CLAUDE_ENV_FILE" ]; then
 fi
 
 # --- Output additionalContext ---
-CONTEXT="PDS v${PDS_VERSION} active. Key skills: /pds:swarm (parallel work), /pds:grill (requirements), /pds:verify (completion check), /pds:bugfix (test-first fixes).${WORKTREE_INFO}"
+CONTEXT="PDS v${PDS_VERSION} active. Key skills: /pds:swarm (parallel work), /pds:grill (requirements), /pds:verify (completion check), /pds:bugfix (test-first fixes), /pds:bcp (ship work), /pds:finish (formal branch completion).${WORKTREE_INFO}"
 
 # Use python3 for safe JSON encoding
 python3 -c "

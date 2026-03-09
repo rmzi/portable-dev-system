@@ -10,11 +10,23 @@ if [ -z "$CWD" ] || [ ! -d "$CWD/.git" ] && ! git -C "$CWD" rev-parse --git-dir 
   exit 0
 fi
 
-# Check for staged but uncommitted changes
-if (cd "$CWD" && git diff --cached --quiet 2>/dev/null); then
+# Check for staged or unstaged uncommitted changes
+STAGED_CLEAN=true
+UNSTAGED_CLEAN=true
+
+(cd "$CWD" && git diff --cached --quiet 2>/dev/null) || STAGED_CLEAN=false
+(cd "$CWD" && git diff --quiet 2>/dev/null) || UNSTAGED_CLEAN=false
+
+if $STAGED_CLEAN && $UNSTAGED_CLEAN; then
   exit 0
 else
   TEAMMATE=$(echo "$INPUT" | jq -r '.teammate_name // "agent"')
-  echo "$TEAMMATE has staged uncommitted changes. Commit before going idle." >&2
+  if ! $STAGED_CLEAN && ! $UNSTAGED_CLEAN; then
+    echo "$TEAMMATE has staged and unstaged uncommitted changes. Commit before going idle." >&2
+  elif ! $STAGED_CLEAN; then
+    echo "$TEAMMATE has staged uncommitted changes. Commit before going idle." >&2
+  else
+    echo "$TEAMMATE has unstaged uncommitted changes. Commit before going idle." >&2
+  fi
   exit 2
 fi
