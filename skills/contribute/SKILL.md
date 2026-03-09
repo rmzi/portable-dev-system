@@ -41,17 +41,19 @@ When adding a skill or agent, update all reference points:
 - `/pds:team` — if agent changes
 - `/pds:swarm` — if workflow phase changes
 - `docs/skills.md` — skills catalog
+- `skills/*/EVAL.md` — if modifying a skill with an eval, update scenarios if behavior changed
 - Glossary in `docs/whitepaper.md` — if new terms introduced
 
 ### 5. Architecture Decision Records
 For significant design decisions, store ADRs in `docs/adr/`. Filename: `NNNN-brief-description.md`. Format: Context, Decision, Consequences. Write when choosing between multiple valid approaches or making hard-to-reverse decisions.
 
-### 6. Bump version
-Run `/pds:bump` with the appropriate level:
+### 6. Ship it
+Run `/pds:bcp` to finalize — bumps version, commits, and pushes:
 - **patch** — bug fixes, minor doc updates
 - **minor** — new skills, agent changes, whitepaper updates
 - **major** — breaking changes to skill interfaces or agent contracts
 
 ## See Also
 
-- `/pds:bump` — Version bump and changelog
+- `/pds:bcp` — Bump, commit, push (finalization)
+- `/pds:bump` — Version bump and changelog (no push)

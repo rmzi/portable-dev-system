@@ -50,7 +50,7 @@ make install    # symlinks this checkout as the plugin
 
 ---
 
-## Skills (16)
+## Skills (18)
 
 | Skill | Purpose |
 |-------|---------|
@@ -70,6 +70,8 @@ make install    # symlinks this checkout as the plugin
 | `/pds:contribute` | Contributing to PDS itself |
 | `/pds:bugfix` | Test-first bug fix loop |
 | `/pds:bump` | Version and changelog |
+| `/pds:eval` | Skill evaluation and testing |
+| `/pds:bcp` | Finalize work — bump, commit, push |
 
 ---
 
@@ -83,7 +85,7 @@ make install    # symlinks this checkout as the plugin
 | validator | Merge, test, verify acceptance criteria | sonnet | acceptEdits |
 | reviewer | Code review — quality, security | sonnet | plan |
 | documenter | Documentation updates | sonnet | acceptEdits |
-| scout | PDS meta-improvements | haiku | plan |
+| scout | PDS meta-improvements | haiku | acceptEdits |
 | auditor | Codebase quality → GitHub issues | sonnet | plan |
 
 [Full agent docs →](docs/teams.md)
@@ -96,11 +98,11 @@ make install    # symlinks this checkout as the plugin
 portable-dev-system/
 ├── .claude-plugin/plugin.json     # Plugin manifest
 ├── agents/                        # 8 agent definitions
-├── skills/                        # 16 skills (dir/SKILL.md format)
+├── skills/                        # 18 skills (dir/SKILL.md format)
 │   ├── swarm/SKILL.md
 │   ├── team/SKILL.md
 │   └── ...
-├── hooks/hooks.json               # SessionStart + PermissionRequest
+├── hooks/hooks.json               # SessionStart, Stop, TaskCompleted, TeammateIdle, WorktreeCreate, InstructionsLoaded hooks + PermissionRequest routing
 ├── .claude/settings.json          # Security settings (installed separately)
 ├── install.sh                     # Plugin installer
 ├── VERSION

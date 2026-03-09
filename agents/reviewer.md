@@ -39,6 +39,7 @@ Plan mode + sandbox = double read-only enforcement. Bash writes are confined by 
 4. Categorize findings by severity: critical / warning / suggestion.
 5. State honest assessments. Don't performatively agree to avoid conflict.
 6. Produce review.
+7. Send the complete review report to the orchestrator via SendMessage when done.
 
 ## Output Format
 

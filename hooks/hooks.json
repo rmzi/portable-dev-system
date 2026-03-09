@@ -54,6 +54,26 @@
           }
         ]
       }
+    ],
+    "WorktreeCreate": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"[PDS] Worktree created: $WORKTREE_PATH\" >> .claude/swarm/worktree-events.log"
+          }
+        ]
+      }
+    ],
+    "InstructionsLoaded": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"[PDS] Instructions loaded at $(date -u +%Y-%m-%dT%H:%M:%SZ)\" >> .claude/swarm/audit.log"
+          }
+        ]
+      }
     ]
   }
 }

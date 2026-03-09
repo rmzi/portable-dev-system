@@ -54,7 +54,7 @@ The orchestrator records session metadata: which agents work on which worktrees,
 
 ### Phase 3: Parallel Execution
 
-Workers execute independently. They access the codebase within their worktree, read documentation, and write code.
+Workers execute independently. Each worker agent declares `isolation: worktree` in its agent definition — a Claude Code 2.1.50 feature that provisions a dedicated git worktree declaratively, without manual setup. Workers access the codebase within their worktree, read documentation, and write code.
 
 **Workers favor independent execution for simplicity but can communicate via SendMessage when tasks require coordination.** The orchestrator manages dependencies through task DAGs (defined via TaskCreate/TaskUpdate), ensuring workers can coordinate when needed while keeping most work independent to minimize overhead.
 
@@ -64,19 +64,21 @@ Each worker produces a result artifact: code changes, summary, issues encountere
 
 A validator agent examines all worker output by monitoring TaskUpdate status changes. The validator operates in its own worktree, merging worker branches and running comprehensive tests.
 
-Responsibilities: writing tests based on acceptance criteria, running the existing test suite, performing static analysis, checking for defects. Workers run `/verify` before declaring tasks done — a structured self-check covering acceptance criteria, test suite, debug artifacts, git status, and diff review. The validator does not fix issues—it produces a structured report (via TaskUpdate) identifying failures, localizing them, and suggesting remediation.
+Responsibilities: writing tests based on acceptance criteria, running the existing test suite, performing static analysis, checking for defects. Workers run `/verify` before declaring tasks done — a structured self-check covering acceptance criteria, test suite, debug artifacts, git status, and diff review. The validator does not fix issues—it produces a structured report (via TaskUpdate) identifying failures, localizing them, and suggesting remediation. The validator writes its report to `.claude/swarm/validation-report.md` — a required artifact enforced by an LLM prompt evaluator on the validator's Stop hook.
 
 If validation fails, the report flows to the orchestrator, which updates the task DAG and dispatches targeted fix requests. This cycle continues until validation passes or human intervention is required.
 
 ### Phase 5: Consolidation and Human Review
 
-The orchestrator consolidates worker branches into a single pull request, using `/finish` to prepare each branch — rebasing onto the target, cleaning commit history, and running post-rebase tests — before creating the PR. A **reviewer** agent performs automated pre-review — checking code quality, security patterns, and consistency — producing a structured report before human review. A **documenter** agent updates user-facing documentation when changes warrant it.
+Once Phase 4 validation passes, the orchestrator consolidates worker branches using `/finish` to prepare each branch — rebasing onto the target, cleaning commit history, and running post-rebase tests — then ships via `/bcp` (bump version, commit, push, create PR). `/bcp` is the single exit path for all shipping; `/finish` handles preparation, `/bcp` handles delivery. A **reviewer** agent is spawned here — after validation completes — to perform automated pre-review: checking code quality, security patterns, and consistency, and producing a structured report before human review. A **documenter** agent updates user-facing documentation when changes warrant it.
 
-The developer reviews with full context: requirements, plan, validation results, reviewer findings, issues encountered. The developer can request changes (flowing back through the orchestrator) or approve for merge. The reviewer's automated pre-review supplements but never replaces the human gate.
+The orchestrator writes the reviewer's report to `.claude/swarm/review-report.md` — a required artifact. A PreToolUse gate on `gh pr create` blocks PR creation unless both the validation and review reports exist. The developer reviews with full context: requirements, plan, validation results, reviewer findings, issues encountered. The developer can request changes (flowing back through the orchestrator) or approve for merge. The reviewer's automated pre-review supplements but never replaces the human gate.
 
 ### Phase 6: Knowledge Capture
 
-Before merging, the orchestrator reviews what happened: patterns emerged, architectural decisions made, unexpected challenges. A **scout** agent analyzes the completed swarm for meta-improvements — workflow optimizations, skill gaps, configuration updates.
+Before merging, the orchestrator reviews what happened: patterns emerged, architectural decisions made, unexpected challenges. A **scout** agent analyzes the completed swarm for meta-improvements — workflow optimizations, skill gaps, configuration updates. The scout writes its report to `.claude/swarm/scout-report.md` and can access cross-session memory via claude-mem MCP tools (when available) to enrich analysis with historical context.
+
+A PreToolUse gate on `TeamDelete` blocks team teardown unless all three phase artifacts exist (validation, review, scout reports). This ensures no phase is skipped during swarm completion.
 
 This knowledge flows into the lexicon—a persistent repository of engineering knowledge spanning tasks, repositories, and team members. The lexicon captures lessons learned, gotchas, and patterns.
 
@@ -116,14 +118,15 @@ Agents must operate within well-defined boundaries. Unrestricted access to produ
 
 **Defense-in-Depth Model**:
 
-PDS layers six enforcement mechanisms, from OS-level sandboxing to human review:
+PDS layers seven enforcement mechanisms, from OS-level sandboxing to human review:
 
 1. **OS-level sandbox** — Claude Code's native sandbox (Seatbelt on macOS, bubblewrap on Linux) confines Bash commands: filesystem writes are restricted to the working directory, network access is limited to an allowlist of domains. This is the hard floor — no prompt injection or agent confusion can bypass OS-level enforcement.
 2. **Static deny rules** — Pattern-matched rules in `settings.json` block credential paths, protected branches, sensitive files, and production patterns across all tools.
-3. **Permission hooks** — An LLM-as-judge `PermissionRequest` hook evaluates subagent requests not covered by static rules (see `/permission-router` skill).
-4. **Agent prompt constraints** — Each agent's `.md` file defines role-specific boundaries ("read-only", "stay in your worktree", "does not fix code").
-5. **Permission modes** — `plan`, `acceptEdits`, `delegate` control which tools each agent type can access.
-6. **The human gate** — All changes flow through PR review before reaching production.
+3. **Permission hooks** — An LLM-as-judge `PermissionRequest` hook evaluates subagent requests not covered by static rules (see `/permission-router` skill). Hooks now receive `agent_id` and `agent_type` in all hook events (Claude Code 2.1.69), enabling agent-aware decisions — the same hook can apply different policy depending on whether the requestor is a worker, validator, or orchestrator. HTTP hooks (Claude Code 2.1.63) allow quality gates to call external services for policy enforcement.
+4. **PreToolUse phase gates** — Agent-level hooks that enforce SDLC phase transitions mechanically. The orchestrator's PR gate blocks `gh pr create` without validation and review reports; its teardown gate blocks `TeamDelete` without all phase artifacts. The validator's Stop hook uses an LLM evaluator to verify report completeness. `WorktreeCreate`/`WorktreeRemove` hook events (Claude Code 2.1.50) provide lifecycle gates for worktree operations — creation and cleanup can be audited or blocked. `InstructionsLoaded` events (Claude Code 2.1.69) let hooks audit which rule files are active at session start.
+5. **Agent prompt constraints** — Each agent's `.md` file defines role-specific boundaries ("read-only", "stay in your worktree", "does not fix code").
+6. **Permission modes** — `plan`, `acceptEdits`, `delegate` control which tools each agent type can access. Orchestrators declare which agent types they can spawn via `Task(agent_type)` restriction syntax (Claude Code 2.1.33), preventing unauthorized agent escalation.
+7. **The human gate** — All changes flow through PR review before reaching production.
 
 This approach favors lightweight isolation over heavyweight containers. The sandbox adds OS enforcement without container overhead. The blast radius of a misbehaving worker is limited to its worktree branch. No changes reach production without human approval.
 
@@ -394,6 +397,7 @@ PDS encodes two complementary layers of engineering guidance, designed to be MEC
 | Requirement interrogation | `/pds:grill` | Understand before you act |
 | Completion verification | `/pds:verify` | Explicit over implicit |
 | Branch preparation for merge | `/pds:finish` | Small, reversible steps |
+| Version bump and ship | `/pds:bcp` | Explicit over implicit |
 
 This separation matters: principles are stable across projects and technologies, while techniques evolve with tooling and practice. An agent grounded in principles makes better judgment calls when no specific technique applies.
 
@@ -473,6 +477,10 @@ This is a starting point. The model evolves with implementation experience and i
 **Instinct**: A structured observation of a recurring pattern — lighter than a skill, with confidence levels and an automated lifecycle managed by scout.
 
 **Acceptance Criteria**: Specific, mechanically verifiable conditions defining task completion.
+
+**Phase Gate**: A mechanical enforcement point (PreToolUse hook or prompt evaluator) that blocks phase transitions unless required artifacts exist. Prevents SDLC phases from being skipped.
+
+**Swarm Artifacts**: Phase reports written to `.claude/swarm/` during a swarm — `validation-report.md` (Phase 4), `review-report.md` (Phase 5), `scout-report.md` (Phase 6). Required by phase gates for PR creation and team teardown.
 
 **Human Gate**: Principle that no agent work reaches production without human approval.
 

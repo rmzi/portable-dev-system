@@ -2,6 +2,63 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.3.0] - 2026-03-09
+
+### Added
+- **`/pds:bcp` skill** — single exit path for shipping: bump version, commit, push, create PR. `/finish` handles preparation, `/bcp` handles delivery.
+- **Native worktree isolation** — worker agent declares `isolation: worktree` in frontmatter; Claude Code (2.1.50) provisions worktrees automatically, replacing manual setup
+- **Typed agent spawning** — swarm uses `Task(agent_type)` syntax throughout (e.g., `Task(worker)`, `Task(validator)`) to enforce spawn restrictions
+- **WorktreeCreate hook** — logs worktree provisioning events to `.claude/swarm/worktree-events.log` for lifecycle auditing
+- **InstructionsLoaded hook** — logs rule file loading to `.claude/swarm/audit.log` for compliance auditing
+- **Pytest support in TaskCompleted gate** — detects `pytest.ini`, `conftest.py`, or `pyproject.toml` pytest config; resolves pytest binary automatically
+
+### Changed
+- **Orchestrator phases** — reviewer moved from Phase 4 (Validate) to Phase 5 (Consolidate), matching the SDLC phase model
+- **TeammateIdle gate** — now catches both staged and unstaged uncommitted changes (was staged-only)
+- **Scout write constraint** — added `.claude/eval-results.md` to allowed write paths (needed for eval execution)
+- **Reviewer agent** — explicit SendMessage step to deliver review report to orchestrator
+- **Worker agent** — explicit `/pds:verify` before declaring done; removed manual worktree instructions (now declarative)
+- **`/finish` skill** — step 5 explicitly forwards bump type to `/bcp`; added "When to Use" comparison table
+- **Whitepaper defense-in-depth** — "six" → "seven" enforcement mechanisms; layers 3/4/6 expanded with `agent_id`/`agent_type` in hooks, `WorktreeCreate`/`InstructionsLoaded` events, HTTP hooks, `Task(agent_type)` restrictions
+- **Whitepaper Phase 3** — documents native `isolation: worktree` replacing manual worktree setup
+- **Whitepaper Phase 5** — clarifies reviewer spawns after validation completes
+- **Hook descriptions** — CLAUDE.md, README.md updated from "2 event types" to full list of 6+ hook events
+- **Scout mode** — fixed stale `plan` → `acceptEdits` in README.md and docs/teams.md
+- **Session-start tips** — added `/pds:bcp` and `/pds:finish` to key skills
+- **Sandbox skill** — new Hook Events section documenting all lifecycle events; HTTP hooks noted
+- **Team skill** — new Agent Capabilities section documenting `isolation: worktree`, `Task(agent_type)`, `agent_id`/`agent_type` in hooks
+
+## [4.2.0] - 2026-03-04
+
+### Added
+- **SDLC phase gates** — Mechanical enforcement of phase transitions via PreToolUse hooks on the orchestrator agent:
+  - `orchestrator-pr-gate.sh` — blocks `gh pr create` unless `.claude/swarm/validation-report.md` and `review-report.md` exist
+  - `orchestrator-teardown-gate.sh` — blocks `TeamDelete` unless all 3 phase reports exist (validation, review, scout)
+- **Swarm artifact directory** — `.claude/swarm/` stores phase artifacts (plan, contracts, validation/review/scout reports); added to `.gitignore`
+- **Validator LLM evaluator** — prompt-based Stop hook replaces command-based `validator-stop-gate.sh`; evaluates report completeness semantically
+- **Scout write access** — scout agent upgraded from `plan` to `acceptEdits` mode with Write tool; writes scoped to `.claude/swarm/scout-report.md` and `.claude/instincts.md`
+- **Scout claude-mem integration** — scout can access cross-session memory via `smart_search`, `timeline`, `get_observations` MCP tools (graceful skip if unavailable)
+- **Grill swarm decision** — `/pds:grill` step 9 evaluates swarm vs. no-swarm with explicit criteria and rationale
+- **Phase gates reference table** — `/pds:swarm` documents all mechanical enforcement points and swarm artifact inventory
+- **Skill evaluation framework** — new `/pds:eval` skill defines how to write, run, and report skill evals. Skills now have testable acceptance criteria via companion `EVAL.md` files.
+- **EVAL.md files** — evaluation scenarios for `/verify`, `/grill`, `/bugfix`, and `/finish` skills. Each defines structured scenarios with expected behaviors, anti-patterns, and baseline comparisons.
+- **Scout eval responsibilities** — scout agent now runs skill evals during Phase 6 (Knowledge), grading observed agent behavior against EVAL.md rubrics and recording results.
+
+### Changed
+- **Orchestrator dispatch** — Phase 3 now runs `mkdir -p .claude/swarm`; Phase 5 writes reviewer report to `.claude/swarm/review-report.md`
+- **Validator process** — step 5 now writes report to `.claude/swarm/validation-report.md`
+- **Scout process** — step 9 now writes report to `.claude/swarm/scout-report.md`
+- **Swarm Phase 2** — contracts and plans written to `.claude/swarm/` instead of `.swarm/`
+- **Team skill** — scout row updated (permissionMode: acceptEdits, scoped write access documented)
+- **Whitepaper** — Phase 4/5/6 descriptions updated with artifact requirements; defense-in-depth model gains PreToolUse phase gates (layer 4); glossary adds Phase Gate and Swarm Artifacts entries
+- **install.sh** — `install_project()` adds `.claude/swarm/` to `.gitignore`; `cleanup_project()` removes `.claude/swarm/`; test assertions updated for new hook scripts and orchestrator frontmatter
+- **Scout agent** — added `pds:eval` to skills list, new eval step in process, `Evals` section in output format
+- **Swarm Phase 6** — scout prompt now includes eval execution for exercised skills
+- **Contribute checklist** — step 4 (cross-references) now includes `EVAL.md` maintenance when modifying skills
+
+### Removed
+- **`hooks/scripts/validator-stop-gate.sh`** — replaced by prompt-based LLM evaluator in validator agent frontmatter
+
 ## [4.1.0] - 2026-02-27
 
 ### Added

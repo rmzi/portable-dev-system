@@ -162,6 +162,24 @@ Bash command arrives
 
 Deny rules fire first (deny > allow). The sandbox handles routine Bash. The PermissionRequest hook handles git, docker, and anything that falls through.
 
+## Hook Events
+
+PDS hooks fire on lifecycle events. Relevant events for sandbox and agent auditing:
+
+| Event | Hook Type | When it fires |
+|-------|-----------|---------------|
+| `PreToolUse` | PreToolUse | Before any tool call — used for deny/allow gates |
+| `PostToolUse` | PostToolUse | After a tool call — used for audit logging |
+| `PermissionRequest` | PermissionRequest | When Claude Code needs a permission decision |
+| `SessionStart` | SessionStart | On session init — used to check Linux sandbox deps |
+| `WorktreeCreate` | PostToolUse | When a worker worktree is provisioned — logged for lifecycle audit |
+| `WorktreeRemove` | PostToolUse | When a worktree is removed after task completion — logged for lifecycle audit |
+| `InstructionsLoaded` | SessionStart | When agent instructions are loaded — used to verify plugin config |
+
+`WorktreeCreate` and `WorktreeRemove` events are available since Claude Code 2.1.50 and let hooks track worker lifecycle for audit purposes.
+
+**HTTP hooks** (since 2.1.63): Hooks can now be configured as HTTP endpoints in addition to local shell scripts. Useful for centralized audit logging or team-wide permission policies.
+
 ## See Also
 
 - `/pds:permission-router` — Hook policy for the PermissionRequest layer

@@ -26,7 +26,7 @@ These map directly to the whitepaper's Agentic SDLC: orchestrator coordinates, w
 |-------|------|-------|------|----------|--------|---------------|
 | **reviewer** | Code review — quality, security | sonnet | plan | 25 | project | PRs, pre-human review |
 | **documenter** | Documentation updates | sonnet | acceptEdits | 30 | — | User-facing docs changed |
-| **scout** | PDS meta-improvements | haiku | plan | 15 | project | Post-swarm knowledge capture |
+| **scout** | PDS meta-improvements | haiku | acceptEdits | 15 | project | Post-swarm knowledge capture |
 | **auditor** | Codebase analysis → GitHub issues | sonnet | plan | 30 | project | Periodic tech debt scans |
 
 Specialists add value in specific situations but aren't needed every swarm. The orchestrator decides based on task requirements.
@@ -37,7 +37,8 @@ Specialists add value in specific situations but aren't needed every swarm. The 
 |------|--------|----------|
 | **delegate** | orchestrator | Coordination only — must delegate to agents |
 | **acceptEdits** | worker, validator, documenter | Auto-accept file edits, full implementation access |
-| **plan** | researcher, reviewer, scout, auditor | Read-only exploration, no file modifications |
+| **plan** | researcher, reviewer, auditor | Read-only exploration, no file modifications |
+| **acceptEdits** (scoped) | scout | Write limited to `.claude/swarm/scout-report.md` and `.claude/instincts.md` |
 
 ## Coordination Model
 
@@ -52,6 +53,14 @@ Specialists add value in specific situations but aren't needed every swarm. The 
 ```
 
 Agents coordinate via TaskCreate/TaskUpdate for status and SendMessage for communication. TeamCreate establishes the team and shared task list.
+
+## New Agent Capabilities (Claude Code 2.1.50+)
+
+| Feature | Description |
+|---------|-------------|
+| `isolation: worktree` | Declared in worker frontmatter — Claude Code provisions the worktree automatically. No manual `git worktree add` needed. |
+| `Task(agent_type)` | Typed spawn syntax (e.g., `Task(worker)`, `Task(validator)`) — restricts which agent definitions can fulfill the spawn. Use this instead of `subagent_type=`. |
+| `agent_id` / `agent_type` in hooks | Hook events expose these fields, enabling agent-aware routing in the PermissionRequest hook. |
 
 ## Core Principles
 

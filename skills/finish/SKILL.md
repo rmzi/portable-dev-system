@@ -1,16 +1,20 @@
 ---
-description: Completing a development branch for merge readiness. Use when implementation and tests pass and the branch needs preparation for review and merge.
+description: Completing a development branch for merge readiness. Use when implementation and tests pass and the branch needs formal preparation for review and merge.
 disable-model-invocation: true
 ---
 # /finish — Branch Completion Protocol
 
-The gap between "code works" and "branch is ready" is where quality lives. This protocol ensures branches are clean, tested, and reviewable before merge.
+The gap between "code works" and "branch is ready" is where quality lives. This protocol ensures branches are clean, tested, and reviewable — then ships via `/bcp`.
 
 ## Invocation
 
 ```
-/finish [target-branch]    # Default target: main
+/finish patch [target-branch]    # Verify, clean, bump patch, ship
+/finish minor [target-branch]    # Verify, clean, bump minor, ship
+/finish major [target-branch]    # Verify, clean, bump major, ship
 ```
+
+Default target: main.
 
 ## Protocol
 
@@ -46,25 +50,16 @@ npm test    # or equivalent
 
 Rebasing can introduce subtle breakage — verify.
 
-### 5. Pre-Push Check
-Pull and rebase again if others pushed since step 2. Verify no merge conflicts introduced. No debug code, secrets, or credentials in the diff.
+### 5. Ship
+Run `/pds:bcp` with the bump type to finalize. Forward the exact bump type from the `/finish` invocation — do not choose a different one:
 
-### 6. Create or Update PR
-If no PR exists, create one. If one exists, force-push the rebased branch:
-
-```bash
-gh pr create --title "feat(scope): description" --body "..."
-git push --force-with-lease origin branch-name
+```
+/bcp <bump-type>    # Forward the same bump type from /finish invocation
 ```
 
-PR body should include: summary, acceptance criteria status, test plan.
+Example: `/finish minor` → `/bcp minor`.
 
-### 7. Request Review
-Assign reviewers. Tag the PR in relevant channels if needed.
-
-## Review Integrity
-
-State honest assessments. Don't performatively agree to avoid conflict. If code has problems, say so clearly and constructively. A review that rubber-stamps bad code is worse than no review.
+This commits any remaining changes, bumps the version, pushes, and creates/updates the PR.
 
 ## Cleanup
 
@@ -75,7 +70,15 @@ After the branch is merged:
 - [ ] Close related issues
 - [ ] Update task status via TaskUpdate if working as a team agent
 
+## When to Use
+
+| Situation | Skill |
+|-----------|-------|
+| Formal ship: verify, rebase, clean, bump, push | `/finish` |
+| Quick ship: bump, commit, push | `/bcp` |
+
 ## See Also
 
+- `/pds:bcp` — bump, commit, push (step 5)
 - `/pds:verify` — completion self-check (step 1)
 - `/pds:merge` — merging subtask worktrees to coordinator
