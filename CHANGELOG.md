@@ -14,6 +14,9 @@ All notable changes to this project will be documented in this file.
 - **Scout claude-mem integration** — scout can access cross-session memory via `smart_search`, `timeline`, `get_observations` MCP tools (graceful skip if unavailable)
 - **Grill swarm decision** — `/pds:grill` step 9 evaluates swarm vs. no-swarm with explicit criteria and rationale
 - **Phase gates reference table** — `/pds:swarm` documents all mechanical enforcement points and swarm artifact inventory
+- **Skill evaluation framework** — new `/pds:eval` skill defines how to write, run, and report skill evals. Skills now have testable acceptance criteria via companion `EVAL.md` files.
+- **EVAL.md files** — evaluation scenarios for `/verify`, `/grill`, `/bugfix`, and `/finish` skills. Each defines structured scenarios with expected behaviors, anti-patterns, and baseline comparisons.
+- **Scout eval responsibilities** — scout agent now runs skill evals during Phase 6 (Knowledge), grading observed agent behavior against EVAL.md rubrics and recording results.
 
 ### Changed
 - **Orchestrator dispatch** — Phase 3 now runs `mkdir -p .claude/swarm`; Phase 5 writes reviewer report to `.claude/swarm/review-report.md`
@@ -23,6 +26,9 @@ All notable changes to this project will be documented in this file.
 - **Team skill** — scout row updated (permissionMode: acceptEdits, scoped write access documented)
 - **Whitepaper** — Phase 4/5/6 descriptions updated with artifact requirements; defense-in-depth model gains PreToolUse phase gates (layer 4); glossary adds Phase Gate and Swarm Artifacts entries
 - **install.sh** — `install_project()` adds `.claude/swarm/` to `.gitignore`; `cleanup_project()` removes `.claude/swarm/`; test assertions updated for new hook scripts and orchestrator frontmatter
+- **Scout agent** — added `pds:eval` to skills list, new eval step in process, `Evals` section in output format
+- **Swarm Phase 6** — scout prompt now includes eval execution for exercised skills
+- **Contribute checklist** — step 4 (cross-references) now includes `EVAL.md` maintenance when modifying skills
 
 ### Removed
 - **`hooks/scripts/validator-stop-gate.sh`** — replaced by prompt-based LLM evaluator in validator agent frontmatter

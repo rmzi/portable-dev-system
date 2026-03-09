@@ -96,10 +96,10 @@ Use TaskUpdate to set dependencies between tasks (`addBlockedBy`, `addBlocks`). 
 
 1. Spawn scout for PDS meta-improvements:
    ```
-   Task(subagent_type="scout", prompt="Read .claude/instincts.md. Update counts for re-observed patterns. Propose new instincts. Flag high-confidence patterns for skill promotion. Write report to .claude/swarm/scout-report.md.")
+   Task(subagent_type="scout", prompt="Read .claude/instincts.md. Update counts for re-observed patterns. Propose new instincts. Flag high-confidence patterns for skill promotion. Run /pds:eval on skills exercised in this swarm. Write report to .claude/swarm/scout-report.md.")
    ```
 2. Scout writes report to `.claude/swarm/scout-report.md` **(required — TeamDelete gate checks for this file)**
-3. Scout updates observation counts, proposes new patterns, flags promotions (human-gated — new skill = new file = PR review)
+3. Scout updates observation counts, proposes new patterns, flags promotions (human-gated — new skill = new file = PR review). Scout also runs skill evals per `/pds:eval`.
 4. Clean up: `TeamDelete`
    **Note:** The teardown gate (`orchestrator-teardown-gate.sh`) blocks `TeamDelete` unless all 3 phase reports exist in `.claude/swarm/` (validation, review, scout).
 
