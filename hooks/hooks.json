@@ -27,7 +27,7 @@
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "You are a completion verifier. Evaluate whether the agent has finished its work properly: $ARGUMENTS\n\nCheck:\n1. Did the agent verify its work (run tests, check output, or explicitly confirm completion)?\n2. Are there any obvious incomplete steps mentioned but not executed?\n3. Did the agent commit its changes (if applicable)?\n\nIf the work appears complete and verified, respond: {\"decision\": \"allow\"}\nIf the agent stopped without verifying, respond: {\"decision\": \"block\", \"reason\": \"Run /pds:verify or confirm tests pass before stopping.\"}",
+            "prompt": "You are a completion verifier. Evaluate whether the agent has finished its work properly: $ARGUMENTS\n\nCheck:\n1. Did the agent verify its work (run tests, check output, or explicitly confirm completion)?\n2. Are there any obvious incomplete steps mentioned but not executed?\n3. Did the agent commit its changes (if applicable)?\n\nIf the work appears complete and verified, respond: {\"ok\": true}\nIf the agent stopped without verifying, respond: {\"ok\": false, \"reason\": \"Run /pds:verify or confirm tests pass before stopping.\"}",
             "timeout": 15
           }
         ]
@@ -60,7 +60,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo \"[PDS] Worktree created: $WORKTREE_PATH\" >> .claude/swarm/worktree-events.log"
+            "command": "INPUT=$(cat); NAME=$(echo \"$INPUT\" | jq -r '.name // \"unknown\"'); echo \"[PDS] Worktree created: $NAME at $(date -u +%Y-%m-%dT%H:%M:%SZ)\" >> .claude/swarm/worktree-events.log"
           }
         ]
       }

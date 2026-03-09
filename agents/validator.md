@@ -29,8 +29,8 @@ hooks:
             (5) clear overall verdict
 
             Respond with JSON:
-            - Complete: {"decision": "allow"}
-            - Incomplete: {"decision": "block", "reason": "what is missing and where to write it"}
+            - Complete: {"ok": true}
+            - Incomplete: {"ok": false, "reason": "what is missing and where to write it"}
           timeout: 30
 ---
 # Validator

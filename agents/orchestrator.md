@@ -8,7 +8,7 @@ tools:
   - Grep
   - Bash
   - Task(researcher, worker, validator, reviewer, documenter, scout, auditor)
-permissionMode: delegate
+permissionMode: default
 skills:
   - pds:team
   - pds:worktree
