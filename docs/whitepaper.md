@@ -70,7 +70,7 @@ If validation fails, the report flows to the orchestrator, which updates the tas
 
 ### Phase 5: Consolidation and Human Review
 
-The orchestrator consolidates worker branches into a single pull request, using `/finish` to prepare each branch — rebasing onto the target, cleaning commit history, and running post-rebase tests — before creating the PR. A **reviewer** agent performs automated pre-review — checking code quality, security patterns, and consistency — producing a structured report before human review. A **documenter** agent updates user-facing documentation when changes warrant it.
+The orchestrator consolidates worker branches using `/finish` to prepare each branch — rebasing onto the target, cleaning commit history, and running post-rebase tests — then ships via `/bcp` (bump version, commit, push, create PR). `/bcp` is the single exit path for all shipping; `/finish` handles preparation, `/bcp` handles delivery. A **reviewer** agent performs automated pre-review — checking code quality, security patterns, and consistency — producing a structured report before human review. A **documenter** agent updates user-facing documentation when changes warrant it.
 
 The orchestrator writes the reviewer's report to `.claude/swarm/review-report.md` — a required artifact. A PreToolUse gate on `gh pr create` blocks PR creation unless both the validation and review reports exist. The developer reviews with full context: requirements, plan, validation results, reviewer findings, issues encountered. The developer can request changes (flowing back through the orchestrator) or approve for merge. The reviewer's automated pre-review supplements but never replaces the human gate.
 
@@ -397,6 +397,7 @@ PDS encodes two complementary layers of engineering guidance, designed to be MEC
 | Requirement interrogation | `/pds:grill` | Understand before you act |
 | Completion verification | `/pds:verify` | Explicit over implicit |
 | Branch preparation for merge | `/pds:finish` | Small, reversible steps |
+| Version bump and ship | `/pds:bcp` | Explicit over implicit |
 
 This separation matters: principles are stable across projects and technologies, while techniques evolve with tooling and practice. An agent grounded in principles makes better judgment calls when no specific technique applies.
 
