@@ -26,7 +26,7 @@ OS-level enforcement for Bash commands via Claude Code's native sandbox (Seatbel
 | **2. Deny rules** | Static pattern matching in `settings.json` | All tools: credential paths, protected branches, sensitive files |
 | **3. PermissionRequest hook** | LLM-as-judge prompt evaluation | Subagent requests not covered by static rules |
 | **4. Agent prompts** | Constraints in `agents/*.md` (plugin) | Role-specific behavior (read-only, stay in worktree) |
-| **5. Permission modes** | `plan`, `acceptEdits`, `delegate` | Tool access per agent type |
+| **5. Permission modes** | `plan`, `acceptEdits`, `default` | Tool access per agent type |
 | **6. Human gate** | PR review before merge | All changes before production |
 
 Per-agent differentiation relies on layers 2-6. The sandbox (layer 1) is a shared floor that all agents stand on.
