@@ -7,6 +7,8 @@ tools:
   - Glob
   - Grep
   - Write
+  - TaskGet
+  - SendMessage
   - mcp__plugin_claude-mem_mcp-search__search
   - mcp__plugin_claude-mem_mcp-search__timeline
   - mcp__plugin_claude-mem_mcp-search__get_observations

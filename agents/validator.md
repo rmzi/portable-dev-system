@@ -9,6 +9,10 @@ tools:
   - Bash
   - Write
   - Edit
+  - TaskGet
+  - TaskList
+  - TaskUpdate
+  - SendMessage
 permissionMode: acceptEdits
 skills:
   - pds:verify

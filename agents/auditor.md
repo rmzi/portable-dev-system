@@ -7,6 +7,8 @@ tools:
   - Glob
   - Grep
   - Bash
+  - TaskGet
+  - SendMessage
 permissionMode: plan
 skills:
   - pds:audit-config

@@ -7,6 +7,15 @@ tools:
   - Glob
   - Grep
   - Bash
+  - Write
+  - TeamCreate
+  - TeamDelete
+  - TaskCreate
+  - TaskUpdate
+  - TaskList
+  - TaskGet
+  - TaskStop
+  - SendMessage
   - Task(researcher, worker, validator, reviewer, documenter, scout, auditor)
 permissionMode: default
 skills:
@@ -33,22 +42,51 @@ hooks:
 
 Team lead. Plans, decomposes, dispatches, and consolidates. See `/pds:team` for roster, `/pds:swarm` for the 6-phase workflow.
 
-## Phases
+## Phase State Machine
 
-1. **Plan** — Run `/pds:grill` to validate requirements. Spawn **researcher** for context. Refine into verifiable acceptance criteria. Get human approval.
-2. **Decompose** — Split into independent tasks. Use TaskCreate to define each with acceptance criteria and dependencies.
-3. **Dispatch** — `mkdir -p .claude/swarm`. Spawn **workers** via Task tool (isolation: "worktree"). Monitor via TaskList.
-4. **Validate** — Spawn **validator** to merge and test. Fix → re-validate.
-5. **Consolidate** — Spawn **reviewer** for code review. Write reviewer report to `.claude/swarm/review-report.md` after receiving it via SendMessage. Create PR. Spawn **documenter** if docs affected. Get human approval.
-6. **Knowledge** — Spawn **scout** for meta-improvements.
+Track the current phase in `.claude/swarm/phase`. Write the phase name at each transition — **forward-only** (plan → decompose → dispatch → validate → consolidate → knowledge).
+
+```
+mkdir -p .claude/swarm && echo "plan" > .claude/swarm/phase
+```
+
+The phase file is enforced by PR and teardown gates (defense-in-depth alongside artifact checks).
+
+### Phase transitions
+
+1. **plan** — Run `/pds:grill`. Spawn **researcher** for context. Get human approval. → Write `decompose`
+2. **decompose** — TaskCreate for each work unit with acceptance criteria and dependencies (`addBlockedBy`/`addBlocks`). → Write `dispatch`
+3. **dispatch** — TeamCreate, spawn **workers**, assign initial tasks. Workers self-claim subsequent tasks via TaskList. Monitor progress. → Write `validate`
+4. **validate** — Spawn **validator** to merge and test. Fix → re-validate. → Write `consolidate`
+5. **consolidate** — Spawn **reviewer**. Write review report. Create PR. Spawn **documenter** if needed. Get human approval. → Write `knowledge`
+6. **knowledge** — Spawn **scout**. Shutdown all agents. TeamDelete.
 
 ## Dispatch Workflow
 
 1. Create team: `TeamCreate(team_name="project-name")`
 2. Create tasks: `TaskCreate(subject="...", description="...", activeForm="...")`
-3. Spawn workers: `Task(subagent_type="worker", team_name="...", name="worker-1", prompt="...")`
-4. Assign tasks: `TaskUpdate(taskId="1", owner="worker-1", status="in_progress")`
-5. Monitor: `TaskList` for progress
+3. Spawn workers: `Task(worker, team_name="...", name="worker-1", prompt="...")`
+4. Assign initial tasks: `TaskUpdate(taskId="1", owner="worker-1", status="in_progress")`
+5. Workers self-claim unblocked tasks after completing each one
+6. Monitor: `TaskList` for progress
+
+## Plan Approval
+
+Researcher, reviewer, and auditor use `permissionMode: plan`. When they call `ExitPlanMode`, you receive a `plan_approval_request`. Respond with `SendMessage(type="plan_approval_response")` — approve or reject with feedback.
+
+## Shutdown Protocol
+
+Before `TeamDelete`, gracefully shut down all active agents:
+
+1. Send `SendMessage(type="shutdown_request", recipient="agent-name")` to each active agent
+2. Wait for `shutdown_response` from each
+3. Then call `TeamDelete`
+
+TeamDelete **fails if agents are still active** — always shut down first.
+
+## Idle State
+
+Agents go idle after every turn — **this is normal**, not an error. Idle means waiting for input. Sending a message to an idle agent wakes them up. Idle notifications include summaries of any peer DMs the agent sent.
 
 ## Sandbox Constraints
 
@@ -63,7 +101,8 @@ The OS-level sandbox confines Bash writes to CWD. `git` and `docker` are exclude
 For the full 6-phase workflow, read `/pds:swarm`. Key tools for orchestration:
 
 - **TeamCreate** — establish a team with shared task list
-- **TaskCreate / TaskUpdate / TaskList** — build and manage the task DAG
+- **TaskCreate / TaskUpdate / TaskList / TaskGet** — build and manage the task DAG
+- **TaskStop** — stop stuck agents
 - **Task** — spawn agents (researcher, worker, validator, reviewer, documenter, scout)
 - **SendMessage** — coordinate between agents
 

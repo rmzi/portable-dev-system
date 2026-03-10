@@ -25,6 +25,29 @@ if [ ! -d "$SWARM_DIR" ]; then
   exit 0
 fi
 
+# Phase check (defense-in-depth — warns if phase file missing, blocks if wrong phase)
+KNOWN_PHASES="plan decompose dispatch validate consolidate knowledge"
+if [ -f "$SWARM_DIR/phase" ]; then
+  PHASE=$(tr -d '[:space:]' < "$SWARM_DIR/phase" 2>/dev/null) || {
+    printf "BLOCKED: Cannot read .claude/swarm/phase — check file permissions." >&2
+    exit 2
+  }
+  if [ -z "$PHASE" ]; then
+    printf "BLOCKED: .claude/swarm/phase is empty. Write the current phase name and retry." >&2
+    exit 2
+  fi
+  if ! echo "$KNOWN_PHASES" | grep -qw "$PHASE"; then
+    printf "BLOCKED: Unrecognized phase '%s' in .claude/swarm/phase.\nValid phases: %s" "$PHASE" "$KNOWN_PHASES" >&2
+    exit 2
+  fi
+  if [[ "$PHASE" != "consolidate" && "$PHASE" != "knowledge" ]]; then
+    printf "BLOCKED: Cannot create PR in phase '%s' — advance to 'consolidate' first." "$PHASE" >&2
+    exit 2
+  fi
+else
+  printf "WARNING: .claude/swarm/phase missing — phase gate bypassed, falling through to artifact checks.\n" >&2
+fi
+
 MISSING=""
 
 if [ ! -f "$SWARM_DIR/validation-report.md" ]; then
