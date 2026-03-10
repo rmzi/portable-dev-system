@@ -1,6 +1,5 @@
 ---
 description: Merging subtask branches back into a coordinator branch. Use when parallel subtask branches are ready to consolidate via rebase-then-fast-forward.
-disable-model-invocation: true
 ---
 # /merge — Subtask Branch Coordination
 

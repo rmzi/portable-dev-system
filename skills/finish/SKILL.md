@@ -1,6 +1,5 @@
 ---
 description: Completing a development branch for merge readiness. Use when implementation and tests pass and the branch needs formal preparation for review and merge.
-disable-model-invocation: true
 ---
 # /finish — Branch Completion Protocol
 

@@ -1,6 +1,5 @@
 ---
 description: Finalize work — bump version, commit, push. Use when work is complete and ready to ship.
-disable-model-invocation: true
 ---
 # /bcp — Bump, Commit, Push
 
