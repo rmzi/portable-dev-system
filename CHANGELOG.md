@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.4.1] - 2026-03-10T17:57:25-04:00
+
+### Fixed
+- Remove `disable-model-invocation` from bcp, bump, finish, merge skills — all are procedural workflows that should be invocable via the Skill tool
+- Add delegation preamble to swarm skill — main conversation now spawns an orchestrator instead of trying to execute TeamCreate/Task(worker) directly
+- Add `.agent/` to `.gitignore` and install script to prevent stale legacy files from being recommitted (#60)
+
 ## [4.4.0] - 2026-03-10
 
 ### Added
