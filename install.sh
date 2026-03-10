@@ -381,9 +381,13 @@ install_project() {
       printf '.claude/swarm/\n' >> .gitignore
       ok "Added .claude/swarm/ to .gitignore"
     fi
+    if ! grep -q '^\.agent/' .gitignore 2>/dev/null; then
+      printf '.agent/\n' >> .gitignore
+      ok "Added .agent/ to .gitignore (legacy cleanup)"
+    fi
   else
-    printf '.worktrees/\n.claude/swarm/\n' > .gitignore
-    ok "Created .gitignore with .worktrees/ and .claude/swarm/"
+    printf '.worktrees/\n.claude/swarm/\n.agent/\n' > .gitignore
+    ok "Created .gitignore with .worktrees/, .claude/swarm/, .agent/"
   fi
 
   echo ""
