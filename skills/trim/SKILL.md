@@ -19,7 +19,7 @@ Keep PDS artifacts lean. Every line in `.claude/` costs context tokens at sessio
 3. **Max 1 quote per file.** Quotes are memorable; more than one dilutes impact.
 4. **Max 10 lines per code block.** Trim examples to the minimum that teaches.
 5. **Cross-reference, don't repeat.** Use `See /skillname` instead of duplicating content.
-6. **Cut LLM-known content.** Don't explain git, markdown, or standard tooling. The model knows.
+6. **Cut LLM-known content.** Don't explain git, markdown, or standard tooling. The model knows. But keep multi-step sequences where skipping a step causes failure (e.g., shutdown before TeamDelete) — even if native, agents may not find the docs in time.
 7. **No hedging or preamble.** Drop "It's important to...", "Remember that...", "Note:".
 
 ## Audit Process

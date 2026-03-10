@@ -372,7 +372,10 @@ Agent configuration files consume context window. Compression is tempting but ha
 
 ### The Test
 
-Before cutting a line, ask: "Would an agent behave differently without this?" If yes — or if you're unsure — keep it.
+Two questions, in order:
+
+1. **"Would an agent get *stuck* without this?"** Multi-step sequences where missing a step causes failure (shutdown → response → TeamDelete, plan approval response flow) must stay — even if they're native platform behavior documented elsewhere. The agent may never navigate to that documentation in time.
+2. **"Would an agent behave *differently* without this?"** If the line changes agent behavior — or you're unsure — keep it. If it restates something the agent already knows from built-in tool documentation and can't cause a failure mode, cut it.
 
 ---
 
