@@ -18,25 +18,23 @@ Initialize at swarm start:
 mkdir -p .claude/swarm && echo "plan" > .claude/swarm/phase
 ```
 
-Advance by writing the next phase name. The PR gate and teardown gate enforce phase state (defense-in-depth alongside artifact checks). If the phase file is absent, gates fall through to artifact-only checks.
+Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the first step of each phase. The PR gate and teardown gate enforce phase state (defense-in-depth alongside artifact checks). If the phase file is absent, gates fall through to artifact-only checks.
 
 ## Phase 1: Plan
 
-1. Write phase: `echo "plan" > .claude/swarm/phase`
-2. Run `/pds:grill` on the requirements to surface gaps and ambiguities
-3. Spawn a researcher for codebase context:
+1. Run `/pds:grill` on the requirements to surface gaps and ambiguities
+2. Spawn a researcher for codebase context:
    ```
    Task(researcher, prompt="Analyze the codebase for X. Query .claude/instincts.md for relevant prior patterns.")
    ```
    The researcher sends findings back via `SendMessage`. If it calls `ExitPlanMode`, respond with `plan_approval_response` to approve or reject its plan.
-4. Synthesize findings into **mechanically verifiable acceptance criteria** — each criterion must be checkable by running a command or reading output (no subjective criteria)
-5. Present plan + criteria to the human. **Do not proceed without approval.**
+3. Synthesize findings into **mechanically verifiable acceptance criteria** — each criterion must be checkable by running a command or reading output (no subjective criteria)
+4. Present plan + criteria to the human. **Do not proceed without approval.**
 
 ## Phase 2: Decompose
 
-1. Write phase: `echo "decompose" > .claude/swarm/phase`
-2. Split along architecture boundaries. If CLAUDE.md defines **Agent Zones** (a table mapping zones to paths and merge order), use them to guide decomposition — one task per zone, foundation-first merge order.
-3. Use TaskCreate for each work unit. Put acceptance criteria in the `description` field — this is what workers and the validator check against:
+1. Split along architecture boundaries. If CLAUDE.md defines **Agent Zones** (a table mapping zones to paths and merge order), use them to guide decomposition — one task per zone, foundation-first merge order.
+2. Use TaskCreate for each work unit. Put acceptance criteria in the `description` field — this is what workers and the validator check against:
    ```
    TaskCreate(
      subject: "Implement auth module",
@@ -44,28 +42,27 @@ Advance by writing the next phase name. The PR gate and teardown gate enforce ph
      activeForm: "Implementing auth module"
    )
    ```
-4. Use TaskUpdate to set dependencies between tasks (`addBlockedBy`, `addBlocks`). Workers respect blocked status and prefer tasks in ID order.
-5. When zones cross a boundary (e.g., backend <-> frontend), write a **contract** to `.claude/swarm/contracts.md` defining the interface before dispatching.
-6. Write decomposition plan to `.claude/swarm/plan.md`.
+3. Use TaskUpdate to set dependencies between tasks (`addBlockedBy`, `addBlocks`). Workers respect blocked status and prefer tasks in ID order.
+4. When zones cross a boundary (e.g., backend <-> frontend), write a **contract** to `.claude/swarm/contracts.md` defining the interface before dispatching.
+5. Write decomposition plan to `.claude/swarm/plan.md`.
 
 ## Phase 3: Dispatch
 
-1. Write phase: `echo "dispatch" > .claude/swarm/phase`
-2. Create the team:
+1. Create the team:
    ```
    TeamCreate(team_name="project-name", description="Working on feature X")
    ```
-3. Spawn workers via `Task(worker)` — use the typed syntax to enforce agent type restrictions. Workers declare `isolation: worktree` in their frontmatter; Claude Code provisions the worktree automatically:
+2. Spawn workers via `Task(worker)` — use the typed syntax to enforce agent type restrictions. Workers declare `isolation: worktree` in their frontmatter; Claude Code provisions the worktree automatically:
    ```
    Task(worker, team_name="project-name", name="worker-auth",
         prompt="Implement auth module per task description. Run /pds:verify before reporting done.")
    ```
    Use `Task(validator)` for validation tasks, `Task(researcher)` for research, etc. The typed syntax restricts which agent definitions can fulfill the spawn.
-4. Assign initial tasks to workers:
+3. Assign initial tasks to workers:
    ```
    TaskUpdate(taskId="1", owner="worker-auth", status="in_progress")
    ```
-5. Workers implement autonomously using a **pull model**:
+4. Workers implement autonomously using a **pull model**:
    - Read task via `TaskGet` for requirements and acceptance criteria
    - Implement, commit frequently
    - Use `SendMessage` for cross-agent coordination or to report blockers
@@ -73,66 +70,63 @@ Advance by writing the next phase name. The PR gate and teardown gate enforce ph
    - Mark task completed: `TaskUpdate(taskId="1", status="completed")`
    - Check `TaskList` and **self-claim** next unblocked task (prefer lowest ID)
    - Create new tasks via `TaskCreate` if they discover additional work
-6. Monitor progress via `TaskList`. Agents go idle between turns — this is normal. Send a message to wake an idle agent.
+5. Monitor progress via `TaskList`. Agents go idle between turns — this is normal. Send a message to wake an idle agent.
 
 **Hook note:** PDS hooks log `WorktreeCreate` and `WorktreeRemove` events as workers start and finish. These appear in the audit log for lifecycle traceability.
 
 ## Phase 4: Validate
 
-1. Write phase: `echo "validate" > .claude/swarm/phase`
-2. Workers run `/pds:verify` (self-check) before reporting task complete
-3. Spawn a validator:
+1. Workers run `/pds:verify` (self-check) before reporting task complete
+2. Spawn a validator:
    ```
    Task(validator, team_name="project-name", name="validator",
         prompt="Check TaskList for all task branches. Merge them, run full test suite, produce structured pass/fail report. Write report to .claude/swarm/validation-report.md.")
    ```
-4. Validator uses `TaskList` to find all tasks, `TaskGet` to read acceptance criteria, merges branches, runs tests, writes structured report to `.claude/swarm/validation-report.md` **(required — PR gate checks for this file)**
-5. If issues found:
+3. Validator uses `TaskList` to find all tasks, `TaskGet` to read acceptance criteria, merges branches, runs tests, writes structured report to `.claude/swarm/validation-report.md` **(required — PR gate checks for this file)**
+4. If issues found:
    - Update tasks: `TaskUpdate(taskId="1", status="in_progress", description="Fix: ...")`
    - Dispatch targeted workers to fix specific failures
    - Re-validate
-6. **Escalate to human after 2 failed validation cycles** — don't loop indefinitely
+5. **Escalate to human after 2 failed validation cycles** — don't loop indefinitely
 
 ## Phase 5: Consolidate
 
-1. Write phase: `echo "consolidate" > .claude/swarm/phase`
-2. Run `/pds:finish` on each task branch (rebase, clean history, post-rebase tests)
-3. Spawn a reviewer for pre-human code review:
+1. Run `/pds:finish` on each task branch (rebase, clean history, post-rebase tests)
+2. Spawn a reviewer for pre-human code review:
    ```
    Task(reviewer, team_name="project-name", name="reviewer",
         prompt="Review the diff against acceptance criteria from Phase 1. Send your review report via SendMessage when done.")
    ```
-4. Write reviewer report to `.claude/swarm/review-report.md` after receiving it via SendMessage **(required — PR gate checks for this file)**
-5. Spawn a documenter if user-facing docs are affected:
+3. Write reviewer report to `.claude/swarm/review-report.md` after receiving it via SendMessage **(required — PR gate checks for this file)**
+4. Spawn a documenter if user-facing docs are affected:
    ```
    Task(documenter, team_name="project-name", name="documenter",
         prompt="Update docs for the changes in this PR. Send summary via SendMessage when done.")
    ```
-6. Create PR with full context:
+5. Create PR with full context:
    ```bash
    gh pr create --title "feat: ..." --body "## Summary\n...\n## Acceptance Criteria\n...\n## Validation\n...\n## Issues\n..."
    ```
    **Note:** The PR gate blocks `gh pr create` unless phase is `consolidate`+ AND both `validation-report.md` and `review-report.md` exist.
-7. **Get human approval before merge.**
+6. **Get human approval before merge.**
 
 ## Phase 6: Knowledge
 
-1. Write phase: `echo "knowledge" > .claude/swarm/phase`
-2. Spawn scout for PDS meta-improvements:
+1. Spawn scout for PDS meta-improvements:
    ```
    Task(scout, team_name="project-name", name="scout",
         prompt="Read .claude/instincts.md. Update counts for re-observed patterns. Propose new instincts. Flag high-confidence patterns for skill promotion. Run /pds:eval on skills exercised in this swarm. Write report to .claude/swarm/scout-report.md. Send summary via SendMessage when done.")
    ```
-3. Scout writes report to `.claude/swarm/scout-report.md` **(required — TeamDelete gate checks for this file)**
-4. Scout updates observation counts, proposes new patterns, flags promotions (human-gated — new skill = new file = PR review). Scout also runs skill evals per `/pds:eval`.
-5. **Shutdown all agents** before cleanup:
+2. Scout writes report to `.claude/swarm/scout-report.md` **(required — TeamDelete gate checks for this file)**
+3. Scout updates observation counts, proposes new patterns, flags promotions (human-gated — new skill = new file = PR review). Scout also runs skill evals per `/pds:eval`.
+4. **Shutdown all agents** before cleanup:
    ```
    SendMessage(type="shutdown_request", recipient="worker-auth", content="Work complete, shutting down.")
    SendMessage(type="shutdown_request", recipient="validator", content="Work complete, shutting down.")
    # ... for each active agent
    ```
    Wait for `shutdown_response` from each agent before proceeding.
-6. Clean up: `TeamDelete`
+5. Clean up: `TeamDelete`
    **Note:** The teardown gate blocks `TeamDelete` unless phase is `knowledge` AND all 3 reports exist. TeamDelete also **fails if agents are still active** — always shut down first.
 
 ## Phase Gates
@@ -159,10 +153,6 @@ All phase artifacts are written to `.claude/swarm/`:
 | `validation-report.md` | 4 | validator | PR gate, teardown gate |
 | `review-report.md` | 5 | orchestrator (from reviewer) | PR gate, teardown gate |
 | `scout-report.md` | 6 | scout | Teardown gate |
-
-## Monitoring
-
-Check task progress via `TaskList`. For detailed status on individual tasks, use `TaskGet`. Discover team members by reading `~/.claude/teams/{team-name}/config.json`.
 
 ## See Also
 

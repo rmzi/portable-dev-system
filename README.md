@@ -79,7 +79,7 @@ make install    # symlinks this checkout as the plugin
 
 | Agent | Role | Model | Mode |
 |-------|------|-------|------|
-| orchestrator | Coordination — plans, decomposes, dispatches | opus | delegate |
+| orchestrator | Coordination — plans, decomposes, dispatches | opus | default |
 | researcher | Deep codebase exploration | sonnet | plan |
 | worker | Implementation in isolated worktrees | sonnet | acceptEdits |
 | validator | Merge, test, verify acceptance criteria | sonnet | acceptEdits |

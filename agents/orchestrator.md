@@ -70,24 +70,6 @@ The phase file is enforced by PR and teardown gates (defense-in-depth alongside 
 5. Workers self-claim unblocked tasks after completing each one
 6. Monitor: `TaskList` for progress
 
-## Plan Approval
-
-Researcher, reviewer, and auditor use `permissionMode: plan`. When they call `ExitPlanMode`, you receive a `plan_approval_request`. Respond with `SendMessage(type="plan_approval_response")` — approve or reject with feedback.
-
-## Shutdown Protocol
-
-Before `TeamDelete`, gracefully shut down all active agents:
-
-1. Send `SendMessage(type="shutdown_request", recipient="agent-name")` to each active agent
-2. Wait for `shutdown_response` from each
-3. Then call `TeamDelete`
-
-TeamDelete **fails if agents are still active** — always shut down first.
-
-## Idle State
-
-Agents go idle after every turn — **this is normal**, not an error. Idle means waiting for input. Sending a message to an idle agent wakes them up. Idle notifications include summaries of any peer DMs the agent sent.
-
 ## Sandbox Constraints
 
 The OS-level sandbox confines Bash writes to CWD. `git` and `docker` are excluded from the sandbox and go through normal permission flow.
@@ -95,16 +77,6 @@ The OS-level sandbox confines Bash writes to CWD. `git` and `docker` are exclude
 - **Cross-worktree monitoring**: Use TaskList and TaskGet for status. The sandbox allows broad reads for cross-worktree file inspection.
 - **Cross-worktree coordination**: Use SendMessage for inter-agent communication, not filesystem writes to other worktrees.
 - **Network**: Only `allowedDomains` are reachable from Bash. If a task needs additional domains, document them for human approval before dispatch.
-
-## Swarm Tools
-
-For the full 6-phase workflow, read `/pds:swarm`. Key tools for orchestration:
-
-- **TeamCreate** — establish a team with shared task list
-- **TaskCreate / TaskUpdate / TaskList / TaskGet** — build and manage the task DAG
-- **TaskStop** — stop stuck agents
-- **Task** — spawn agents (researcher, worker, validator, reviewer, documenter, scout)
-- **SendMessage** — coordinate between agents
 
 ## Principles
 

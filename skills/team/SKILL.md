@@ -52,86 +52,16 @@ Specialists add value in specific situations but aren't needed every swarm. The 
       (each spawned via Task tool with worktree isolation)
 ```
 
-Agents coordinate via TaskCreate/TaskUpdate for status and SendMessage for communication. TeamCreate establishes the team and shared task list.
+Agents coordinate via Claude Code's native team tools — TeamCreate, TaskCreate/TaskUpdate/TaskList/TaskGet, SendMessage, TaskStop. See each agent's frontmatter `tools:` field for which tools it has access to. Claude Code's built-in tool documentation covers usage, protocols (shutdown, plan approval, idle state, messaging).
 
-## Team Coordination Tools
+## PDS Coordination Patterns
 
-Agents use Claude Code's team primitives for structured coordination instead of ad-hoc communication.
+These patterns are PDS-specific — they layer on top of native Claude Code team behavior:
 
-### Orchestrator tools (team lead)
-
-| Tool | Purpose |
-|------|---------|
-| `TeamCreate` | Establish team with shared task list |
-| `TeamDelete` | Clean up team after swarm completion |
-| `TaskCreate` | Define work units with acceptance criteria |
-| `TaskUpdate` | Assign tasks, update status, set dependencies |
-| `TaskList` | Monitor all task progress |
-| `TaskGet` | Check individual task details |
-| `TaskStop` | Stop stuck agents |
-| `SendMessage` | Direct communication with any agent |
-
-### Agent tools (all non-orchestrator agents)
-
-| Tool | Agents | Purpose |
-|------|--------|---------|
-| `TaskGet` | all | Read assigned task details and acceptance criteria |
-| `TaskList` | worker, validator | Find available/unblocked tasks, discover branches |
-| `TaskCreate` | worker | Create new tasks when discovering additional work |
-| `TaskUpdate` | worker, validator | Mark tasks `in_progress` / `completed`, claim tasks |
-| `SendMessage` | all | Report results to orchestrator, cross-agent coordination |
-
-### Coordination patterns
-
-- **Task assignment**: Orchestrator creates initial tasks (`TaskCreate`), assigns first tasks via `TaskUpdate(owner=)`. Workers self-claim subsequent unblocked tasks via `TaskList` + `TaskUpdate`.
-- **Progress tracking**: Agents update status (`TaskUpdate(status=)`), orchestrator monitors (`TaskList`)
-- **Results delivery**: Agents send reports via `SendMessage`, orchestrator writes to swarm artifacts
-- **Blocker escalation**: Agents commit progress, update task status, `SendMessage` to orchestrator with details
-- **Task discovery**: Workers create new tasks with `TaskCreate` when they discover additional work during implementation
-
-## New Agent Capabilities (Claude Code 2.1.50+)
-
-| Feature | Description |
-|---------|-------------|
-| `isolation: worktree` | Declared in worker frontmatter — Claude Code provisions the worktree automatically. No manual `git worktree add` needed. |
-| `Task(agent_type)` | Typed spawn syntax (e.g., `Task(worker)`, `Task(validator)`) — restricts which agent definitions can fulfill the spawn. Use this instead of `subagent_type=`. |
-| `agent_id` / `agent_type` in hooks | Hook events expose these fields, enabling agent-aware routing in the PermissionRequest hook. |
-
-## Coordination Protocols
-
-### Shutdown
-
-TeamDelete **fails if agents are still active**. Before calling TeamDelete, the orchestrator must:
-
-1. `SendMessage(type="shutdown_request", recipient="agent-name")` to each active agent
-2. Wait for each agent's `shutdown_response` (approve or reject)
-3. Only then call `TeamDelete`
-
-### Plan Approval
-
-Agents in `plan` mode (researcher, reviewer, auditor) send a `plan_approval_request` when they call `ExitPlanMode`. The orchestrator responds with:
-```
-SendMessage(type="plan_approval_response", request_id="...", recipient="agent-name", approve=true)
-```
-Reject with `approve=false` and `content="feedback"` to request revisions.
-
-### Team Discovery
-
-Agents discover teammates by reading `~/.claude/teams/{team-name}/config.json`. The `members` array has each agent's `name`, `agentId`, and `agentType`. **Always use `name` for messaging and task ownership** (not agentId).
-
-### Idle State
-
-Agents go idle after every turn — **this is normal**. Idle means waiting for input, not done or broken.
-
-- Sending a message to an idle agent wakes it up
-- Idle notifications are automatic — no need to react unless assigning new work
-- Peer DM summaries appear in idle notifications for visibility
-
-### Messaging
-
-- **DM** (`type="message"`): Default for all communication. Targeted, efficient.
-- **Broadcast** (`type="broadcast"`): Sends to ALL agents. Use only for critical team-wide issues (e.g., "stop all work, blocking bug found"). Costs scale linearly with team size.
-- **Plain text output is NOT visible to teammates** — always use `SendMessage` to communicate.
+- **Pull model**: Orchestrator assigns initial tasks. Workers self-claim subsequent unblocked tasks via `TaskList` + `TaskUpdate` (prefer lowest ID).
+- **Results delivery**: Agents send reports via `SendMessage`. Orchestrator writes to `.claude/swarm/` artifacts (required by phase gates).
+- **Task discovery**: Workers create new tasks via `TaskCreate` when they discover additional work during implementation.
+- **Blocker escalation**: Agents commit progress, update task status, `SendMessage` to orchestrator with details.
 
 ## Core Principles
 

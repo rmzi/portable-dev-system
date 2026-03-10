@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.4.0] - 2026-03-10
+
+### Added
+- **Phase state machine** — `.claude/swarm/phase` tracks forward-only phase transitions (plan → decompose → dispatch → validate → consolidate → knowledge); enforced by PR and teardown gates as defense-in-depth alongside artifact checks
+- **Team coordination tools in agent frontmatter** — all 8 agents now declare the Claude Code team tools they need (TeamCreate, TaskCreate, TaskUpdate, TaskList, TaskGet, TaskStop, SendMessage) in their `tools:` field
+- **Self-service task claiming (pull model)** — workers check `TaskList` after completing tasks and self-claim next unblocked task (prefer lowest ID), reducing orchestrator bottleneck
+- **Phase validation in gate scripts** — `orchestrator-pr-gate.sh` and `orchestrator-teardown-gate.sh` now validate phase state, empty phase files, and unrecognized phase names with clear error messages
+
+### Changed
+- **Trimmed ~70 lines of native Claude Code restatements** — removed Coordination Protocols section (shutdown, plan approval, team discovery, idle state, messaging) from `/team`, removed Plan Approval/Shutdown Protocol/Idle State/Swarm Tools sections from orchestrator agent, removed Monitoring section and per-phase `echo` commands from `/swarm`. Claude Code's built-in tool documentation covers these natively.
+- **Team skill** — replaced tool tables and coordination protocols with concise PDS-specific patterns (pull model, artifact delivery, task discovery, blocker escalation); removed "New Agent Capabilities" section (now standard features)
+- **Whitepaper** — added phase state machine to SDLC model and defense-in-depth layer 4; Phase 3 documents pull model for task claiming; fixed `delegate` → `default` permission mode
+- **README** — fixed orchestrator mode from `delegate` to `default`
+
 ## [4.3.0] - 2026-03-09
 
 ### Added

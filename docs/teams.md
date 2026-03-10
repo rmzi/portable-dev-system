@@ -117,7 +117,7 @@ PDS includes 8 specialized agents for multi-agent orchestration. Each agent has 
 
 | Agent | Role | Model | Mode |
 |-------|------|-------|------|
-| orchestrator | Team lead — plans, decomposes, dispatches | opus | delegate |
+| orchestrator | Team lead — plans, decomposes, dispatches | opus | default |
 | researcher | Deep codebase exploration | sonnet | plan |
 | worker | Implementation in isolated worktrees | sonnet | acceptEdits |
 | validator | Merge branches, run tests, report | sonnet | acceptEdits |
@@ -130,7 +130,7 @@ PDS includes 8 specialized agents for multi-agent orchestration. Each agent has 
 
 | Mode | Agents | Behavior |
 |------|--------|----------|
-| **delegate** | orchestrator | Coordination only — cannot implement, must delegate |
+| **default** | orchestrator | Standard permission flow — coordinates and delegates to agents |
 | **acceptEdits** | worker, validator, documenter, scout | Auto-accept file edits, full implementation access |
 | **plan** | researcher, reviewer, auditor | Read-only exploration, no file modifications |
 
