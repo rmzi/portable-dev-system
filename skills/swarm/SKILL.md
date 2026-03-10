@@ -5,6 +5,19 @@ description: Launching multi-agent parallel work with the Agentic SDLC. Use when
 
 Six-phase workflow for decomposing, dispatching, and validating parallel work across agent teams. Each phase shows the concrete tool calls needed to execute it.
 
+## Delegation
+
+**If you are not the orchestrator**, spawn one to execute this workflow:
+
+```
+Agent(subagent_type="pds:orchestrator", name="orchestrator",
+      prompt="Execute /pds:swarm for: <task description and context>")
+```
+
+The orchestrator has `TeamCreate`, `TaskCreate`, `Task(worker)`, `SendMessage`, and other coordination tools. The main conversation does not — delegation is required.
+
+Everything below is written for the orchestrator.
+
 ## Phase State Machine
 
 The orchestrator tracks the current phase in `.claude/swarm/phase`. Transitions are **forward-only**:
