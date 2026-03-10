@@ -63,6 +63,14 @@ These patterns are PDS-specific — they layer on top of native Claude Code team
 - **Task discovery**: Workers create new tasks via `TaskCreate` when they discover additional work during implementation.
 - **Blocker escalation**: Agents commit progress, update task status, `SendMessage` to orchestrator with details.
 
+## Native Behaviors Worth Knowing
+
+These are Claude Code native behaviors, but agents that haven't seen them before will get stuck:
+
+- **Shutdown before TeamDelete**: `SendMessage(type="shutdown_request")` to each active agent → wait for `shutdown_response` → then `TeamDelete`. TeamDelete **fails if agents are still active**.
+- **Plan approval**: Agents in `plan` mode send `plan_approval_request` when they call `ExitPlanMode`. Orchestrator must respond with `SendMessage(type="plan_approval_response", approve=true)` — or `approve=false` with feedback. Without this response, the agent hangs.
+- **Plain text is invisible to teammates** — always use `SendMessage`. DM (`type="message"`) for targeted communication; broadcast (`type="broadcast"`) only for critical team-wide issues.
+
 ## Core Principles
 
 - **Progress in commits and task updates.** Commits and TaskUpdate are durable. Context is ephemeral.
