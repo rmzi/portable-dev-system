@@ -18,6 +18,7 @@ All notable changes to this project will be documented in this file.
 - **Swarm Phase 5** — Lite tier: orchestrator self-reviews (no reviewer spawn); med/heavy: reviewer spawned with tier model
 - **Swarm Phase 6** — Heavy tier: auditor spawned alongside scout; scout model upgraded to sonnet at heavy tier
 - **Team skill** — New "Swarm Tiers" reference table with model mapping per tier
+- **Whitepaper bibliography** — New Appendix C: References with 7 cited sources including Anthropic multi-agent research, Vercel agent evals, Fowler context engineering; inline citations [N] throughout
 - **Whitepaper** — Tier system in Phase 1 description, Cost Considerations section, and Glossary
 - **Team setup docs** — Tier table added to Agent Teams section
 

@@ -8,7 +8,7 @@
 
 This whitepaper details a model for software development where AI agents operate as autonomous collaborators. Rather than treating AI as sophisticated autocomplete, we propose infrastructure where agents plan, execute, validate, and document work with minimal human intervention.
 
-The goal is amplification, not replacement. A single engineer orchestrates multiple agents working in parallel, each in isolated environments, producing work that flows through automated validation before human review. The human remains architect and final authority. The agents become a scalable workforce.
+The goal is amplification, not replacement. A single engineer orchestrates multiple agents working in parallel, each in isolated environments, producing work that flows through automated validation before human review. The human remains architect and final authority. The agents become a scalable workforce. This central orchestrator + specialist sub-agents pattern is emerging as the industry standard for agentic development [1][6].
 
 This document provides the technical depth required to implement this model: the conceptual framework, isolation architecture, tooling requirements, adoption path, and governance framework.
 
@@ -40,7 +40,7 @@ Work begins when requirements arrive. The developer engages with an orchestratin
 
 The orchestrator runs `/grill` — a structured requirement interrogation protocol — to validate requirements before decomposition. This protocol covers: restating the problem, defining scope boundaries, establishing verifiable acceptance criteria, surfacing constraints, challenging assumptions, identifying risks, ranking priorities, and performing a MECE check to ensure requirements don't overlap and all cases are covered. Ambiguous requirements are the primary source of wasted tokens in agentic workflows.
 
-The grill protocol also recommends a **swarm tier** (lite, med, heavy) based on problem complexity. Tiers control model selection and specialist inclusion — lite uses haiku workers for routine pattern-following tasks, med uses the default sonnet/opus configuration, heavy uses opus for reasoning-heavy roles with a full specialist roster. The developer confirms or overrides the tier during plan approval.
+The grill protocol also recommends a **swarm tier** (lite, med, heavy) based on problem complexity. Tiers control model selection and specialist inclusion — lite uses haiku workers for routine pattern-following tasks, med uses the default sonnet/opus configuration, heavy uses opus for reasoning-heavy roles with a full specialist roster. This tiered architecture draws from Anthropic's own multi-agent research [1], where an Opus lead with Sonnet subagents outperformed single-agent Opus by 90.2%. The developer confirms or overrides the tier during plan approval.
 
 The orchestrator may spawn a **researcher** agent to gather context: querying documentation, searching codebases, accessing external APIs. The orchestrator synthesizes this research and produces a structured task specification.
 
@@ -156,7 +156,7 @@ This approach eliminates Docker/container overhead while maintaining isolation t
 
 ### Instruction Architecture
 
-Agent effectiveness depends on how instructions reach the model. [Vercel's agent evals](https://vercel.com/blog/agents-md-outperforms-skills-in-our-agent-evals) found that passive context (always-loaded AGENTS.md) achieves 100% pass rates for horizontal framework knowledge, while skills without explicit invocation instructions scored 53%. Skills with careful wording reached 79%.
+Agent effectiveness depends on how instructions reach the model. Vercel's agent evals [2] found that passive context (always-loaded AGENTS.md) achieves 100% pass rates for horizontal framework knowledge, while skills without explicit invocation instructions scored 53%. Skills with careful wording reached 79%.
 
 PDS uses a dual-layer approach informed by these findings:
 
@@ -356,7 +356,7 @@ Direct work favors: continuous judgment, ambiguous requirements.
 
 ## Context Compression
 
-Agent configuration files consume context window. Compression is tempting but has a fidelity cliff — beyond a threshold, agents lose operational knowledge and produce worse results.
+Agent configuration files consume context window. Compression is tempting but has a fidelity cliff — beyond a threshold, agents lose operational knowledge and produce worse results [3].
 
 ### What's Safe to Compress
 
@@ -498,3 +498,21 @@ This is a starting point. The model evolves with implementation experience and i
 **TaskCreate**: Tool for defining work units with dependencies, forming task DAGs.
 
 **TeamCreate**: Tool for establishing an agent team with shared task list and coordination.
+
+---
+
+## Appendix C: References
+
+1. Hadfield, J., Zhang, B., Lien, K., Scholz, F., Fox, J., & Ford, D. (2025). "Multi-agent research system." *Anthropic Engineering Blog.* https://www.anthropic.com/engineering/multi-agent-research-system — Opus lead + Sonnet subagents outperformed single-agent Opus by 90.2% on internal research eval. 3-5 parallel subagents, ~15x token usage vs chat.
+
+2. Vercel Engineering. (2025). "AGENTS.md outperforms skills in our agent evals." *Vercel Blog.* https://vercel.com/blog/agents-md-outperforms-skills-in-our-agent-evals — Passive context (always-loaded AGENTS.md) achieves 100% pass rate for horizontal knowledge; skills without invocation instructions scored 53%; carefully worded skills reached 79%.
+
+3. Böckeler, B. & Fowler, M. (2026). "Context Engineering for Coding Agents." *martinfowler.com.* https://martinfowler.com/articles/exploring-gen-ai/context-engineering-coding-agents.html — Defines context engineering as curating model input for better output. Notes over-stuffing context hurts more than helps.
+
+4. Anthropic. (2025). "Effective Context Engineering for AI Agents." *Anthropic Engineering Blog.* https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents
+
+5. The New Stack. (2026). "Memory for AI Agents: A New Paradigm of Context Engineering." https://thenewstack.io/memory-for-ai-agents-a-new-paradigm-of-context-engineering/ — Large context windows improved short-term coherence but did not solve memory. 2026 production standard: dual-layer memory (hot path + cold path retrieval).
+
+6. HuggingFace. (2026). "2026 Agentic Coding Trends." https://huggingface.co/blog/Svngoku/agentic-coding-trends-2026 — Engineers shifting from writing code to coordinating agents. Central orchestrator + specialist sub-agents as the emerging standard.
+
+7. Anthropic. (2025). "Enabling Claude Code to work more autonomously." *Anthropic News.* https://www.anthropic.com/news/enabling-claude-code-to-work-more-autonomously
