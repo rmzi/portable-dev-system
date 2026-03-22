@@ -10,6 +10,9 @@ All notable changes to this project will be documented in this file.
 - **Tier override syntax** — `/pds:swarm lite`, `/pds:swarm med`, `/pds:swarm heavy` to force a specific tier; without argument, tier auto-selected via grill
 - **Tier state file** — `.claude/swarm/tier` tracks the active tier alongside `.claude/swarm/phase`
 - **Grill eval scenarios** — Tier selection test cases in `skills/grill/EVAL.md` (routine task → lite, complex refactor → heavy)
+- **Automated eval runner** — `scripts/run-eval.sh` runs EVAL.md scenarios N times via `claude -p`, grades with LLM-as-judge, reports pass rates with Wilson score 95% confidence intervals
+- **Eval Makefile target** — `make eval SKILL=grill RUNS=10` for statistical skill testing
+- **Whitepaper testing bibliography** — 3 new citations: Anthropic "Demystifying Evals" [8], AgentAssay probabilistic regression [9], Agent-as-a-Judge [10]
 
 ### Changed
 - **Swarm delegation** — Orchestrator spawn now includes `model` override for lite tier (sonnet instead of opus) and tier in prompt

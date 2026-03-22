@@ -405,8 +405,11 @@ PDS encodes two complementary layers of engineering guidance, designed to be MEC
 | Completion verification | `/pds:verify` | Explicit over implicit |
 | Branch preparation for merge | `/pds:finish` | Small, reversible steps |
 | Version bump and ship | `/pds:bcp` | Explicit over implicit |
+| Statistical skill evaluation | `/pds:eval` | Tests as specification |
 
 This separation matters: principles are stable across projects and technologies, while techniques evolve with tooling and practice. An agent grounded in principles makes better judgment calls when no specific technique applies.
+
+Skills themselves need testing — a modified skill that silently degrades is worse than no skill. PDS uses LLM-as-judge grading [10] with statistical repetition and Wilson score confidence intervals [8][9] to evaluate whether skills produce the intended agent behavior. This treats skills as testable artifacts, not just documentation.
 
 ---
 
@@ -516,3 +519,9 @@ This is a starting point. The model evolves with implementation experience and i
 6. HuggingFace. (2026). "2026 Agentic Coding Trends." https://huggingface.co/blog/Svngoku/agentic-coding-trends-2026 — Engineers shifting from writing code to coordinating agents. Central orchestrator + specialist sub-agents as the emerging standard.
 
 7. Anthropic. (2025). "Enabling Claude Code to work more autonomously." *Anthropic News.* https://www.anthropic.com/news/enabling-claude-code-to-work-more-autonomously
+
+8. Anthropic. (2025). "Demystifying Evals for AI Agents." *Anthropic Engineering Blog.* https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents — Three-grader system (code, model, human). pass@k for capability, pass^k for consistency. Start with 20-50 tasks from real failures.
+
+9. AgentAssay. (2026). "Probabilistic Regression Testing for AI Agents." *arXiv 2603.02601.* https://arxiv.org/abs/2603.02601 — Three-valued verdicts (Pass/Fail/Inconclusive) with Wilson score CIs. Behavioral fingerprinting achieves 86% regression detection where binary testing has 0%.
+
+10. Agent-as-a-Judge. (2025). *arXiv 2508.02994.* https://arxiv.org/html/2508.02994v1 — Agent evaluators disagree with human majority vote 0.3% of the time; single LLM judges disagree 31%. Strongest evidence for LLM-as-judge reliability in agentic evaluation.

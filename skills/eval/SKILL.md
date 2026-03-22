@@ -76,6 +76,50 @@ Record in `.claude/eval-results.md`:
 | **partial** | >50% expected behaviors, minor anti-pattern violations |
 | **fail** | <50% expected behaviors OR critical anti-pattern |
 
+## Automated Eval
+
+`scripts/run-eval.sh` runs EVAL.md scenarios statistically — N executions per scenario, LLM-as-judge grading, Wilson score confidence intervals.
+
+### Usage
+
+```bash
+./scripts/run-eval.sh grill              # 5 runs, haiku
+./scripts/run-eval.sh grill --runs 10    # 10 runs for tighter CI
+./scripts/run-eval.sh grill --model sonnet  # sonnet for execution
+make eval SKILL=grill RUNS=10            # via Makefile
+```
+
+### How it works
+
+1. Reads the skill's `SKILL.md` and `EVAL.md`
+2. For each scenario, runs N times via `claude -p --bare` (hermetic — no plugins, just the skill text)
+3. Grades each run with LLM-as-judge (`claude -p --model haiku --json-schema`)
+4. Reports pass rate with 95% Wilson score confidence interval
+
+### Statistical approach
+
+Non-deterministic systems need repetition. A single pass/fail tells you nothing [8].
+
+- **pass@k** — probability of at least one success in k attempts (measures capability)
+- **pass^k** — probability ALL k trials succeed (measures consistency for production)
+- **Wilson score CI** — proper small-sample confidence interval:
+  - N=5, 5/5 pass → 95% CI: [57%-100%] (wide — run more to narrow)
+  - N=10, 9/10 pass → 95% CI: [60%-98%]
+  - N=20, 18/20 pass → 95% CI: [70%-97%] (actionable)
+
+### Choosing run count
+
+| Count | Use | CI width |
+|-------|-----|----------|
+| 3 | Quick smoke test | Very wide |
+| 5 | Default — catches gross failures | Wide |
+| 10 | Serious check before shipping | Moderate |
+| 20 | High confidence, regression baseline | Tight |
+
+### Cost
+
+Haiku execution + haiku grading ≈ $0.05/run. 5 runs ≈ $0.25. 20 runs ≈ $1.00.
+
 ## A/B Comparison
 
 To test whether a skill adds value over baseline:
