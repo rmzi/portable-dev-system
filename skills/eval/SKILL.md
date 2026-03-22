@@ -83,10 +83,10 @@ Record in `.claude/eval-results.md`:
 ### Usage
 
 ```bash
-./scripts/run-eval.sh grill              # 5 runs, haiku
-./scripts/run-eval.sh grill --runs 10    # 10 runs for tighter CI
-./scripts/run-eval.sh grill --model sonnet  # sonnet for execution
-make eval SKILL=grill RUNS=10            # via Makefile
+./scripts/run-eval.sh grill              # 5 runs, haiku execution, sonnet grading
+./scripts/run-eval.sh grill --runs 20    # 20 runs for tight CI
+./scripts/run-eval.sh grill --model sonnet  # sonnet for both execution and grading
+make eval SKILL=grill RUNS=20            # via Makefile
 ```
 
 ### How it works
@@ -118,7 +118,7 @@ Non-deterministic systems need repetition. A single pass/fail tells you nothing 
 
 ### Cost
 
-Haiku execution + haiku grading ≈ $0.05/run. 5 runs ≈ $0.25. 20 runs ≈ $1.00.
+Haiku execution + sonnet grading ≈ $0.10/run. Sonnet execution + sonnet grading ≈ $0.25/run. 20 runs at sonnet ≈ $5.00. Use sonnet grading by default — haiku grading produces false positives and false negatives on complex output.
 
 ## A/B Comparison
 

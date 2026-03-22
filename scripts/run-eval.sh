@@ -19,7 +19,7 @@ set -euo pipefail
 # --- Defaults ---
 RUNS=5
 EXEC_MODEL="haiku"
-GRADE_MODEL="haiku"
+GRADE_MODEL="sonnet"
 
 # --- Parse args ---
 SKILL="${1:?Usage: run-eval.sh <skill> [--runs N] [--model MODEL]}"
