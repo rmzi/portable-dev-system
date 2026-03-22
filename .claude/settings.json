@@ -135,6 +135,36 @@
       "Use /pds:team to see available agents and roles"
     ]
   },
+  "worktree": {
+    "symlinkDirectories": ["node_modules", ".cache", ".bin", ".venv", "__pycache__"]
+  },
+  "autoMode": {
+    "allow": [
+      "Creating git worktrees",
+      "Running tests and linters",
+      "Reading and searching files",
+      "Creating and switching branches",
+      "Installing dependencies"
+    ],
+    "soft_deny": [
+      "Force pushing to any branch",
+      "Deleting branches without confirmation",
+      "Modifying CI/CD pipelines",
+      "Pushing to protected branches (main, master, dev, develop)"
+    ],
+    "environment": [
+      "PDS (Portable Dev System) plugin is active with skills and agents",
+      "Worktree-based workflow: branches are isolated in .worktrees/",
+      "Security-hardened: sandbox enabled, credential paths denied"
+    ]
+  },
+  "showClearContextOnPlanAccept": true,
+  "plansDirectory": ".claude/plans",
+  "showThinkingSummaries": true,
+  "defaultView": "chat",
+  "autoMemoryEnabled": true,
+  "autoDreamEnabled": true,
+  "fastModePerSessionOptIn": true,
   "attribution": {
     "pr": "\n\nGenerated with [PDS](https://github.com/rmzi/portable-dev-system)"
   }
