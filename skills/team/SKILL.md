@@ -31,6 +31,27 @@ These map directly to the whitepaper's Agentic SDLC: orchestrator coordinates, w
 
 Specialists add value in specific situations but aren't needed every swarm. The orchestrator decides based on task requirements.
 
+## Swarm Tiers
+
+Model overrides applied at spawn time via the `model` parameter. Agent definitions stay unchanged. Tier stored in `.claude/swarm/tier`, set during Phase 1 grill.
+
+| Agent | Lite | Med (default) | Heavy |
+|-------|------|---------------|-------|
+| orchestrator | sonnet | opus | opus |
+| researcher | _(skip)_ | sonnet | opus |
+| worker | haiku | sonnet | sonnet |
+| validator | haiku | sonnet | sonnet |
+| reviewer | _(skip)_ | sonnet | opus |
+| documenter | _(skip)_ | sonnet | sonnet |
+| scout | haiku | haiku | sonnet |
+| auditor | _(skip)_ | _(skip)_ | sonnet |
+
+- **Lite**: 1-2 workers, no reviewer/documenter/auditor. Orchestrator self-researches and self-reviews. Daily driver for routine work.
+- **Med**: 2-3 workers, full specialist roster as needed. Current defaults — no model overrides.
+- **Heavy**: 3-4 workers, all specialists including auditor. Opus for reasoning-heavy roles.
+
+User override: `/pds:swarm lite|med|heavy`. Without argument, auto-selected via `/pds:grill` step 9.
+
 ## Permission Modes
 
 | Mode | Agents | Behavior |

@@ -32,5 +32,31 @@ skill: grill
 - [ ] Identifies gaps but doesn't produce verifiable acceptance criteria
 - [ ] Skips MECE check
 
+### Scenario: Tier selection for routine task
+**Setup:** User says "add a new /health endpoint that returns 200 with uptime" in a REST API with 20 existing endpoints following the same pattern.
+**Prompt:** Interrogate these requirements and recommend execution strategy.
+**Expected:**
+- [ ] Identifies this as pattern-following work (similar endpoints exist)
+- [ ] Produces swarm recommendation with tier: lite
+- [ ] Rationale references: single boundary, clear pattern, low ambiguity
+- [ ] Does NOT recommend med or heavy for simple addition
+**Anti-patterns:**
+- [ ] Recommends heavy tier for routine work
+- [ ] Omits tier from swarm recommendation
+- [ ] Recommends no-swarm when 3+ files are affected (endpoint, route, test, docs)
+
+### Scenario: Tier selection for complex refactor
+**Setup:** User says "refactor the auth system from session-based to JWT, update all API endpoints, add refresh token flow, update frontend auth context, and add integration tests."
+**Prompt:** Interrogate these requirements and recommend execution strategy.
+**Expected:**
+- [ ] Identifies deep cross-boundary coupling (API + DB + frontend + tests)
+- [ ] Produces swarm recommendation with tier: heavy
+- [ ] Rationale references: 15+ files, new architectural pattern, high complexity
+- [ ] Includes decomposition outline with task count and boundaries
+**Anti-patterns:**
+- [ ] Recommends lite for a major refactor
+- [ ] Skips risk assessment for auth changes
+- [ ] Fails to identify the scope as heavy-tier
+
 ## Baseline
-Without `/grill`, agents typically accept requirements at face value and begin implementation. Edge cases surface during coding (expensive) rather than during planning (cheap).
+Without `/grill`, agents typically accept requirements at face value and begin implementation. Edge cases surface during coding (expensive) rather than during planning (cheap). Without tier selection, all swarms run at med cost regardless of complexity.

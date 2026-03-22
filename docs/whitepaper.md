@@ -40,6 +40,8 @@ Work begins when requirements arrive. The developer engages with an orchestratin
 
 The orchestrator runs `/grill` — a structured requirement interrogation protocol — to validate requirements before decomposition. This protocol covers: restating the problem, defining scope boundaries, establishing verifiable acceptance criteria, surfacing constraints, challenging assumptions, identifying risks, ranking priorities, and performing a MECE check to ensure requirements don't overlap and all cases are covered. Ambiguous requirements are the primary source of wasted tokens in agentic workflows.
 
+The grill protocol also recommends a **swarm tier** (lite, med, heavy) based on problem complexity. Tiers control model selection and specialist inclusion — lite uses haiku workers for routine pattern-following tasks, med uses the default sonnet/opus configuration, heavy uses opus for reasoning-heavy roles with a full specialist roster. The developer confirms or overrides the tier during plan approval.
+
 The orchestrator may spawn a **researcher** agent to gather context: querying documentation, searching codebases, accessing external APIs. The orchestrator synthesizes this research and produces a structured task specification.
 
 The critical output is explicit acceptance criteria—unambiguous and mechanically verifiable. "The API should be fast" becomes "p99 latency for /users under 200ms with 1000 concurrent connections."
@@ -333,6 +335,8 @@ Complex tasks: millions of tokens across phases. Substantial task: $10-50. Heavy
 
 Token budgets provide control—tasks pause and request intervention when exhausted.
 
+**Swarm tiers** provide cost control at the architectural level. A lite tier swarm using haiku workers costs roughly 10-20x less than a heavy tier swarm using opus for reasoning-heavy roles, for the same number of turns. The grill protocol recommends the appropriate tier based on problem complexity, preventing over-spending on routine tasks while ensuring complex work gets adequate model capability.
+
 ### Compute
 
 Cloud execution scales with concurrent agents and duration. Spot instances work for ephemeral workers. On-demand for orchestrators and validators.
@@ -484,6 +488,8 @@ This is a starting point. The model evolves with implementation experience and i
 **Phase Gate**: A mechanical enforcement point (PreToolUse hook or prompt evaluator) that blocks phase transitions unless required artifacts exist. Prevents SDLC phases from being skipped.
 
 **Swarm Artifacts**: Phase reports written to `.claude/swarm/` during a swarm — `validation-report.md` (Phase 4), `review-report.md` (Phase 5), `scout-report.md` (Phase 6). Required by phase gates for PR creation and team teardown.
+
+**Swarm Tier**: One of three cost/capability levels (lite, med, heavy) that control model selection and specialist inclusion for a swarm. Set during Phase 1 grill, stored in `.claude/swarm/tier`. Lite uses haiku workers for routine tasks. Med uses sonnet workers (the default). Heavy uses opus for reasoning-heavy roles with full specialist roster.
 
 **Human Gate**: Principle that no agent work reaches production without human approval.
 

@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.5.0] - 2026-03-22
+
+### Added
+- **Swarm tiers (lite/med/heavy)** — Three cost/capability levels controlling model selection and specialist inclusion per swarm. Lite uses haiku workers for routine tasks (~10-20x cheaper). Med matches current defaults. Heavy uses opus for reasoning-heavy roles with full specialist roster.
+- **Grill tier recommendation** — `/pds:grill` step 9 now recommends a tier alongside the swarm/no-swarm decision, with criteria for each tier based on problem complexity
+- **Tier override syntax** — `/pds:swarm lite`, `/pds:swarm med`, `/pds:swarm heavy` to force a specific tier; without argument, tier auto-selected via grill
+- **Tier state file** — `.claude/swarm/tier` tracks the active tier alongside `.claude/swarm/phase`
+- **Grill eval scenarios** — Tier selection test cases in `skills/grill/EVAL.md` (routine task → lite, complex refactor → heavy)
+
+### Changed
+- **Swarm delegation** — Orchestrator spawn now includes `model` override for lite tier (sonnet instead of opus) and tier in prompt
+- **Swarm Phase 1** — Tier initialization; grill mandatory before dispatch; researcher skipped at lite tier
+- **Swarm Phase 3** — Tier-aware dispatch with per-agent model overrides via `model` parameter
+- **Swarm Phase 5** — Lite tier: orchestrator self-reviews (no reviewer spawn); med/heavy: reviewer spawned with tier model
+- **Swarm Phase 6** — Heavy tier: auditor spawned alongside scout; scout model upgraded to sonnet at heavy tier
+- **Team skill** — New "Swarm Tiers" reference table with model mapping per tier
+- **Whitepaper** — Tier system in Phase 1 description, Cost Considerations section, and Glossary
+- **Team setup docs** — Tier table added to Agent Teams section
+
 ## [4.4.1] - 2026-03-10T17:57:25-04:00
 
 ### Fixed

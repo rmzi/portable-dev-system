@@ -55,7 +55,7 @@ make install    # symlinks this checkout as the plugin
 | Skill | Purpose |
 |-------|---------|
 | `/pds:ethos` | Development principles, MECE |
-| `/pds:swarm` | Multi-agent team workflow (6-phase Agentic SDLC) |
+| `/pds:swarm` | Multi-agent team workflow (6-phase SDLC, lite/med/heavy tiers) |
 | `/pds:team` | Agent roster and coordination |
 | `/pds:grill` | Requirement interrogation |
 | `/pds:verify` | Completion self-check |

@@ -7,7 +7,7 @@ Skills encode team knowledge and workflows. Claude reads and follows them automa
 | Skill | Purpose | When to Use |
 |-------|---------|-------------|
 | `/pds:ethos` | Development principles, MECE | Starting work, when stuck, design decisions |
-| `/pds:swarm` | Multi-agent team workflow (6-phase Agentic SDLC) | Launching multi-agent parallel work |
+| `/pds:swarm` | Multi-agent team workflow (6-phase Agentic SDLC, lite/med/heavy tiers) | Launching multi-agent parallel work |
 | `/pds:team` | Agent roster and coordination | Agent roles, permissions, file protocol |
 | `/pds:grill` | Requirement interrogation | Before decomposition, ambiguous features |
 | `/pds:verify` | Completion self-check | Before declaring tasks done, creating PRs |

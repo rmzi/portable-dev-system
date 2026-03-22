@@ -55,20 +55,39 @@ Requirements don't overlap (mutually exclusive) and all cases are covered (colle
 - Overlaps: do two requirements contradict each other?
 - Edge cases: empty inputs, concurrent access, error states
 
-### 9. Swarm Decision
-Based on the validated requirements, decide whether to use a multi-agent swarm or single-agent execution:
+### 9. Swarm Decision + Tier
 
-**Swarm when:**
-- 3+ files across different modules or architecture boundaries
-- Parallel-independent subtasks that don't share state
-- Multiple architecture boundaries (frontend + backend, API + DB, etc.)
+Based on the validated requirements, decide execution strategy:
 
 **No-swarm when:**
 - 2 or fewer files to modify
 - No parallelism opportunity — changes are sequential/dependent
 - Single agent can complete in ~30 turns or less
 
-**Output:** Explicit `Recommendation: swarm | no-swarm` with rationale. If swarm, include a decomposition outline (task count, boundaries, dependencies).
+**Swarm when** 3+ files across different modules or parallel-independent subtasks exist. Select tier:
+
+**Lite** — routine, well-understood changes:
+- Pattern-following work (add endpoint like existing ones, new test file, config change)
+- 3-5 files, single architecture boundary
+- Low ambiguity — requirements are clear after steps 1-8
+- No new architectural patterns introduced
+- Uses haiku workers, sonnet orchestrator — cheapest effective configuration
+
+**Med** — non-trivial work requiring reasoning:
+- Multiple architecture boundaries (but not deeply coupled)
+- 5-15 files across 2-3 modules
+- Moderate complexity/risk resolved during grill
+- May introduce new patterns within existing conventions
+- Uses sonnet workers, opus orchestrator — the current default
+
+**Heavy** — complex, high-stakes, or exploratory:
+- Deep cross-boundary coupling (API + DB + frontend + tests)
+- 15+ files or significant refactoring
+- High ambiguity, significant risk items from step 6
+- Introduces new architectural patterns or major refactors
+- Uses opus for reasoning-heavy roles, full specialist roster
+
+**Output:** Explicit `Recommendation: swarm (tier: lite)` or `swarm (tier: med)` or `swarm (tier: heavy)` or `no-swarm` — with rationale. If swarm, include a decomposition outline (task count, boundaries, dependencies).
 
 ## Output
 
@@ -78,9 +97,9 @@ A validated problem statement containing:
 - Acceptance criteria (verifiable)
 - Constraints and assumptions (explicit)
 - Priority ranking (must/should/could)
-- Swarm decision (swarm/no-swarm with rationale)
+- Swarm decision with tier (swarm + lite/med/heavy, or no-swarm, with rationale)
 
-This feeds directly into `/pds:swarm` Phase 2 decomposition.
+This feeds directly into `/pds:swarm` Phase 1 tier initialization and Phase 2 decomposition.
 
 ## See Also
 
