@@ -60,32 +60,30 @@ Requirements don't overlap (mutually exclusive) and all cases are covered (colle
 Based on the validated requirements, decide execution strategy:
 
 **No-swarm when:**
-- 2 or fewer files to modify
+- Changes stay within a single module or boundary
 - No parallelism opportunity — changes are sequential/dependent
 - Single agent can complete in ~30 turns or less
 
-**Swarm when** 3+ files across different modules or parallel-independent subtasks exist. Select tier:
+**Swarm when** changes cross module boundaries or benefit from parallel execution. Select tier:
 
-**Lite** — routine, well-understood changes:
-- Pattern-following work (add endpoint like existing ones, new test file, config change)
-- 3-5 files, single architecture boundary
-- Low ambiguity — requirements are clear after steps 1-8
-- No new architectural patterns introduced
-- Uses haiku workers, sonnet orchestrator — cheapest effective configuration
+**Lite** — routine, pattern-following:
+- Crosses 2 modules but follows existing patterns (add X like existing Y)
+- Low ambiguity — requirements clear after steps 1-8
+- No new interfaces between modules
+- Example: new API endpoint + tests when many similar endpoints exist
 
-**Med** — non-trivial work requiring reasoning:
-- Multiple architecture boundaries (but not deeply coupled)
-- 5-15 files across 2-3 modules
-- Moderate complexity/risk resolved during grill
-- May introduce new patterns within existing conventions
-- Uses sonnet workers, opus orchestrator — the current default
+**Med** — non-trivial, multi-boundary:
+- Crosses 2-3 architecture boundaries
+- Moderate complexity — some design decisions needed
+- May add new interfaces within existing conventions
+- Example: new feature touching API + database + frontend
 
-**Heavy** — complex, high-stakes, or exploratory:
-- Deep cross-boundary coupling (API + DB + frontend + tests)
-- 15+ files or significant refactoring
-- High ambiguity, significant risk items from step 6
-- Introduces new architectural patterns or major refactors
-- Uses opus for reasoning-heavy roles, full specialist roster
+**Heavy** — complex, high-stakes:
+- Crosses 3+ architecture boundaries
+- Requires new interfaces or contracts between modules
+- Refactors a core abstraction other code depends on
+- Significant risk items identified in step 6
+- Example: replacing an auth system, new data pipeline, major API redesign
 
 **Output:** Explicit `Recommendation: swarm (tier: lite)` or `swarm (tier: med)` or `swarm (tier: heavy)` or `no-swarm` — with rationale. If swarm, include a decomposition outline (task count, boundaries, dependencies).
 

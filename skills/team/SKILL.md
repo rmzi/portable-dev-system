@@ -46,9 +46,9 @@ Model overrides applied at spawn time via the `model` parameter. Agent definitio
 | scout | haiku | haiku | sonnet |
 | auditor | _(skip)_ | _(skip)_ | sonnet |
 
-- **Lite**: 1-2 workers, no reviewer/documenter/auditor. Orchestrator self-researches and self-reviews. Daily driver for routine work.
-- **Med**: 2-3 workers, full specialist roster as needed. Current defaults — no model overrides.
-- **Heavy**: 3-4 workers, all specialists including auditor. Opus for reasoning-heavy roles.
+- **Lite**: 2 modules, existing patterns. 1-2 workers, no reviewer/documenter/auditor. Orchestrator self-researches and self-reviews.
+- **Med**: 2-3 boundaries, some design decisions. 2-3 workers, full specialist roster as needed. Current defaults.
+- **Heavy**: 3+ boundaries, new interfaces, or core refactors. 3-4 workers, all specialists including auditor. Opus for reasoning.
 
 User override: `/pds:swarm lite|med|heavy`. Without argument, auto-selected via `/pds:grill` step 9.
 

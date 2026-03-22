@@ -409,7 +409,7 @@ PDS encodes two complementary layers of engineering guidance, designed to be MEC
 
 This separation matters: principles are stable across projects and technologies, while techniques evolve with tooling and practice. An agent grounded in principles makes better judgment calls when no specific technique applies.
 
-Skills themselves need testing — a modified skill that silently degrades is worse than no skill. PDS uses LLM-as-judge grading [10] with statistical repetition and Wilson score confidence intervals [8][9] to evaluate whether skills produce the intended agent behavior. This treats skills as testable artifacts, not just documentation.
+Skills themselves need testing — a modified skill that silently degrades is worse than no skill. PDS uses LLM-as-judge grading [10] with statistical repetition and Wilson score confidence intervals [8][9] to evaluate whether skills produce the intended agent behavior. Eval criteria are subject to drift [11] — "users need criteria to grade outputs, but grading outputs helps users define criteria" — so eval scenarios are calibrated against observed model behavior, testing reasoning quality rather than predetermined answers [12]. This treats skills as testable artifacts, not just documentation.
 
 ---
 
@@ -525,3 +525,7 @@ This is a starting point. The model evolves with implementation experience and i
 9. AgentAssay. (2026). "Probabilistic Regression Testing for AI Agents." *arXiv 2603.02601.* https://arxiv.org/abs/2603.02601 — Three-valued verdicts (Pass/Fail/Inconclusive) with Wilson score CIs. Behavioral fingerprinting achieves 86% regression detection where binary testing has 0%.
 
 10. Agent-as-a-Judge. (2025). *arXiv 2508.02994.* https://arxiv.org/html/2508.02994v1 — Agent evaluators disagree with human majority vote 0.3% of the time; single LLM judges disagree 31%. Strongest evidence for LLM-as-judge reliability in agentic evaluation.
+
+11. Shankar, S. et al. (2024). "Who Validates the Validators? Aligning LLM-Assisted Evaluation of LLM Outputs with Human Preferences." *UIST 2024.* https://arxiv.org/abs/2404.12272 — Criteria drift: evaluation criteria evolve upon observing model outputs, even when defined a priori. Eval authors need to iterate criteria against actual behavior.
+
+12. Husain, H. (2026). "Your AI Product Needs Evals." https://hamel.dev/blog/posts/evals/ — Write evaluators for errors you discover, not errors you imagine. Observe model behavior before finalizing criteria. Binary pass/fail forces clarity over subjective Likert scales.

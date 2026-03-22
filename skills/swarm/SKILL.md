@@ -36,9 +36,9 @@ Three tiers control model selection and specialist inclusion. The tier is set du
 | **scout** | haiku | haiku | sonnet |
 | **auditor** | _(skip)_ | _(skip)_ | sonnet |
 
-- **Lite**: Daily driver. Haiku workers, sonnet orchestrator. 1-2 workers. Orchestrator self-researches and self-reviews (no researcher/reviewer spawn). Cheapest effective configuration.
-- **Med**: Just right for serious work. Current defaults — no model overrides needed. 2-3 workers. Full specialist roster as needed.
-- **Heavy**: Maximum capability. Opus for reasoning-heavy roles (orchestrator, researcher, reviewer). 3-4 workers. Full specialist roster including auditor.
+- **Lite**: Daily driver. Crosses 2 modules, follows existing patterns. Haiku workers, sonnet orchestrator. 1-2 workers. Orchestrator self-researches and self-reviews. Cheapest effective configuration.
+- **Med**: Serious work. Crosses 2-3 boundaries, some design decisions. Current defaults — no model overrides needed. 2-3 workers. Full specialist roster as needed.
+- **Heavy**: Maximum capability. 3+ boundaries, new interfaces, or core abstraction refactors. Opus for reasoning-heavy roles. 3-4 workers. Full specialist roster including auditor.
 
 ### Tier Override
 

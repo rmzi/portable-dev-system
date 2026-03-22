@@ -13,8 +13,11 @@ All notable changes to this project will be documented in this file.
 - **Automated eval runner** — `scripts/run-eval.sh` runs EVAL.md scenarios N times via `claude -p`, grades with LLM-as-judge, reports pass rates with Wilson score 95% confidence intervals
 - **Eval Makefile target** — `make eval SKILL=grill RUNS=10` for statistical skill testing
 - **Whitepaper testing bibliography** — 3 new citations: Anthropic "Demystifying Evals" [8], AgentAssay probabilistic regression [9], Agent-as-a-Judge [10]
+- **Eval calibration citations** — Shankar "Who Validates the Validators" [11] on criteria drift, Husain "Your AI Product Needs Evals" [12] on observation-first criteria
 
 ### Changed
+- **Grill tier criteria sharpened** — Boundaries based on module/boundary count instead of file count; heavy tier defined by core abstraction refactors and new interfaces, not subjective "new patterns"
+- **Grill eval scenarios recalibrated** — Replaced ambiguous scenarios with clear boundary-crossing setups; test reasoning quality not predetermined tier answers (per Anthropic guidance: "grade what the agent produced, not the path it took")
 - **Swarm delegation** — Orchestrator spawn now includes `model` override for lite tier (sonnet instead of opus) and tier in prompt
 - **Swarm Phase 1** — Tier initialization; grill mandatory before dispatch; researcher skipped at lite tier
 - **Swarm Phase 3** — Tier-aware dispatch with per-agent model overrides via `model` parameter
