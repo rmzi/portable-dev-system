@@ -129,6 +129,22 @@ To test whether a skill adds value over baseline:
 
 Use when: questioning whether a model upgrade made a skill redundant.
 
+## Closing the Loop
+
+Eval results are only useful if they lead to action. After each eval run:
+
+1. **Record results** in `.claude/eval-results.md` (format in Results section above)
+2. **Diagnose failures** — read the grader's reasons. Three causes:
+   - **Scenario is wrong** — the expected behavior is ambiguous or tests a predetermined answer. Fix: sharpen the scenario, test reasoning quality not specific outputs [11]
+   - **Skill criteria are wrong** — the skill's own criteria lead models to a different defensible judgment. Fix: sharpen the criteria to be more mechanical (e.g., boundary count > file count)
+   - **Model variance** — genuine non-determinism. Run more trials to narrow the CI. If pass rate stays <50% at N=10, investigate the scenario
+3. **Compare against baseline** — `.claude/eval-results.md` tracks historical results. A skill change that drops pass rate is a regression.
+4. **Act on the data** — don't just record results. Either fix the skill, fix the eval, or document why the current rate is acceptable.
+
+### Grader considerations
+
+The grading model affects results. Haiku is cheap but may under-credit rich output from sonnet/opus. If a scenario scores well on haiku-execution + haiku-grading but poorly on sonnet-execution + haiku-grading, the grader may be the bottleneck. Test with `--grade-model sonnet` to verify.
+
 ## See Also
 
 - `/pds:instinct` — pattern lifecycle (evals complement instinct validation)

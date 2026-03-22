@@ -18,6 +18,8 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - **Grill tier criteria sharpened** — Boundaries based on module/boundary count instead of file count; heavy tier defined by core abstraction refactors and new interfaces, not subjective "new patterns"
 - **Grill eval scenarios recalibrated** — Replaced ambiguous scenarios with clear boundary-crossing setups; test reasoning quality not predetermined tier answers (per Anthropic guidance: "grade what the agent produced, not the path it took")
+- **Eval baseline recorded** — `.claude/eval-results.md` with v4.5.0 baseline: 75% overall (sonnet, 10 runs), tier scenarios at 90% and 70% post-calibration (up from 0% pre-calibration)
+- **Eval "closing the loop" workflow** — `/pds:eval` skill now documents how to diagnose failures, compare against baseline, and act on results
 - **Swarm delegation** — Orchestrator spawn now includes `model` override for lite tier (sonnet instead of opus) and tier in prompt
 - **Swarm Phase 1** — Tier initialization; grill mandatory before dispatch; researcher skipped at lite tier
 - **Swarm Phase 3** — Tier-aware dispatch with per-agent model overrides via `model` parameter
