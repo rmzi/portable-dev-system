@@ -11,12 +11,38 @@ Six-phase workflow for decomposing, dispatching, and validating parallel work ac
 
 ```
 Agent(subagent_type="pds:orchestrator", name="orchestrator",
-      prompt="Execute /pds:swarm for: <task description and context>")
+      model="sonnet",  # only for lite tier; omit for med/heavy (opus is the default)
+      prompt="Execute /pds:swarm for: <task description and context>. Tier: <lite|med|heavy>")
 ```
+
+If no tier is specified, the orchestrator MUST run `/pds:grill` first to determine the tier. Grill is mandatory before any swarm — it validates requirements AND recommends a tier.
 
 The orchestrator has `TeamCreate`, `TaskCreate`, `Task(worker)`, `SendMessage`, and other coordination tools. The main conversation does not — delegation is required.
 
 Everything below is written for the orchestrator.
+
+## Swarm Tiers
+
+Three tiers control model selection and specialist inclusion. The tier is set during Phase 1 (via grill or user override) and stored in `.claude/swarm/tier`. Med matches the current agent defaults — existing swarms are implicitly med.
+
+| Agent | Lite | Med | Heavy |
+|-------|------|-----|-------|
+| **orchestrator** | sonnet | opus | opus |
+| **researcher** | _(skip)_ | sonnet | opus |
+| **worker** | haiku | sonnet | sonnet |
+| **validator** | haiku | sonnet | sonnet |
+| **reviewer** | _(skip)_ | sonnet | opus |
+| **documenter** | _(skip)_ | sonnet | sonnet |
+| **scout** | haiku | haiku | sonnet |
+| **auditor** | _(skip)_ | _(skip)_ | sonnet |
+
+- **Lite**: Daily driver. Crosses 2 modules, follows existing patterns. Haiku workers, sonnet orchestrator. 1-2 workers. Orchestrator self-researches and self-reviews. Cheapest effective configuration.
+- **Med**: Serious work. Crosses 2-3 boundaries, some design decisions. Current defaults — no model overrides needed. 2-3 workers. Full specialist roster as needed.
+- **Heavy**: Maximum capability. 3+ boundaries, new interfaces, or core abstraction refactors. Opus for reasoning-heavy roles. 3-4 workers. Full specialist roster including auditor.
+
+### Tier Override
+
+User can force a tier: `/pds:swarm lite`, `/pds:swarm med`, `/pds:swarm heavy`. Without an argument, tier is auto-selected via `/pds:grill` step 9. The human confirms or overrides the tier during Phase 1 approval.
 
 ## Phase State Machine
 
@@ -28,21 +54,24 @@ plan → decompose → dispatch → validate → consolidate → knowledge
 
 Initialize at swarm start:
 ```bash
-mkdir -p .claude/swarm && echo "plan" > .claude/swarm/phase
+mkdir -p .claude/swarm && echo "plan" > .claude/swarm/phase && echo "<tier>" > .claude/swarm/tier
 ```
 
 Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the first step of each phase. The PR gate and teardown gate enforce phase state (defense-in-depth alongside artifact checks). If the phase file is absent, gates fall through to artifact-only checks.
 
 ## Phase 1: Plan
 
-1. Run `/pds:grill` on the requirements to surface gaps and ambiguities
-2. Spawn a researcher for codebase context:
+1. **Grill is mandatory.** Run `/pds:grill` to validate requirements and get a tier recommendation. If the caller already provided a tier override, grill still runs (for requirement validation) but the tier output is overridden.
+2. Write the tier to state: `echo "<tier>" > .claude/swarm/tier`
+3. **Lite tier**: Orchestrator self-researches (skip researcher spawn). **Med/Heavy tier**: Spawn a researcher for codebase context:
    ```
-   Task(researcher, prompt="Analyze the codebase for X. Query .claude/instincts.md for relevant prior patterns.")
+   Task(researcher, model="<tier-model>",
+        prompt="Analyze the codebase for X. Query .claude/instincts.md for relevant prior patterns.")
    ```
+   Tier models — med: omit `model` (sonnet default). Heavy: `model="opus"`.
    The researcher sends findings back via `SendMessage`. If it calls `ExitPlanMode`, respond with `plan_approval_response` to approve or reject its plan.
-3. Synthesize findings into **mechanically verifiable acceptance criteria** — each criterion must be checkable by running a command or reading output (no subjective criteria)
-4. Present plan + criteria to the human. **Do not proceed without approval.**
+4. Synthesize findings into **mechanically verifiable acceptance criteria** — each criterion must be checkable by running a command or reading output (no subjective criteria)
+5. Present plan + criteria + **tier** to the human. The human can override the tier here. **Do not proceed without approval.**
 
 ## Phase 2: Decompose
 
@@ -65,12 +94,20 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
    ```
    TeamCreate(team_name="project-name", description="Working on feature X")
    ```
-2. Spawn workers via `Task(worker)` — use the typed syntax to enforce agent type restrictions. Workers declare `isolation: worktree` in their frontmatter; Claude Code provisions the worktree automatically:
+2. Read tier from `.claude/swarm/tier`. Spawn workers with tier-appropriate model overrides:
    ```
+   # Lite — haiku workers
+   Task(worker, team_name="project-name", name="worker-auth",
+        model="haiku",
+        prompt="Implement auth module per task description. Run /pds:verify before reporting done.")
+
+   # Med — no model override needed (sonnet is the agent default)
    Task(worker, team_name="project-name", name="worker-auth",
         prompt="Implement auth module per task description. Run /pds:verify before reporting done.")
+
+   # Heavy — workers stay sonnet (no override), but use more workers for parallelism
    ```
-   Use `Task(validator)` for validation tasks, `Task(researcher)` for research, etc. The typed syntax restricts which agent definitions can fulfill the spawn.
+   Use `Task(validator)` for validation tasks, `Task(researcher)` for research, etc. The typed syntax restricts which agent definitions can fulfill the spawn. Always pass the tier-appropriate `model` override — see the Swarm Tiers table above.
 3. Assign initial tasks to workers:
    ```
    TaskUpdate(taskId="1", owner="worker-auth", status="in_progress")
@@ -105,13 +142,18 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
 ## Phase 5: Consolidate
 
 1. Run `/pds:finish` on each task branch (rebase, clean history, post-rebase tests)
-2. Spawn a reviewer for pre-human code review:
+2. **Med/Heavy tier**: Spawn a reviewer for pre-human code review:
    ```
    Task(reviewer, team_name="project-name", name="reviewer",
+        model="<tier-model>",
         prompt="Review the diff against acceptance criteria from Phase 1. Send your review report via SendMessage when done.")
    ```
-3. Write reviewer report to `.claude/swarm/review-report.md` after receiving it via SendMessage **(required — PR gate checks for this file)**
-4. Spawn a documenter if user-facing docs are affected:
+   Tier models — med: omit `model` (sonnet default). Heavy: `model="opus"`.
+   Write reviewer report to `.claude/swarm/review-report.md` after receiving it via SendMessage.
+
+   **Lite tier**: Orchestrator performs a lightweight diff review and writes `.claude/swarm/review-report.md` directly (no reviewer spawn). The PR gate checks file existence, not authorship.
+3. `.claude/swarm/review-report.md` is **required** — PR gate checks for this file regardless of tier.
+4. **Med/Heavy tier**: Spawn a documenter if user-facing docs are affected:
    ```
    Task(documenter, team_name="project-name", name="documenter",
         prompt="Update docs for the changes in this PR. Send summary via SendMessage when done.")
@@ -125,21 +167,28 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
 
 ## Phase 6: Knowledge
 
-1. Spawn scout for PDS meta-improvements:
+1. Spawn scout with tier-appropriate model:
    ```
    Task(scout, team_name="project-name", name="scout",
+        model="<tier-model>",
         prompt="Read .claude/instincts.md. Update counts for re-observed patterns. Propose new instincts. Flag high-confidence patterns for skill promotion. Run /pds:eval on skills exercised in this swarm. Write report to .claude/swarm/scout-report.md. Send summary via SendMessage when done.")
    ```
-2. Scout writes report to `.claude/swarm/scout-report.md` **(required — TeamDelete gate checks for this file)**
-3. Scout updates observation counts, proposes new patterns, flags promotions (human-gated — new skill = new file = PR review). Scout also runs skill evals per `/pds:eval`.
-4. **Shutdown all agents** before cleanup:
+   Tier models — lite: `model="haiku"` (default). Med: omit (haiku default). Heavy: `model="sonnet"`.
+2. **Heavy tier only**: Spawn auditor for tech debt scan:
+   ```
+   Task(auditor, team_name="project-name", name="auditor",
+        prompt="Scan the codebase for tech debt, missing tests, and inconsistencies. File findings as GitHub issues. Send summary via SendMessage when done.")
+   ```
+3. Scout writes report to `.claude/swarm/scout-report.md` **(required — TeamDelete gate checks for this file)**
+4. Scout updates observation counts, proposes new patterns, flags promotions (human-gated — new skill = new file = PR review). Scout also runs skill evals per `/pds:eval`.
+5. **Shutdown all agents** before cleanup:
    ```
    SendMessage(type="shutdown_request", recipient="worker-auth", content="Work complete, shutting down.")
    SendMessage(type="shutdown_request", recipient="validator", content="Work complete, shutting down.")
    # ... for each active agent
    ```
    Wait for `shutdown_response` from each agent before proceeding.
-5. Clean up: `TeamDelete`
+6. Clean up: `TeamDelete`
    **Note:** The teardown gate blocks `TeamDelete` unless phase is `knowledge` AND all 3 reports exist. TeamDelete also **fails if agents are still active** — always shut down first.
 
 ## Phase Gates
@@ -161,10 +210,11 @@ All phase artifacts are written to `.claude/swarm/`:
 | File | Phase | Producer | Required By |
 |------|-------|----------|-------------|
 | `phase` | all | orchestrator | PR gate, teardown gate |
+| `tier` | 1 | orchestrator | Dispatch (model selection) |
 | `plan.md` | 2 | orchestrator | — |
 | `contracts.md` | 2 | orchestrator | — |
 | `validation-report.md` | 4 | validator | PR gate, teardown gate |
-| `review-report.md` | 5 | orchestrator (from reviewer) | PR gate, teardown gate |
+| `review-report.md` | 5 | reviewer (or orchestrator at lite tier) | PR gate, teardown gate |
 | `scout-report.md` | 6 | scout | Teardown gate |
 
 ## See Also

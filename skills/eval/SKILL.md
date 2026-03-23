@@ -76,6 +76,50 @@ Record in `.claude/eval-results.md`:
 | **partial** | >50% expected behaviors, minor anti-pattern violations |
 | **fail** | <50% expected behaviors OR critical anti-pattern |
 
+## Automated Eval
+
+`scripts/run-eval.sh` runs EVAL.md scenarios statistically — N executions per scenario, LLM-as-judge grading, Wilson score confidence intervals.
+
+### Usage
+
+```bash
+./scripts/run-eval.sh grill              # 5 runs, haiku execution, sonnet grading
+./scripts/run-eval.sh grill --runs 20    # 20 runs for tight CI
+./scripts/run-eval.sh grill --model sonnet  # sonnet for both execution and grading
+make eval SKILL=grill RUNS=20            # via Makefile
+```
+
+### How it works
+
+1. Reads the skill's `SKILL.md` and `EVAL.md`
+2. For each scenario, runs N times via `claude -p --bare` (hermetic — no plugins, just the skill text)
+3. Grades each run with LLM-as-judge (`claude -p --model haiku --json-schema`)
+4. Reports pass rate with 95% Wilson score confidence interval
+
+### Statistical approach
+
+Non-deterministic systems need repetition. A single pass/fail tells you nothing [8].
+
+- **pass@k** — probability of at least one success in k attempts (measures capability)
+- **pass^k** — probability ALL k trials succeed (measures consistency for production)
+- **Wilson score CI** — proper small-sample confidence interval:
+  - N=5, 5/5 pass → 95% CI: [57%-100%] (wide — run more to narrow)
+  - N=10, 9/10 pass → 95% CI: [60%-98%]
+  - N=20, 18/20 pass → 95% CI: [70%-97%] (actionable)
+
+### Choosing run count
+
+| Count | Use | CI width |
+|-------|-----|----------|
+| 3 | Quick smoke test | Very wide |
+| 5 | Default — catches gross failures | Wide |
+| 10 | Serious check before shipping | Moderate |
+| 20 | High confidence, regression baseline | Tight |
+
+### Cost
+
+Haiku execution + sonnet grading ≈ $0.10/run. Sonnet execution + sonnet grading ≈ $0.25/run. 20 runs at sonnet ≈ $5.00. Use sonnet grading by default — haiku grading produces false positives and false negatives on complex output.
+
 ## A/B Comparison
 
 To test whether a skill adds value over baseline:
@@ -84,6 +128,22 @@ To test whether a skill adds value over baseline:
 3. Compare against the Baseline section in EVAL.md
 
 Use when: questioning whether a model upgrade made a skill redundant.
+
+## Closing the Loop
+
+Eval results are only useful if they lead to action. After each eval run:
+
+1. **Record results** in `.claude/eval-results.md` (format in Results section above)
+2. **Diagnose failures** — read the grader's reasons. Three causes:
+   - **Scenario is wrong** — the expected behavior is ambiguous or tests a predetermined answer. Fix: sharpen the scenario, test reasoning quality not specific outputs [11]
+   - **Skill criteria are wrong** — the skill's own criteria lead models to a different defensible judgment. Fix: sharpen the criteria to be more mechanical (e.g., boundary count > file count)
+   - **Model variance** — genuine non-determinism. Run more trials to narrow the CI. If pass rate stays <50% at N=10, investigate the scenario
+3. **Compare against baseline** — `.claude/eval-results.md` tracks historical results. A skill change that drops pass rate is a regression.
+4. **Act on the data** — don't just record results. Either fix the skill, fix the eval, or document why the current rate is acceptable.
+
+### Grader considerations
+
+The grading model affects results. Haiku is cheap but may under-credit rich output from sonnet/opus. If a scenario scores well on haiku-execution + haiku-grading but poorly on sonnet-execution + haiku-grading, the grader may be the bottleneck. Test with `--grade-model sonnet` to verify.
 
 ## See Also
 

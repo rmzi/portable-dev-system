@@ -55,20 +55,37 @@ Requirements don't overlap (mutually exclusive) and all cases are covered (colle
 - Overlaps: do two requirements contradict each other?
 - Edge cases: empty inputs, concurrent access, error states
 
-### 9. Swarm Decision
-Based on the validated requirements, decide whether to use a multi-agent swarm or single-agent execution:
+### 9. Swarm Decision + Tier
 
-**Swarm when:**
-- 3+ files across different modules or architecture boundaries
-- Parallel-independent subtasks that don't share state
-- Multiple architecture boundaries (frontend + backend, API + DB, etc.)
+Based on the validated requirements, decide execution strategy:
 
 **No-swarm when:**
-- 2 or fewer files to modify
+- Changes stay within a single module or boundary
 - No parallelism opportunity — changes are sequential/dependent
 - Single agent can complete in ~30 turns or less
 
-**Output:** Explicit `Recommendation: swarm | no-swarm` with rationale. If swarm, include a decomposition outline (task count, boundaries, dependencies).
+**Swarm when** changes cross module boundaries or benefit from parallel execution. Select tier:
+
+**Lite** — routine, pattern-following:
+- Crosses 2 modules but follows existing patterns (add X like existing Y)
+- Low ambiguity — requirements clear after steps 1-8
+- No new interfaces between modules
+- Example: new API endpoint + tests when many similar endpoints exist
+
+**Med** — non-trivial, multi-boundary:
+- Crosses 2-3 architecture boundaries
+- Moderate complexity — some design decisions needed
+- May add new interfaces within existing conventions
+- Example: new feature touching API + database + frontend
+
+**Heavy** — complex, high-stakes:
+- Crosses 3+ architecture boundaries
+- Requires new interfaces or contracts between modules
+- Refactors a core abstraction other code depends on
+- Significant risk items identified in step 6
+- Example: replacing an auth system, new data pipeline, major API redesign
+
+**Output:** Explicit `Recommendation: swarm (tier: lite)` or `swarm (tier: med)` or `swarm (tier: heavy)` or `no-swarm` — with rationale. If swarm, include a decomposition outline (task count, boundaries, dependencies).
 
 ## Output
 
@@ -78,9 +95,9 @@ A validated problem statement containing:
 - Acceptance criteria (verifiable)
 - Constraints and assumptions (explicit)
 - Priority ranking (must/should/could)
-- Swarm decision (swarm/no-swarm with rationale)
+- Swarm decision with tier (swarm + lite/med/heavy, or no-swarm, with rationale)
 
-This feeds directly into `/pds:swarm` Phase 2 decomposition.
+This feeds directly into `/pds:swarm` Phase 1 tier initialization and Phase 2 decomposition.
 
 ## See Also
 

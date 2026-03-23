@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.5.0] - 2026-03-22
+
+### Added
+- **Swarm tiers (lite/med/heavy)** — Three cost/capability levels controlling model selection and specialist inclusion per swarm. Lite uses haiku workers for routine tasks (~10-20x cheaper). Med matches current defaults. Heavy uses opus for reasoning-heavy roles with full specialist roster.
+- **Grill tier recommendation** — `/pds:grill` step 9 now recommends a tier alongside the swarm/no-swarm decision, with criteria for each tier based on problem complexity
+- **Tier override syntax** — `/pds:swarm lite`, `/pds:swarm med`, `/pds:swarm heavy` to force a specific tier; without argument, tier auto-selected via grill
+- **Tier state file** — `.claude/swarm/tier` tracks the active tier alongside `.claude/swarm/phase`
+- **Grill eval scenarios** — Tier selection test cases in `skills/grill/EVAL.md` (routine task → lite, complex refactor → heavy)
+- **Automated eval runner** — `scripts/run-eval.sh` runs EVAL.md scenarios N times via `claude -p`, grades with LLM-as-judge, reports pass rates with Wilson score 95% confidence intervals
+- **Eval Makefile target** — `make eval SKILL=grill RUNS=10` for statistical skill testing
+- **Whitepaper testing bibliography** — 3 new citations: Anthropic "Demystifying Evals" [8], AgentAssay probabilistic regression [9], Agent-as-a-Judge [10]
+- **Eval calibration citations** — Shankar "Who Validates the Validators" [11] on criteria drift, Husain "Your AI Product Needs Evals" [12] on observation-first criteria
+
+### Changed
+- **Grill tier criteria sharpened** — Boundaries based on module/boundary count instead of file count; heavy tier defined by core abstraction refactors and new interfaces, not subjective "new patterns"
+- **Grill eval scenarios recalibrated** — Replaced ambiguous scenarios with clear boundary-crossing setups; test reasoning quality not predetermined tier answers (per Anthropic guidance: "grade what the agent produced, not the path it took")
+- **Eval baseline recorded** — `.claude/eval-results.md` with v4.5.0 definitive baseline: 80% overall [70%-87%] (sonnet execution + grading, N=20). Three scenarios at 100%, one real gap at 20% (#64)
+- **Eval "closing the loop" workflow** — `/pds:eval` skill documents how to diagnose failures, compare against baseline, and act on results
+- **Eval grader default changed** — Sonnet grading instead of haiku. Haiku produced false positives (80% → actual 20%) and false negatives (60% → actual 100%) when grading sonnet output
+- **Swarm delegation** — Orchestrator spawn now includes `model` override for lite tier (sonnet instead of opus) and tier in prompt
+- **Swarm Phase 1** — Tier initialization; grill mandatory before dispatch; researcher skipped at lite tier
+- **Swarm Phase 3** — Tier-aware dispatch with per-agent model overrides via `model` parameter
+- **Swarm Phase 5** — Lite tier: orchestrator self-reviews (no reviewer spawn); med/heavy: reviewer spawned with tier model
+- **Swarm Phase 6** — Heavy tier: auditor spawned alongside scout; scout model upgraded to sonnet at heavy tier
+- **Team skill** — New "Swarm Tiers" reference table with model mapping per tier
+- **Whitepaper bibliography** — New Appendix C: References with 7 cited sources including Anthropic multi-agent research, Vercel agent evals, Fowler context engineering; inline citations [N] throughout
+- **Whitepaper** — Tier system in Phase 1 description, Cost Considerations section, and Glossary
+- **Team setup docs** — Tier table added to Agent Teams section
+
 ## [4.4.1] - 2026-03-10T17:57:25-04:00
 
 ### Fixed

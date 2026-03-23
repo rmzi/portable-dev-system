@@ -126,6 +126,23 @@ PDS includes 8 specialized agents for multi-agent orchestration. Each agent has 
 | scout | PDS meta-improvements | haiku | acceptEdits |
 | auditor | Codebase analysis → GitHub issues | sonnet | plan |
 
+### Swarm Tiers
+
+Tiers override agent models at spawn time via the `model` parameter. Med matches current defaults.
+
+| Agent | Lite | Med (default) | Heavy |
+|-------|------|---------------|-------|
+| orchestrator | sonnet | opus | opus |
+| researcher | _(skip)_ | sonnet | opus |
+| worker | haiku | sonnet | sonnet |
+| validator | haiku | sonnet | sonnet |
+| reviewer | _(skip)_ | sonnet | opus |
+| documenter | _(skip)_ | sonnet | sonnet |
+| scout | haiku | haiku | sonnet |
+| auditor | _(skip)_ | _(skip)_ | sonnet |
+
+Lite = routine work (1-2 workers, orchestrator self-reviews). Med = serious work (2-3 workers, full roster). Heavy = complex/high-stakes (3-4 workers, all specialists). Auto-selected via `/pds:grill` step 9 or overridden with `/pds:swarm lite|med|heavy`.
+
 ### Permission Modes
 
 | Mode | Agents | Behavior |

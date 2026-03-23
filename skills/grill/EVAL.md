@@ -32,5 +32,31 @@ skill: grill
 - [ ] Identifies gaps but doesn't produce verifiable acceptance criteria
 - [ ] Skips MECE check
 
+### Scenario: Tier selection for cross-module feature
+**Setup:** User says "add user notification preferences — a new preferences table, API endpoints for CRUD, and a settings page in the React frontend that reads/writes preferences." Express.js API with PostgreSQL, React frontend. 12 existing features follow this pattern (CRUD + UI).
+**Prompt:** Interrogate these requirements and recommend execution strategy.
+**Expected:**
+- [ ] Identifies multiple architecture boundaries (API + DB + frontend)
+- [ ] Produces swarm recommendation (not no-swarm) — crosses module boundaries
+- [ ] Recommends a tier with rationale referencing boundary count and pattern analysis
+- [ ] Rationale is consistent with the skill's tier criteria
+**Anti-patterns:**
+- [ ] Recommends no-swarm despite 3 architecture boundaries
+- [ ] Omits tier or rationale from swarm recommendation
+- [ ] Recommends heavy for pattern-following work
+
+### Scenario: Tier selection for core abstraction refactor
+**Setup:** User says "replace our homegrown ORM with Prisma across the entire backend. Every model, every query, every migration needs to change. The API layer, background jobs, and test fixtures all depend on the current ORM's query builder interface." 40+ model files, 3 service layers (API, workers, cron), 200+ queries.
+**Prompt:** Interrogate these requirements and recommend execution strategy.
+**Expected:**
+- [ ] Identifies this as refactoring a core abstraction (ORM) that other code depends on
+- [ ] Identifies 3+ architecture boundaries (API, workers, cron, tests)
+- [ ] Produces swarm recommendation with tier: heavy
+- [ ] Rationale references scope (40+ files), core dependency, cross-boundary impact
+**Anti-patterns:**
+- [ ] Recommends lite or no-swarm for a 40+ file core refactor
+- [ ] Fails to identify the ORM as a shared dependency
+- [ ] Skips risk assessment for a migration affecting all data access
+
 ## Baseline
-Without `/grill`, agents typically accept requirements at face value and begin implementation. Edge cases surface during coding (expensive) rather than during planning (cheap).
+Without `/grill`, agents typically accept requirements at face value and begin implementation. Edge cases surface during coding (expensive) rather than during planning (cheap). Without tier selection, all swarms run at med cost regardless of complexity.

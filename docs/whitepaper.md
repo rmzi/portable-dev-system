@@ -8,7 +8,7 @@
 
 This whitepaper details a model for software development where AI agents operate as autonomous collaborators. Rather than treating AI as sophisticated autocomplete, we propose infrastructure where agents plan, execute, validate, and document work with minimal human intervention.
 
-The goal is amplification, not replacement. A single engineer orchestrates multiple agents working in parallel, each in isolated environments, producing work that flows through automated validation before human review. The human remains architect and final authority. The agents become a scalable workforce.
+The goal is amplification, not replacement. A single engineer orchestrates multiple agents working in parallel, each in isolated environments, producing work that flows through automated validation before human review. The human remains architect and final authority. The agents become a scalable workforce. This central orchestrator + specialist sub-agents pattern is emerging as the industry standard for agentic development [1][6].
 
 This document provides the technical depth required to implement this model: the conceptual framework, isolation architecture, tooling requirements, adoption path, and governance framework.
 
@@ -39,6 +39,8 @@ Six phases, each with clear inputs, outputs, and transition criteria. Human invo
 Work begins when requirements arrive. The developer engages with an orchestrating agent to refine requirements into an actionable plan.
 
 The orchestrator runs `/grill` — a structured requirement interrogation protocol — to validate requirements before decomposition. This protocol covers: restating the problem, defining scope boundaries, establishing verifiable acceptance criteria, surfacing constraints, challenging assumptions, identifying risks, ranking priorities, and performing a MECE check to ensure requirements don't overlap and all cases are covered. Ambiguous requirements are the primary source of wasted tokens in agentic workflows.
+
+The grill protocol also recommends a **swarm tier** (lite, med, heavy) based on problem complexity. Tiers control model selection and specialist inclusion — lite uses haiku workers for routine pattern-following tasks, med uses the default sonnet/opus configuration, heavy uses opus for reasoning-heavy roles with a full specialist roster. This tiered architecture draws from Anthropic's own multi-agent research [1], where an Opus lead with Sonnet subagents outperformed single-agent Opus by 90.2%. The developer confirms or overrides the tier during plan approval.
 
 The orchestrator may spawn a **researcher** agent to gather context: querying documentation, searching codebases, accessing external APIs. The orchestrator synthesizes this research and produces a structured task specification.
 
@@ -154,7 +156,7 @@ This approach eliminates Docker/container overhead while maintaining isolation t
 
 ### Instruction Architecture
 
-Agent effectiveness depends on how instructions reach the model. [Vercel's agent evals](https://vercel.com/blog/agents-md-outperforms-skills-in-our-agent-evals) found that passive context (always-loaded AGENTS.md) achieves 100% pass rates for horizontal framework knowledge, while skills without explicit invocation instructions scored 53%. Skills with careful wording reached 79%.
+Agent effectiveness depends on how instructions reach the model. Vercel's agent evals [2] found that passive context (always-loaded AGENTS.md) achieves 100% pass rates for horizontal framework knowledge, while skills without explicit invocation instructions scored 53%. Skills with careful wording reached 79%.
 
 PDS uses a dual-layer approach informed by these findings:
 
@@ -333,6 +335,8 @@ Complex tasks: millions of tokens across phases. Substantial task: $10-50. Heavy
 
 Token budgets provide control—tasks pause and request intervention when exhausted.
 
+**Swarm tiers** provide cost control at the architectural level. A lite tier swarm using haiku workers costs roughly 10-20x less than a heavy tier swarm using opus for reasoning-heavy roles, for the same number of turns. The grill protocol recommends the appropriate tier based on problem complexity, preventing over-spending on routine tasks while ensuring complex work gets adequate model capability.
+
 ### Compute
 
 Cloud execution scales with concurrent agents and duration. Spot instances work for ephemeral workers. On-demand for orchestrators and validators.
@@ -352,7 +356,7 @@ Direct work favors: continuous judgment, ambiguous requirements.
 
 ## Context Compression
 
-Agent configuration files consume context window. Compression is tempting but has a fidelity cliff — beyond a threshold, agents lose operational knowledge and produce worse results.
+Agent configuration files consume context window. Compression is tempting but has a fidelity cliff — beyond a threshold, agents lose operational knowledge and produce worse results [3].
 
 ### What's Safe to Compress
 
@@ -401,8 +405,11 @@ PDS encodes two complementary layers of engineering guidance, designed to be MEC
 | Completion verification | `/pds:verify` | Explicit over implicit |
 | Branch preparation for merge | `/pds:finish` | Small, reversible steps |
 | Version bump and ship | `/pds:bcp` | Explicit over implicit |
+| Statistical skill evaluation | `/pds:eval` | Tests as specification |
 
 This separation matters: principles are stable across projects and technologies, while techniques evolve with tooling and practice. An agent grounded in principles makes better judgment calls when no specific technique applies.
+
+Skills themselves need testing — a modified skill that silently degrades is worse than no skill. PDS uses LLM-as-judge grading [10] with statistical repetition and Wilson score confidence intervals [8][9] to evaluate whether skills produce the intended agent behavior. Eval criteria are subject to drift [11] — "users need criteria to grade outputs, but grading outputs helps users define criteria" — so eval scenarios are calibrated against observed model behavior, testing reasoning quality rather than predetermined answers [12]. This treats skills as testable artifacts, not just documentation.
 
 ---
 
@@ -485,6 +492,8 @@ This is a starting point. The model evolves with implementation experience and i
 
 **Swarm Artifacts**: Phase reports written to `.claude/swarm/` during a swarm — `validation-report.md` (Phase 4), `review-report.md` (Phase 5), `scout-report.md` (Phase 6). Required by phase gates for PR creation and team teardown.
 
+**Swarm Tier**: One of three cost/capability levels (lite, med, heavy) that control model selection and specialist inclusion for a swarm. Set during Phase 1 grill, stored in `.claude/swarm/tier`. Lite uses haiku workers for routine tasks. Med uses sonnet workers (the default). Heavy uses opus for reasoning-heavy roles with full specialist roster.
+
 **Human Gate**: Principle that no agent work reaches production without human approval.
 
 **SendMessage**: Tool for direct and broadcast communication between agents in a team.
@@ -492,3 +501,31 @@ This is a starting point. The model evolves with implementation experience and i
 **TaskCreate**: Tool for defining work units with dependencies, forming task DAGs.
 
 **TeamCreate**: Tool for establishing an agent team with shared task list and coordination.
+
+---
+
+## Appendix C: References
+
+1. Hadfield, J., Zhang, B., Lien, K., Scholz, F., Fox, J., & Ford, D. (2025). "Multi-agent research system." *Anthropic Engineering Blog.* https://www.anthropic.com/engineering/multi-agent-research-system — Opus lead + Sonnet subagents outperformed single-agent Opus by 90.2% on internal research eval. 3-5 parallel subagents, ~15x token usage vs chat.
+
+2. Vercel Engineering. (2025). "AGENTS.md outperforms skills in our agent evals." *Vercel Blog.* https://vercel.com/blog/agents-md-outperforms-skills-in-our-agent-evals — Passive context (always-loaded AGENTS.md) achieves 100% pass rate for horizontal knowledge; skills without invocation instructions scored 53%; carefully worded skills reached 79%.
+
+3. Böckeler, B. & Fowler, M. (2026). "Context Engineering for Coding Agents." *martinfowler.com.* https://martinfowler.com/articles/exploring-gen-ai/context-engineering-coding-agents.html — Defines context engineering as curating model input for better output. Notes over-stuffing context hurts more than helps.
+
+4. Anthropic. (2025). "Effective Context Engineering for AI Agents." *Anthropic Engineering Blog.* https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents
+
+5. The New Stack. (2026). "Memory for AI Agents: A New Paradigm of Context Engineering." https://thenewstack.io/memory-for-ai-agents-a-new-paradigm-of-context-engineering/ — Large context windows improved short-term coherence but did not solve memory. 2026 production standard: dual-layer memory (hot path + cold path retrieval).
+
+6. HuggingFace. (2026). "2026 Agentic Coding Trends." https://huggingface.co/blog/Svngoku/agentic-coding-trends-2026 — Engineers shifting from writing code to coordinating agents. Central orchestrator + specialist sub-agents as the emerging standard.
+
+7. Anthropic. (2025). "Enabling Claude Code to work more autonomously." *Anthropic News.* https://www.anthropic.com/news/enabling-claude-code-to-work-more-autonomously
+
+8. Anthropic. (2025). "Demystifying Evals for AI Agents." *Anthropic Engineering Blog.* https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents — Three-grader system (code, model, human). pass@k for capability, pass^k for consistency. Start with 20-50 tasks from real failures.
+
+9. AgentAssay. (2026). "Probabilistic Regression Testing for AI Agents." *arXiv 2603.02601.* https://arxiv.org/abs/2603.02601 — Three-valued verdicts (Pass/Fail/Inconclusive) with Wilson score CIs. Behavioral fingerprinting achieves 86% regression detection where binary testing has 0%.
+
+10. Agent-as-a-Judge. (2025). *arXiv 2508.02994.* https://arxiv.org/html/2508.02994v1 — Agent evaluators disagree with human majority vote 0.3% of the time; single LLM judges disagree 31%. Strongest evidence for LLM-as-judge reliability in agentic evaluation.
+
+11. Shankar, S. et al. (2024). "Who Validates the Validators? Aligning LLM-Assisted Evaluation of LLM Outputs with Human Preferences." *UIST 2024.* https://arxiv.org/abs/2404.12272 — Criteria drift: evaluation criteria evolve upon observing model outputs, even when defined a priori. Eval authors need to iterate criteria against actual behavior.
+
+12. Husain, H. (2026). "Your AI Product Needs Evals." https://hamel.dev/blog/posts/evals/ — Write evaluators for errors you discover, not errors you imagine. Observe model behavior before finalizing criteria. Binary pass/fail forces clarity over subjective Likert scales.
