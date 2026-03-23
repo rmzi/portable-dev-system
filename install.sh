@@ -272,7 +272,10 @@ if 'env' in pds or 'env' in user:
     user['env'] = merged_env
 
 # PDS-managed keys overwrite (security guardrails + UX)
-for key in ['sandbox', 'permissions', 'spinnerTipsOverride', 'attribution']:
+for key in ['sandbox', 'permissions', 'spinnerTipsOverride', 'attribution',
+            'worktree', 'autoMode', 'showClearContextOnPlanAccept',
+            'plansDirectory', 'showThinkingSummaries', 'defaultView',
+            'autoMemoryEnabled', 'autoDreamEnabled', 'fastModePerSessionOptIn']:
     if key in pds:
         user[key] = pds[key]
 
