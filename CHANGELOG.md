@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.5.1] - 2026-03-23
+
+### Fixed
+- **Stop hook false positives** — Hook now detects session type and only verifies completion for implementation sessions. Q&A, planning, config, and doc-only sessions pass through cleanly.
+
+### Added
+- **Personal workflow rules in CLAUDE.md** — General Rules, Frontend/CSS, Development Workflow, and Troubleshooting sections for cross-project preferences.
+
 ## [4.5.0] - 2026-03-22
 
 ### Added

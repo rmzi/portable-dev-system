@@ -82,3 +82,23 @@ Use `git worktree add` for branch isolation — never `git clone` (clones discon
 
 **Create or update a PR after pushing.** Don't wait to be asked.
 <!-- PDS:END -->
+
+---
+
+## General Rules
+
+- When asked to set a tool, editor, or config to a specific value, use EXACTLY what is specified. Do not substitute alternatives.
+- Never fabricate answers or claim something is a known issue without verifying first. If you don't know, say so and offer to look it up.
+- Don't refuse non-code tasks. Help with macOS, hardware setup, and general tech questions.
+
+## Frontend / CSS
+
+- For mobile/responsive CSS fixes, make aggressive changes on the first attempt. Font sizes, padding, and layout changes should be substantial — overshoot and dial back rather than iterating 5+ times.
+
+## Development Workflow
+
+- Always run commands in the correct project directory. Before running `npm install`, `expo prebuild`, or any build command, verify you're in the right directory with `pwd`.
+
+## Troubleshooting
+
+- Exhaust documentation and actual verification before hypothesizing. Fetch docs with WebFetch rather than guessing at configs or APIs.
