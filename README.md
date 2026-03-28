@@ -50,7 +50,7 @@ make install    # symlinks this checkout as the plugin
 
 ---
 
-## Skills (18)
+## Skills (21)
 
 | Skill | Purpose |
 |-------|---------|
@@ -72,6 +72,9 @@ make install    # symlinks this checkout as the plugin
 | `/pds:bump` | Version and changelog |
 | `/pds:eval` | Skill evaluation and testing |
 | `/pds:bcp` | Finalize work — bump, commit, push |
+| `/pds:rebase` | Focused branch rebase |
+| `/pds:pr-review` | Address PR review comments |
+| `/pds:preflight` | Environment validation |
 
 ---
 
@@ -97,8 +100,8 @@ make install    # symlinks this checkout as the plugin
 ```
 portable-dev-system/
 ├── .claude-plugin/plugin.json     # Plugin manifest
-├── agents/                        # 8 agent definitions
-├── skills/                        # 18 skills (dir/SKILL.md format)
+├── agents/                        # 8 agent definitions + shared-rules.md
+├── skills/                        # 21 skills (dir/SKILL.md format)
 │   ├── swarm/SKILL.md
 │   ├── team/SKILL.md
 │   └── ...
