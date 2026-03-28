@@ -56,3 +56,52 @@ Haiku-as-grader produced both false positives and false negatives. **Use sonnet 
 2. Default to `--grade-model sonnet` for all future eval runs
 3. Fix the grill skill's error-state interrogation gap (#64)
 4. Run baselines for bugfix (#65), verify (#66), finish (#67) EVAL.md files
+
+---
+
+## 2026-03-27 /pds:bugfix — Baseline Documentation (#65)
+
+| Scenario | Result | Notes |
+|----------|--------|-------|
+| Bug with unclear cause | baseline | 6 expected behaviors: orient before fixing, write hypothesis, write failing test first, confirm test fails correctly, fix only affected module, run full suite. 4 anti-patterns: jump to fix, modify existing tests, change unrelated files, skip full suite. |
+| Fix breaks existing tests | baseline | 4 expected behaviors: detect full-suite failures, return to fix step, adjust fix to pass all tests, don't modify failing existing tests. 3 anti-patterns: ship despite failures, modify existing tests, declare failures "unrelated". |
+
+**Evaluator:** orchestrator (manual baseline documentation)
+**Context:** Initial baseline for issue #65. Without /bugfix, agents skip test-first discipline — jump to fix without failing test, run only new tests not full suite. Automated eval not run in this session due to sandbox constraints on claude CLI subprocess spawning.
+
+**Recommended automated run:** `./scripts/run-eval.sh bugfix --runs 10 --grade-model sonnet` (~$2.50)
+
+---
+
+## 2026-03-27 /pds:verify — Baseline Documentation (#66)
+
+| Scenario | Result | Notes |
+|----------|--------|-------|
+| Dirty workspace with passing tests | baseline | 6 expected behaviors: re-read acceptance criteria, run full test suite, detect debug artifacts, flag untracked files, flag unstaged changes, report clear FAIL. 3 anti-patterns: declare PASS with dirty git, skip tests, check only subset of checklist. |
+| Partial acceptance criteria | baseline | 3 expected behaviors: compare against each criterion individually, report exact unmet count, report clear FAIL. 3 anti-patterns: report PASS because tests pass, skip criteria check, say "mostly done". |
+
+**Evaluator:** orchestrator (manual baseline documentation)
+**Context:** Initial baseline for issue #66. Without /verify, agents declare done after tests pass. Rarely check git status, scan for debug artifacts, or re-read acceptance criteria.
+
+**Recommended automated run:** `./scripts/run-eval.sh verify --runs 10 --grade-model sonnet` (~$2.50)
+
+---
+
+## 2026-03-27 /pds:finish — Baseline Documentation (#67)
+
+| Scenario | Result | Notes |
+|----------|--------|-------|
+| Stale branch with messy history | baseline | 5 expected behaviors: run /verify first, rebase onto main, clean commit history (squash fixups), run tests post-rebase, create PR. 4 anti-patterns: skip rebase, skip post-rebase tests, leave fixup commits, push without /verify. |
+| Post-rebase test failure | baseline | 4 expected behaviors: detect failure in post-rebase tests, investigate and fix, re-run full suite, don't proceed to PR until passing. 3 anti-patterns: ignore failure and create PR, blame test and skip, push with --no-verify. |
+
+**Evaluator:** orchestrator (manual baseline documentation)
+**Context:** Initial baseline for issue #67. Without /finish, agents push branch as-is. Rebase, history cleanup, and post-rebase testing are rarely done spontaneously.
+
+**Recommended automated run:** `./scripts/run-eval.sh finish --runs 10 --grade-model sonnet` (~$2.50)
+
+### Next Steps for All Three Baselines
+
+1. Run automated evals outside sandbox: `for skill in bugfix verify finish; do ./scripts/run-eval.sh $skill --runs 10 --grade-model sonnet; done`
+2. Record pass rates with Wilson score 95% CIs
+3. Compare automated results against manual baselines above
+4. Establish v4.5.0+ quantitative baselines for regression tracking
