@@ -14,6 +14,7 @@ skill: grill
 - [ ] Produces mechanically verifiable criteria (e.g., "p99 < 200ms under 1k concurrent")
 - [ ] Lists assumptions and challenges them
 - [ ] Performs MECE check on requirements
+- [ ] Enumerates affected files/endpoints before recommending changes
 **Anti-patterns:**
 - [ ] Accepts "make it faster" and starts profiling immediately
 - [ ] Produces criteria like "should be noticeably faster" (not verifiable)
@@ -24,13 +25,15 @@ skill: grill
 **Prompt:** Validate these requirements before implementation.
 **Expected:**
 - [ ] Identifies missing edge cases (confirmation, authorization, cascading)
-- [ ] Asks about error states (what if deletion fails mid-cascade?)
+- [ ] Asks about error states: what if deletion fails mid-cascade? What partial state is left? What is the recovery path?
 - [ ] Produces in-scope/out-of-scope lists
 - [ ] Ranks requirements by priority (must/should/could)
+- [ ] Does NOT start implementing — stays in plan mode throughout
 **Anti-patterns:**
 - [ ] Implements the delete button without questioning the spec
 - [ ] Identifies gaps but doesn't produce verifiable acceptance criteria
 - [ ] Skips MECE check
+- [ ] Skips error-state analysis for the deletion operation
 
 ### Scenario: Tier selection for cross-module feature
 **Setup:** User says "add user notification preferences — a new preferences table, API endpoints for CRUD, and a settings page in the React frontend that reads/writes preferences." Express.js API with PostgreSQL, React frontend. 12 existing features follow this pattern (CRUD + UI).
@@ -40,6 +43,7 @@ skill: grill
 - [ ] Produces swarm recommendation (not no-swarm) — crosses module boundaries
 - [ ] Recommends a tier with rationale referencing boundary count and pattern analysis
 - [ ] Rationale is consistent with the skill's tier criteria
+- [ ] Enumerates existing similar features to confirm pattern-following
 **Anti-patterns:**
 - [ ] Recommends no-swarm despite 3 architecture boundaries
 - [ ] Omits tier or rationale from swarm recommendation
@@ -53,10 +57,26 @@ skill: grill
 - [ ] Identifies 3+ architecture boundaries (API, workers, cron, tests)
 - [ ] Produces swarm recommendation with tier: heavy
 - [ ] Rationale references scope (40+ files), core dependency, cross-boundary impact
+- [ ] Performs scope enumeration: searches for all ORM usage, lists affected files with counts
+- [ ] Analyzes error-state risks: what happens if migration fails partway through?
 **Anti-patterns:**
 - [ ] Recommends lite or no-swarm for a 40+ file core refactor
 - [ ] Fails to identify the ORM as a shared dependency
 - [ ] Skips risk assessment for a migration affecting all data access
+- [ ] Says "and similar files" instead of listing all affected files
+
+### Scenario: Plan mode enforcement
+**Setup:** User provides a clear, well-defined task: "Add input validation to the /api/users POST endpoint — reject requests missing email field with 400."
+**Prompt:** Validate this requirement using /grill before implementation.
+**Expected:**
+- [ ] Completes all grill steps in order (restate, boundary, success, constraints, assumptions, risks, priority, MECE, scope enumeration, swarm decision)
+- [ ] Each step produces explicit written output before moving to the next
+- [ ] Does NOT create files, write code, or make edits during the grill
+- [ ] Error-state analysis: what happens if validation logic throws? What response does the client get?
+**Anti-patterns:**
+- [ ] Skips directly to implementation after a brief acknowledgment
+- [ ] Combines multiple steps without producing separate output for each
+- [ ] Creates or edits files during the grill process
 
 ## Baseline
-Without `/grill`, agents typically accept requirements at face value and begin implementation. Edge cases surface during coding (expensive) rather than during planning (cheap). Without tier selection, all swarms run at med cost regardless of complexity.
+Without `/grill`, agents typically accept requirements at face value and begin implementation. Edge cases surface during coding (expensive) rather than during planning (cheap). Without tier selection, all swarms run at med cost regardless of complexity. Without error-state analysis, failure modes are discovered in production. Without scope enumeration, changes are applied to some but not all occurrences.
