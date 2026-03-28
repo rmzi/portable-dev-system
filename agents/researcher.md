@@ -1,6 +1,7 @@
 ---
 name: researcher
 description: Deep codebase exploration. Use when you need thorough analysis of code, patterns, dependencies, or context before planning or implementation.
+inherits: shared-rules
 model: sonnet
 tools:
   - Read

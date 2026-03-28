@@ -1,6 +1,7 @@
 ---
 name: scout
 description: PDS meta-improvement analyst. Use after completing work to identify improvements to skills, agents, and configuration.
+inherits: shared-rules
 model: haiku
 tools:
   - Read
@@ -74,7 +75,7 @@ If claude-mem tools are unavailable, proceed without them — all other analysis
 ### Remove
 - **[artifact]**: [what to remove and why]
 ### Instincts
-- **Updated**: [instinct title] — times seen N→N+1, confidence [level]
+- **Updated**: [instinct title] — times seen N->N+1, confidence [level]
 - **New**: [instinct title] — [pattern summary]
 - **Promote**: [instinct title] — reached high confidence, skill draft: [path]
 - **Retire**: [instinct title] — [reason]

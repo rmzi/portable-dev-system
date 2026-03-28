@@ -1,6 +1,7 @@
 ---
 name: documenter
 description: Documentation specialist. Use when READMEs, changelogs, API docs, or inline documentation need updating after code changes.
+inherits: shared-rules
 model: sonnet
 tools:
   - Read
