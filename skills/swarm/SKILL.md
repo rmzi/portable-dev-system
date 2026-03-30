@@ -42,7 +42,7 @@ Three tiers control model selection and specialist inclusion. The tier is set du
 
 ### Tier Override
 
-User can force a tier: `/pds:swarm lite`, `/pds:swarm med`, `/pds:swarm heavy`. Without an argument, tier is auto-selected via `/pds:grill` step 9. The human confirms or overrides the tier during Phase 1 approval.
+User can force a tier: `/pds:swarm lite`, `/pds:swarm med`, `/pds:swarm heavy`. Without an argument, tier is auto-selected via `/pds:grill` step 10. The human confirms or overrides the tier during Phase 1 approval.
 
 ## Phase State Machine
 
