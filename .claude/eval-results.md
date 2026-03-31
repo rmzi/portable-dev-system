@@ -59,6 +59,37 @@ Haiku-as-grader produced both false positives and false negatives. **Use sonnet 
 
 ---
 
+## 2026-03-31 /pds:grill — Re-eval with softened criteria
+
+**Context:** Second eval run after softening scope enumeration criteria (no longer requires literal file listing without a codebase) and relaxing plan mode step grouping. Grill skill unchanged from post-fix version (Q&A rewrite committed separately but not yet in eval — this run uses the pre-Q&A criteria).
+
+### Automated run — Sonnet execution, sonnet grading, N=10
+
+| Scenario | Result | 95% CI | vs 1st post-fix | vs v4.5.0 Baseline |
+|----------|--------|--------|-----------------|---------------------|
+| Vague performance request | 5/10 (50%) | [23%-76%] | Was 40% (+10) | Was 100% (harder criteria) |
+| Feature with missing edge cases | 7/10 (70%) | [39%-89%] | Was 60% (+10) | Was 20% (**#64 fix confirmed**) |
+| Tier: cross-module | 7/10 (70%) | [39%-89%] | Was 80% (-10) | Was 100% |
+| Tier: core refactor | 10/10 (100%) | [72%-99%] | Was 80% (+20) | Was 100% (**recovered**) |
+| Plan mode enforcement | 1/10 (10%) | [1%-40%] | Was 30% (-20) | New scenario |
+| **Overall** | **30/50 (60%)** | [46%-72%] | Was 58% (+2) | Was 80% (4 scenarios) |
+
+**Evaluator:** `scripts/run-eval.sh` — execution: sonnet, grading: sonnet
+
+### Analysis
+
+1. **#64 fix holds:** Error-state scenario at 70% (up from 20% baseline, 60% first eval). Consistent improvement.
+2. **Core refactor recovered to 100%:** Softened scope enumeration criterion resolved the false failures.
+3. **Scenario 1 stable at 50%:** Softened criteria helped slightly (40%→50%) but sonnet in pipe mode still struggles with proposing concrete criteria for vague requests.
+4. **Plan mode enforcement at 10%:** Worst scenario. Sonnet in pipe mode collapses 10 grill steps into a summary paragraph. The Q&A rewrite (asking questions, producing per-step output) was committed after this eval started — a future eval with Q&A-aligned criteria should test whether it helps.
+5. **Overall 60%:** Up from 58%, stable. The skill is meaningfully better than baseline (20%→70% on the target scenario) but pipe-mode execution limits how well the structured format translates.
+
+### Recommendation
+
+The Q&A grill rewrite and Q&A-aligned EVAL.md criteria were committed after this eval. A future eval run should test whether the interactive format improves Scenarios 1 and 5 in pipe mode, or whether those scenarios need multi-turn eval support (simulated human responses).
+
+---
+
 ## 2026-03-30 /pds:grill — Post-Fix Eval (#64, #69, #76)
 
 **Context:** Re-eval after adding error-state interrogation (#64), plan mode enforcement (#69), and scope enumeration (#76). Two new scenarios added (plan mode enforcement, updated criteria for scope enumeration).
