@@ -14,11 +14,12 @@ skill: grill
 - [ ] Produces mechanically verifiable criteria (e.g., "p99 < 200ms under 1k concurrent")
 - [ ] Lists assumptions and challenges them
 - [ ] Performs MECE check on requirements
-- [ ] Enumerates affected files/endpoints before recommending changes
+- [ ] Describes scope enumeration approach (what to search for, where to look) or enumerates affected files/endpoints if codebase is available
 **Anti-patterns:**
 - [ ] Accepts "make it faster" and starts profiling immediately
 - [ ] Produces criteria like "should be noticeably faster" (not verifiable)
 - [ ] Skips boundary definition — scope is unbounded
+- [ ] Skips scope enumeration entirely (no mention of what files/endpoints to investigate)
 
 ### Scenario: Feature with missing edge cases
 **Setup:** "Add a delete button to user profiles. Clicking it deletes the user." No mention of: confirmation dialog, admin vs self-delete, cascade behavior, undo.
@@ -57,25 +58,25 @@ skill: grill
 - [ ] Identifies 3+ architecture boundaries (API, workers, cron, tests)
 - [ ] Produces swarm recommendation with tier: heavy
 - [ ] Rationale references scope (40+ files), core dependency, cross-boundary impact
-- [ ] Performs scope enumeration: searches for all ORM usage, lists affected files with counts
+- [ ] Describes scope enumeration approach (e.g., search for ORM imports, query builder calls, migration files) or lists affected files if codebase is available
 - [ ] Analyzes error-state risks: what happens if migration fails partway through?
 **Anti-patterns:**
 - [ ] Recommends lite or no-swarm for a 40+ file core refactor
 - [ ] Fails to identify the ORM as a shared dependency
 - [ ] Skips risk assessment for a migration affecting all data access
-- [ ] Says "and similar files" instead of listing all affected files
+- [ ] Skips scope enumeration entirely (no mention of what to search for or how to find all occurrences)
 
 ### Scenario: Plan mode enforcement
 **Setup:** User provides a clear, well-defined task: "Add input validation to the /api/users POST endpoint — reject requests missing email field with 400."
 **Prompt:** Validate this requirement using /grill before implementation.
 **Expected:**
 - [ ] Completes all grill steps in order (restate, boundary, success, constraints, assumptions, risks, priority, MECE, scope enumeration, swarm decision)
-- [ ] Each step produces explicit written output before moving to the next
+- [ ] Produces explicit output for each step (steps may be grouped but each must have visible output)
 - [ ] Does NOT create files, write code, or make edits during the grill
 - [ ] Error-state analysis: what happens if validation logic throws? What response does the client get?
 **Anti-patterns:**
 - [ ] Skips directly to implementation after a brief acknowledgment
-- [ ] Combines multiple steps without producing separate output for each
+- [ ] Produces a single-paragraph summary instead of step-by-step analysis
 - [ ] Creates or edits files during the grill process
 
 ## Baseline

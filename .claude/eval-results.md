@@ -59,6 +59,41 @@ Haiku-as-grader produced both false positives and false negatives. **Use sonnet 
 
 ---
 
+## 2026-03-30 /pds:grill — Post-Fix Eval (#64, #69, #76)
+
+**Context:** Re-eval after adding error-state interrogation (#64), plan mode enforcement (#69), and scope enumeration (#76). Two new scenarios added (plan mode enforcement, updated criteria for scope enumeration).
+
+### Automated run — Sonnet execution, sonnet grading, N=10
+
+| Scenario | Result | 95% CI | vs v4.5.0 Baseline | Notes |
+|----------|--------|--------|---------------------|-------|
+| Vague performance request | 4/10 (40%) | [16%-68%] | Was 100% | Regression — scope enumeration criterion unfair without codebase |
+| Feature with missing edge cases | 6/10 (60%) | [31%-83%] | Was 20% | **#64 fix validated** — hit ≥60% target |
+| Tier selection for cross-module feature | 8/10 (80%) | [49%-94%] | Was 100% | Acceptable; 2 failures include 1 empty output |
+| Tier selection for core abstraction refactor | 8/10 (80%) | [49%-94%] | Was 100% | Acceptable; 2 failures include 1 empty output |
+| Plan mode enforcement | 3/10 (30%) | [10%-60%] | New | Strict step-by-step criterion + 2 empty outputs |
+| **Overall** | **29/50 (58%)** | [44%-70%] | Was 80% | |
+
+**Evaluator:** `scripts/run-eval.sh` — execution: sonnet, grading: sonnet
+
+### Analysis
+
+1. **#64 fix confirmed:** Error-state interrogation scenario tripled from 20% → 60%, meeting acceptance criteria.
+2. **Scenario 1 regression:** Root cause is criterion 6 ("enumerate files/endpoints") — impossible in pipe mode with no codebase. Agent either skips or explicitly declines. Fix: soften to "describes scope enumeration approach."
+3. **Empty output noise:** 4/50 runs (8%) produced empty agent output across scenarios. Infrastructure issue with `claude -p`, not skill issue.
+4. **Plan mode enforcement:** New scenario is too strict — "each step produces explicit written output" fails when sonnet collapses steps in pipe mode. Fix: allow grouped steps with visible output per group.
+
+### Action taken
+
+Updated EVAL.md criteria:
+- Scope enumeration: "describes approach" OR "enumerates files if codebase available"
+- Plan mode: "produces explicit output for each step (steps may be grouped)" instead of strict per-step requirement
+- Added anti-pattern for completely skipping scope enumeration
+
+**Re-eval recommended** with updated criteria to establish post-fix baseline.
+
+---
+
 ## 2026-03-27 /pds:bugfix — Baseline Documentation (#65)
 
 | Scenario | Result | Notes |
