@@ -1,6 +1,7 @@
 ---
 name: auditor
 description: Codebase quality analyst. Use to scan for tech debt, code smells, missing tests, and file findings as GitHub issues.
+inherits: shared-rules
 model: sonnet
 tools:
   - Read

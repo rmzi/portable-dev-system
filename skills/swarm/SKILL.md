@@ -7,15 +7,28 @@ Six-phase workflow for decomposing, dispatching, and validating parallel work ac
 
 ## Delegation
 
-**If you are not the orchestrator**, spawn one to execute this workflow:
+**If you are not the orchestrator**, spawn one to execute this workflow. Agents terminate when they return output, so **the parent must handle the human approval gate** — not the orchestrator.
+
+**Two-phase delegation pattern:**
 
 ```
+# Phase 1: Orchestrator runs grill, produces plan, returns it
+plan = Agent(subagent_type="pds:orchestrator", name="orchestrator-plan",
+      prompt="Run /pds:grill for: <task description>. Tier: <tier>.
+             Produce a plan with acceptance criteria. Return the plan — do NOT
+             proceed to decomposition. Write swarm state files (.claude/swarm/phase,
+             .claude/swarm/tier) before returning.")
+
+# Parent relays plan to human, gets approval/override, then:
+
+# Phase 2+: New orchestrator executes the approved plan through all remaining phases
 Agent(subagent_type="pds:orchestrator", name="orchestrator",
-      model="sonnet",  # only for lite tier; omit for med/heavy (opus is the default)
-      prompt="Execute /pds:swarm for: <task description and context>. Tier: <lite|med|heavy>")
+      prompt="Plan is approved by human. Execute /pds:swarm Phases 2-6 for: <context>.
+             <paste approved plan + acceptance criteria here>.
+             Proceed through all phases without stopping for approval.")
 ```
 
-If no tier is specified, the orchestrator MUST run `/pds:grill` first to determine the tier. Grill is mandatory before any swarm — it validates requirements AND recommends a tier.
+If no tier is specified, the Phase 1 orchestrator MUST run `/pds:grill` first to determine the tier. Grill is mandatory before any swarm — it validates requirements AND recommends a tier.
 
 The orchestrator has `TeamCreate`, `TaskCreate`, `Task(worker)`, `SendMessage`, and other coordination tools. The main conversation does not — delegation is required.
 
@@ -42,7 +55,7 @@ Three tiers control model selection and specialist inclusion. The tier is set du
 
 ### Tier Override
 
-User can force a tier: `/pds:swarm lite`, `/pds:swarm med`, `/pds:swarm heavy`. Without an argument, tier is auto-selected via `/pds:grill` step 9. The human confirms or overrides the tier during Phase 1 approval.
+User can force a tier: `/pds:swarm lite`, `/pds:swarm med`, `/pds:swarm heavy`. Without an argument, tier is auto-selected via `/pds:grill` step 10. The human confirms or overrides the tier during Phase 1 approval.
 
 ## Phase State Machine
 
@@ -71,7 +84,8 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
    Tier models — med: omit `model` (sonnet default). Heavy: `model="opus"`.
    The researcher sends findings back via `SendMessage`. If it calls `ExitPlanMode`, respond with `plan_approval_response` to approve or reject its plan.
 4. Synthesize findings into **mechanically verifiable acceptance criteria** — each criterion must be checkable by running a command or reading output (no subjective criteria)
-5. Present plan + criteria + **tier** to the human. The human can override the tier here. **Do not proceed without approval.**
+5. **If spawned as Phase 1 only** (plan prompt): Return the plan + criteria + tier. The parent conversation handles human approval and spawns a Phase 2+ orchestrator.
+   **If spawned with pre-approval** (full execution prompt): Proceed directly to Phase 2.
 
 ## Phase 2: Decompose
 
@@ -108,6 +122,8 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
    # Heavy — workers stay sonnet (no override), but use more workers for parallelism
    ```
    Use `Task(validator)` for validation tasks, `Task(researcher)` for research, etc. The typed syntax restricts which agent definitions can fulfill the spawn. Always pass the tier-appropriate `model` override — see the Swarm Tiers table above.
+
+   **Worktree isolation:** If workers will edit overlapping files, spawn them with `isolation: "worktree"` so each gets an isolated copy of the repo. If workers touch non-overlapping files (different modules/skills), they can share the current worktree — but document the boundary in each worker's prompt to prevent collisions.
 3. Assign initial tasks to workers:
    ```
    TaskUpdate(taskId="1", owner="worker-auth", status="in_progress")
@@ -163,7 +179,7 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
    gh pr create --title "feat: ..." --body "## Summary\n...\n## Acceptance Criteria\n...\n## Validation\n...\n## Issues\n..."
    ```
    **Note:** The PR gate blocks `gh pr create` unless phase is `consolidate`+ AND both `validation-report.md` and `review-report.md` exist.
-6. **Get human approval before merge.**
+6. **Do not merge.** The PR is the human gate. The orchestrator creates the PR and reports it — the human merges after review.
 
 ## Phase 6: Knowledge
 

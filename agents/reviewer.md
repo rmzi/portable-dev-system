@@ -1,6 +1,7 @@
 ---
 name: reviewer
 description: Code review specialist. Use to review diffs for quality, security, correctness, and best practices.
+inherits: shared-rules
 model: sonnet
 tools:
   - Read
@@ -50,7 +51,7 @@ Plan mode + sandbox = double read-only enforcement. Bash writes are confined by 
 ### Summary
 One sentence on what this change does.
 ### Assessment
-✓ Looks good / ⚠ Needs changes / ✗ Significant issues
+Looks good / Needs changes / Significant issues
 ### Findings
 #### Critical (must fix)
 - **[title]** — `file:line` — [issue] — Fix: [how]

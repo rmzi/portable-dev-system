@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.6.0] - 2026-03-31
+
+### Added
+- **Shared behavioral rules** — `agents/shared-rules.md` with `inherits: shared-rules` in all 8 agents. Common rules for polling guardrails, task claiming, error escalation, and completion protocol (#78, #71, #74)
+- **3 new skills** — `/pds:rebase` (focused rebase + autonomous `--fix` mode), `/pds:pr-review` (systematic PR comment resolution), `/pds:preflight` (environment validation). Skill count: 18 → 21 (#70, #72, #75)
+- **EVAL.md for new skills** — 2 scenarios each for rebase, pr-review, and preflight
+- **3 ADRs** — Hooks enforcement for skills (#77), stricter research mode (#62), PDS metrics tracking (#32)
+- **Autonomous rebase-fix loop** — `/pds:rebase --fix` with 3-cycle conflict resolution and test-fix iteration (#73)
+
+### Changed
+- **Grill skill rewritten as interactive Q&A** — Each step proposes analysis and asks clarifying questions. Mermaid diagrams for architecture boundaries and failure flows. Plan mode enforced via `EnterPlanMode` (#69)
+- **Grill error-state interrogation** — Step 6 (Risks) now requires partial-state, rollback, and recovery analysis. Eval improved from 20% → 70% (#64)
+- **Grill scope enumeration** — New step 9 requires full blast radius search before implementation. Swarm decision moved to step 10 (#76)
+- **Two-phase orchestrator delegation** — Fixes agent lifecycle bug where orchestrator terminated after plan presentation. Phase 1 returns plan, parent handles approval, Phase 2+ executes (#69)
+- **Non-interactive git operations** — Replaced `git rebase -i` with `--autosquash` and `reset --soft` in finish and merge skills
+- **Stop hook improved** — Recognizes orchestration/review sessions as non-code and passes them through
+
+### Fixed
+- **pr-review `{owner}/{repo}` placeholders** — Now resolves dynamically via `gh repo view`
+- **Stale grill step references** — Updated "step 9" → "step 10" in swarm, team, and teams docs
+- **Gate script jq dependency** — PR and teardown gates now check for jq availability, fail open gracefully
+
+### Eval Results
+- Grill eval (N=10, sonnet/sonnet): 60% overall [46%-72%]
+- Error-state scenario: 20% → 70% (target ≥60% met)
+- Core refactor scenario: 100% [72%-99%]
+- Manual baselines documented for bugfix, verify, finish (#65, #66, #67)
+
 ## [4.5.1] - 2026-03-23
 
 ### Fixed

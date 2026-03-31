@@ -1,6 +1,7 @@
 ---
 name: validator
 description: Merge and test specialist. Use after workers finish to merge branches, run test suites, and verify acceptance criteria.
+inherits: shared-rules
 model: sonnet
 tools:
   - Read

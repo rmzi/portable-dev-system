@@ -194,8 +194,8 @@ A coordinator cannot review every line from every subagent. Instead:
 # Rebase subtask onto coordinator
 git rebase coordinator-branch
 
-# Interactive rebase to clean up commits before merging
-git rebase -i coordinator-branch
+# Squash fixup commits before merging (non-interactive)
+git rebase --autosquash coordinator-branch
 
 # Fast-forward merge (coordinator worktree)
 git merge --ff-only subtask-branch

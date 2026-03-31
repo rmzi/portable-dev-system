@@ -4,6 +4,8 @@
 # Only enforces when .claude/swarm/ exists (swarm is active).
 # Exit 0 = allow, Exit 2 = block with reason.
 
+command -v jq >/dev/null 2>&1 || exit 0  # jq required for gate enforcement
+
 INPUT=$(cat)
 CWD=$(echo "$INPUT" | jq -r '.cwd // empty')
 

@@ -141,7 +141,7 @@ Tiers override agent models at spawn time via the `model` parameter. Med matches
 | scout | haiku | haiku | sonnet |
 | auditor | _(skip)_ | _(skip)_ | sonnet |
 
-Lite = routine work (1-2 workers, orchestrator self-reviews). Med = serious work (2-3 workers, full roster). Heavy = complex/high-stakes (3-4 workers, all specialists). Auto-selected via `/pds:grill` step 9 or overridden with `/pds:swarm lite|med|heavy`.
+Lite = routine work (1-2 workers, orchestrator self-reviews). Med = serious work (2-3 workers, full roster). Heavy = complex/high-stakes (3-4 workers, all specialists). Auto-selected via `/pds:grill` step 10 or overridden with `/pds:swarm lite|med|heavy`.
 
 ### Permission Modes
 
