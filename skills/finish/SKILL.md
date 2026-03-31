@@ -31,13 +31,26 @@ git rebase origin/main    # or target branch
 Resolve any conflicts. Each conflict resolution should maintain both sides' intent — don't blindly accept one side.
 
 ### 3. Clean Commit History
-Review your commits. Squash fixup commits, reword unclear messages:
+Review your commits:
 
 ```bash
 git log --oneline main..HEAD
 ```
 
+If there are fixup commits or WIP entries, squash them non-interactively:
+
+```bash
+# Squash all branch commits into one clean commit
+git reset --soft origin/main
+git commit -m "feat(scope): descriptive message"
+
+# Or use autosquash for commits prefixed with fixup!/squash!
+git rebase --autosquash origin/main
+```
+
 Each commit should be atomic and meaningful. Use conventional commit format: `<type>(<scope>): <subject>`. Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `perf`. Subject in imperative mood, max 72 chars. Body explains *what* and *why*, not *how*.
+
+**Do NOT use `git rebase -i`** — interactive rebase requires terminal input and will hang in agent contexts.
 
 ### 4. Run Tests Post-Rebase
 Tests must pass *after* rebase, not just before:

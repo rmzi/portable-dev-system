@@ -55,11 +55,11 @@ The phase file is enforced by PR and teardown gates (defense-in-depth alongside 
 
 ### Phase transitions
 
-1. **plan** — Run `/pds:grill`. Spawn **researcher** for context. Get human approval. -> Write `decompose`
+1. **plan** — Run `/pds:grill`. Spawn **researcher** for context. Return plan (parent handles human approval), or proceed if pre-approved. -> Write `decompose`
 2. **decompose** — TaskCreate for each work unit with acceptance criteria and dependencies (`addBlockedBy`/`addBlocks`). -> Write `dispatch`
 3. **dispatch** — TeamCreate, spawn **workers**, assign initial tasks. Workers self-claim subsequent tasks via TaskList. Monitor progress. -> Write `validate`
 4. **validate** — Spawn **validator** to merge and test. Fix -> re-validate. -> Write `consolidate`
-5. **consolidate** — Spawn **reviewer**. Write review report. Create PR. Spawn **documenter** if needed. Get human approval. -> Write `knowledge`
+5. **consolidate** — Spawn **reviewer**. Write review report. Create PR (PR is the human gate — do not merge). Spawn **documenter** if needed. -> Write `knowledge`
 6. **knowledge** — Spawn **scout**. Shutdown all agents. TeamDelete.
 
 ## Dispatch Workflow

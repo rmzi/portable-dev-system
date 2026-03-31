@@ -17,12 +17,13 @@ Fetch PR review comments via `gh`, address each one with code fixes, run tests, 
 ```bash
 # Get PR number from current branch
 PR_NUMBER=$(gh pr view --json number -q '.number')
+REPO=$(gh repo view --json nameWithOwner -q '.nameWithOwner')
 
-# Fetch all review comments
-gh api repos/{owner}/{repo}/pulls/${PR_NUMBER}/comments --paginate
+# Fetch all review comments (inline code comments)
+gh api repos/$REPO/pulls/${PR_NUMBER}/comments --paginate
 
-# Also fetch general PR comments
-gh api repos/{owner}/{repo}/issues/${PR_NUMBER}/comments --paginate
+# Also fetch general PR comments (top-level discussion)
+gh api repos/$REPO/issues/${PR_NUMBER}/comments --paginate
 
 # Check for requested changes
 gh pr view $PR_NUMBER --json reviews -q '.reviews[] | select(.state == "CHANGES_REQUESTED") | .body'
