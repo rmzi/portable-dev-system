@@ -98,9 +98,6 @@
       "Bash(git push * :master)",
       "Bash(git push * :dev)",
       "Bash(git push * :develop)",
-      "Bash(git push -f*)",
-      "Bash(git push --force*)",
-      "Bash(git push * --force*)",
       "Bash(git push --delete*)",
       "Bash(git push * --delete*)",
 

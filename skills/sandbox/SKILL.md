@@ -159,13 +159,17 @@ Bash command arrives
 |---------|------|
 | `npm test`, `pip install`, `ls` | Sandbox auto-approve |
 | `git commit`, `git push origin feature` | Permission mode (user prompt / auto classifier / dontAsk) |
+| `git push --force-with-lease` | Permission mode — user prompted to approve |
 | `git push origin main` | Deny rule → BLOCKED |
+| `git push --delete` | Deny rule → BLOCKED |
 | `docker build .` | Permission mode (user prompt / auto classifier / dontAsk) |
 | `ssh user@host` | Deny rule → BLOCKED |
 | Read/Write/Edit/Glob/Grep | Static allow list |
 | MCP tools | `mcp__*` allow list |
 
 Deny rules fire first (deny > allow). The sandbox handles routine Bash. The active permission mode handles everything else.
+
+**Force push**: Force push (`--force`, `--force-with-lease`) goes through the normal permission flow rather than being unconditionally blocked. In interactive modes, the user is prompted and can approve or deny. In auto mode, the classifier evaluates it. Protected branch pushes remain unconditionally blocked by deny rules regardless of force flags.
 
 ## Hook Events
 

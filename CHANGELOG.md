@@ -26,6 +26,7 @@ All notable changes to this project will be documented in this file.
 - **Stop hook improved** — Recognizes orchestration/review sessions as non-code and passes them through
 - **Security model: 7 layers → 6** — removed Layer 3 (PermissionRequest hook / LLM-as-judge). Remaining layers renumbered. Whitepaper, `/pds:sandbox`, and `/pds:audit-config` updated.
 - **install.sh** — `autoMode` arrays deep-merged instead of overwritten. Project-level installs (`--project`) skip `autoMode` since the classifier reads user/local settings only. Cleanup now removes stale `autoMode` from project settings.
+- **Force push via permission prompt** — Force push (`--force`, `--force-with-lease`) moved from unconditional deny to normal permission flow. User is prompted in interactive modes; classifier evaluates in auto mode. Protected branch pushes remain unconditionally blocked.
 
 ### Fixed
 - **pr-review `{owner}/{repo}` placeholders** — Now resolves dynamically via `gh repo view`
