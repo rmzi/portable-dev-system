@@ -262,7 +262,7 @@ PDS enables Claude Code's native OS-level sandbox for all Bash commands. The san
 
 **Key behaviors:**
 - Sandboxed Bash commands auto-approve without permission prompts (`autoAllowBashIfSandboxed: true`)
-- `git` and `docker` are excluded from the sandbox — they go through normal deny rules and the PermissionRequest hook
+- `git` and `docker` are excluded from the sandbox — they go through deny rules and the active permission mode (user prompt, auto classifier, or dontAsk)
 - Workers are OS-confined to their worktree directory for writes
 - Cross-worktree reads work via Bash on absolute paths (sandbox allows broad reads)
 

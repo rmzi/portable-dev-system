@@ -39,6 +39,8 @@ Citation constraints are active (`strict: true`):
 
 Plan mode + sandbox = double read-only enforcement. Bash writes are confined by the OS sandbox; plan mode prevents Write/Edit tools. WebSearch and WebFetch operate outside the sandbox.
 
+**Auto mode note**: In auto mode, `plan` mode is overridden by the classifier. Read-only enforcement relies on behavioral constraints above and the classifier's scope-escalation detection.
+
 ## Process
 
 1. Glob for files, Grep for keywords/types/conventions.

@@ -98,9 +98,6 @@
       "Bash(git push * :master)",
       "Bash(git push * :dev)",
       "Bash(git push * :develop)",
-      "Bash(git push -f*)",
-      "Bash(git push --force*)",
-      "Bash(git push * --force*)",
       "Bash(git push --delete*)",
       "Bash(git push * --delete*)",
 
@@ -144,18 +141,29 @@
       "Running tests and linters",
       "Reading and searching files",
       "Creating and switching branches",
-      "Installing dependencies"
-    ],
-    "soft_deny": [
-      "Force pushing to any branch",
-      "Deleting branches without confirmation",
-      "Modifying CI/CD pipelines",
-      "Pushing to protected branches (main, master, dev, develop)"
+      "Installing dependencies",
+      "Spawning subagents via Task tool for parallel work",
+      "Creating and managing agent teams (TeamCreate, TeamDelete)",
+      "Creating and updating tasks (TaskCreate, TaskUpdate)",
+      "Sending inter-agent messages (SendMessage)",
+      "Worktree operations (create, remove, list)"
     ],
     "environment": [
       "PDS (Portable Dev System) plugin is active with skills and agents",
       "Worktree-based workflow: branches are isolated in .worktrees/",
-      "Security-hardened: sandbox enabled, credential paths denied"
+      "Security-hardened: sandbox enabled, credential paths denied, protected branches blocked",
+      "Agent teams: orchestrator coordinates workers, each in an isolated worktree",
+      "Permission modes: plan (read-only agents), acceptEdits (implementation agents), default (orchestrator)",
+      "Static deny rules block: credential paths, protected branches, sensitive files, production patterns",
+      "OS-level sandbox confines Bash writes to working directory, network to domain allowlist",
+      "Phase state machine tracks SDLC progression: plan → decompose → dispatch → validate → consolidate → knowledge",
+      "Swarm tiers (lite/med/heavy) control model selection and specialist inclusion per agent role",
+      "Branch naming: feature branches pushed to origin, PRs created after validation + review phases",
+      "Source control: github.com (update with your GitHub org)",
+      "Package registry: npmjs.org, pypi.org (update if using private registries)",
+      "CI/CD system: (update with your CI — e.g., GitHub Actions, CircleCI, GitLab CI)",
+      "Test infrastructure: (update if validators need test DB or service access)",
+      "Internal APIs and services: (update with your trusted internal domains)"
     ]
   },
   "showClearContextOnPlanAccept": true,

@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [4.6.0] - 2026-03-31
+## [4.6.1] - 2026-03-31
 
 ### Added
 - **Shared behavioral rules** — `agents/shared-rules.md` with `inherits: shared-rules` in all 8 agents. Common rules for polling guardrails, task claiming, error escalation, and completion protocol (#78, #71, #74)
@@ -10,6 +10,12 @@ All notable changes to this project will be documented in this file.
 - **EVAL.md for new skills** — 2 scenarios each for rebase, pr-review, and preflight
 - **3 ADRs** — Hooks enforcement for skills (#77), stricter research mode (#62), PDS metrics tracking (#32)
 - **Autonomous rebase-fix loop** — `/pds:rebase --fix` with 3-cycle conflict resolution and test-fix iteration (#73)
+- **Auto mode compatibility** — `autoMode` config restructured for Claude Code's auto permission mode. Expanded `allow` with swarm operations (subagent spawning, team management, task coordination, worktree ops). Expanded `environment` to ~15 entries with comment-style placeholder hints for org-specific customization.
+- **Auto mode interaction docs** — `/pds:sandbox` documents how auto mode interacts with each PDS security layer, autoMode config guidance, and denial thresholds.
+- **CI/CD and headless guidance** — `/pds:sandbox` and whitepaper document Anthropic's recommended permission modes for CI/CD (`dontAsk` or `acceptEdits` + `--allowedTools`, not auto mode).
+- **`dontAsk` and `auto` permission modes** — documented in whitepaper permission tiers and `/pds:team` skill.
+- **Auto mode notes in agents** — researcher, reviewer, auditor document that `plan` mode is overridden in auto mode.
+- **autoMode deep-merge** — `install.sh` preserves user customizations (org-specific environment entries) across PDS upgrades via array union + deduplication.
 
 ### Changed
 - **Grill skill rewritten as interactive Q&A** — Each step proposes analysis and asks clarifying questions. Mermaid diagrams for architecture boundaries and failure flows. Plan mode enforced via `EnterPlanMode` (#69)
@@ -18,11 +24,21 @@ All notable changes to this project will be documented in this file.
 - **Two-phase orchestrator delegation** — Fixes agent lifecycle bug where orchestrator terminated after plan presentation. Phase 1 returns plan, parent handles approval, Phase 2+ executes (#69)
 - **Non-interactive git operations** — Replaced `git rebase -i` with `--autosquash` and `reset --soft` in finish and merge skills
 - **Stop hook improved** — Recognizes orchestration/review sessions as non-code and passes them through
+- **Security model: 7 layers → 6** — removed Layer 3 (PermissionRequest hook / LLM-as-judge). Remaining layers renumbered. Whitepaper, `/pds:sandbox`, and `/pds:audit-config` updated.
+- **install.sh** — `autoMode` arrays deep-merged instead of overwritten. Project-level installs (`--project`) skip `autoMode` since the classifier reads user/local settings only. Cleanup now removes stale `autoMode` from project settings.
+- **Force push via permission prompt** — Force push (`--force`, `--force-with-lease`) moved from unconditional deny to normal permission flow. User is prompted in interactive modes; classifier evaluates in auto mode. Protected branch pushes remain unconditionally blocked.
 
 ### Fixed
 - **pr-review `{owner}/{repo}` placeholders** — Now resolves dynamically via `gh repo view`
 - **Stale grill step references** — Updated "step 9" → "step 10" in swarm, team, and teams docs
 - **Gate script jq dependency** — PR and teardown gates now check for jq availability, fail open gracefully
+
+### Removed
+- **`autoMode.soft_deny`** — removed from PDS config. Claude Code's built-in defaults apply unmodified. PDS static deny rules cover the critical cases.
+- **PermissionRequest hook** — removed from `hooks/hooks.json`. Its deny patterns were 100% duplicated by static deny rules. Auto mode classifier replaces its dynamic evaluation with broader context.
+
+### Deprecated
+- **`/pds:permission-router` skill** — marked deprecated (not deleted). Redirects to `/pds:sandbox` for current security model.
 
 ### Eval Results
 - Grill eval (N=10, sonnet/sonnet): 60% overall [46%-72%]

@@ -16,7 +16,7 @@ Skills encode team knowledge and workflows. Claude reads and follows them automa
 | `/pds:worktree` | Git worktree workflow | Branch isolation, parallel work |
 | `/pds:instinct` | Pattern capture and lifecycle | Recording, reviewing, and promoting engineering patterns |
 | `/pds:sandbox` | OS-level sandbox configuration | Filesystem confinement, network restrictions |
-| `/pds:permission-router` | Permission hook routing policy | Subagent permission requests |
+| `/pds:permission-router` | **Deprecated** — see /pds:sandbox | — |
 | `/pds:audit-config` | Configuration security audit | After install, periodic review |
 | `/pds:trim` | Context efficiency maintenance | Reducing skill/agent token footprint |
 | `/pds:contribute` | PDS contribution workflow | Before modifying PDS artifacts |

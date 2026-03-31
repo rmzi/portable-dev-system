@@ -32,7 +32,7 @@ PDS is a Claude Code plugin. Skills and agents are distributed via the plugin sy
 | `/pds:worktree` | Branch isolation, parallel work |
 | `/pds:instinct` | Record, review, and promote engineering patterns |
 | `/pds:sandbox` | OS-level sandbox config, network allowlist |
-| `/pds:permission-router` | Permission hook policy, subagent routing |
+| `/pds:permission-router` | **Deprecated** — see /pds:sandbox |
 | `/pds:audit-config` | Verify PDS setup is correct and secure |
 | `/pds:trim` | Context efficiency maintenance |
 | `/pds:contribute` | Contributing to PDS itself — whitepaper alignment |
@@ -54,7 +54,7 @@ See `/pds:team` for the 8-agent roster (orchestrator, researcher, worker, valida
 .claude-plugin/    — Plugin manifest (plugin.json)
 agents/            — 8 agent definitions + shared-rules.md
 skills/            — 21 workflow skills (dir/SKILL.md format)
-hooks/             — Quality gates (SessionStart, Stop, TaskCompleted, TeammateIdle, WorktreeCreate, InstructionsLoaded) + PermissionRequest routing
+hooks/             — Quality gates (SessionStart, Stop, TaskCompleted, TeammateIdle, WorktreeCreate, InstructionsLoaded)
 .claude/           — Security settings (deny rules, sandbox config) — optional per-project
 docs/              — Philosophy, whitepaper, team setup
 install.sh         — Plugin installer + security settings

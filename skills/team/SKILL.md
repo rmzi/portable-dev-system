@@ -60,6 +60,9 @@ User override: `/pds:swarm lite|med|heavy`. Without argument, auto-selected via 
 | **acceptEdits** | worker, validator, documenter | Auto-accept file edits, full implementation access |
 | **plan** | researcher, reviewer, auditor | Read-only exploration, no file modifications |
 | **acceptEdits** (scoped) | scout | Write limited to `.claude/swarm/scout-report.md`, `.claude/instincts.md`, and `.claude/eval-results.md` |
+| **auto** | all (when user enables) | Sonnet classifier evaluates each tool call — overrides agent-declared modes |
+
+**Note**: In auto mode, agent-declared `permissionMode` values (`plan`, `acceptEdits`, `default`) are overridden by the classifier. Behavioral constraints in agent `.md` files and the classifier's context awareness provide enforcement. Static deny rules and the sandbox are unaffected.
 
 ## Coordination Model
 

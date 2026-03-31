@@ -120,15 +120,14 @@ Agents must operate within well-defined boundaries. Unrestricted access to produ
 
 **Defense-in-Depth Model**:
 
-PDS layers seven enforcement mechanisms, from OS-level sandboxing to human review:
+PDS layers six enforcement mechanisms, from OS-level sandboxing to human review:
 
 1. **OS-level sandbox** — Claude Code's native sandbox (Seatbelt on macOS, bubblewrap on Linux) confines Bash commands: filesystem writes are restricted to the working directory, network access is limited to an allowlist of domains. This is the hard floor — no prompt injection or agent confusion can bypass OS-level enforcement.
-2. **Static deny rules** — Pattern-matched rules in `settings.json` block credential paths, protected branches, sensitive files, and production patterns across all tools.
-3. **Permission hooks** — An LLM-as-judge `PermissionRequest` hook evaluates subagent requests not covered by static rules (see `/permission-router` skill). Hooks now receive `agent_id` and `agent_type` in all hook events (Claude Code 2.1.69), enabling agent-aware decisions — the same hook can apply different policy depending on whether the requestor is a worker, validator, or orchestrator. HTTP hooks (Claude Code 2.1.63) allow quality gates to call external services for policy enforcement.
-4. **PreToolUse phase gates** — Agent-level hooks that enforce SDLC phase transitions mechanically. A forward-only phase state machine (`.claude/swarm/phase`) tracks the current phase; gates validate both phase state and required artifacts. The orchestrator's PR gate blocks `gh pr create` unless phase ≥ `consolidate` and validation + review reports exist; its teardown gate blocks `TeamDelete` unless phase = `knowledge` and all three phase artifacts exist. Phase checks are defense-in-depth — if the phase file is absent, gates fall through to artifact-only checks. The validator's Stop hook uses an LLM evaluator to verify report completeness. `WorktreeCreate`/`WorktreeRemove` hook events (Claude Code 2.1.50) provide lifecycle gates for worktree operations — creation and cleanup can be audited or blocked. `InstructionsLoaded` events (Claude Code 2.1.69) let hooks audit which rule files are active at session start.
-5. **Agent prompt constraints** — Each agent's `.md` file defines role-specific boundaries ("read-only", "stay in your worktree", "does not fix code").
-6. **Permission modes** — `plan`, `acceptEdits`, `default` control which tools each agent type can access. Orchestrators declare which agent types they can spawn via `Task(agent_type)` restriction syntax (Claude Code 2.1.33), preventing unauthorized agent escalation.
-7. **The human gate** — All changes flow through PR review before reaching production.
+2. **Static deny rules** — Pattern-matched rules in `settings.json` block credential paths, protected branches, sensitive files, and production patterns across all tools. Deny rules are evaluated before any permission mode logic and cannot be overridden.
+3. **PreToolUse phase gates** — Agent-level hooks that enforce SDLC phase transitions mechanically. A forward-only phase state machine (`.claude/swarm/phase`) tracks the current phase; gates validate both phase state and required artifacts. The orchestrator's PR gate blocks `gh pr create` unless phase ≥ `consolidate` and validation + review reports exist; its teardown gate blocks `TeamDelete` unless phase = `knowledge` and all three phase artifacts exist. Phase checks are defense-in-depth — if the phase file is absent, gates fall through to artifact-only checks. The validator's Stop hook uses an LLM evaluator to verify report completeness. `WorktreeCreate`/`WorktreeRemove` hook events (Claude Code 2.1.50) provide lifecycle gates for worktree operations — creation and cleanup can be audited or blocked. `InstructionsLoaded` events (Claude Code 2.1.69) let hooks audit which rule files are active at session start. HTTP hooks (Claude Code 2.1.63) allow quality gates to call external services for policy enforcement.
+4. **Agent prompt constraints** — Each agent's `.md` file defines role-specific boundaries ("read-only", "stay in your worktree", "does not fix code").
+5. **Permission modes** — `plan`, `acceptEdits`, `default`, and `auto` control which tools each agent type can access. Orchestrators declare which agent types they can spawn via `Task(agent_type)` restriction syntax (Claude Code 2.1.33), preventing unauthorized agent escalation. In auto mode, a Sonnet classifier evaluates each tool call — agent-declared modes are overridden, but deny rules, sandbox, and phase gates remain enforced.
+6. **The human gate** — All changes flow through PR review before reaching production.
 
 This approach favors lightweight isolation over heavyweight containers. The sandbox adds OS enforcement without container overhead. The blast radius of a misbehaving worker is limited to its worktree branch. No changes reach production without human approval.
 
@@ -139,6 +138,11 @@ This approach favors lightweight isolation over heavyweight containers. The sand
 | Worker | Yes (writes to CWD) | Package registries only | Own worktree only | None |
 | Validator | Yes (writes to CWD) | Package registries + test DBs | Own worktree + read others | Test DB credentials |
 | Orchestrator | Yes (writes to CWD) | External APIs (Jira, Slack) | All worktrees (read) | API tokens (no prod) |
+
+**Additional Permission Modes**:
+
+- **auto** — A Sonnet classifier evaluates each tool call instead of prompting the user. Reads `autoMode` config from `~/.claude/settings.json` (user-level) for allow/environment context. Static deny rules and the sandbox still apply. Recommended for interactive development.
+- **dontAsk** — Auto-denies every tool not explicitly in the allow list. Fully non-interactive, suitable for CI/CD pipelines where `--allowedTools` restricts the tool surface. Anthropic recommends `dontAsk` or `acceptEdits` + `--allowedTools` for CI/CD, not auto mode.
 
 ### Native Agent Teams
 

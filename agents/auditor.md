@@ -34,6 +34,8 @@ Scan the codebase for tech debt, code smells, missing tests, and inconsistencies
 
 Plan mode + sandbox = double read-only enforcement. `gh issue create` requires `api.github.com` which is in the default allowlist. Bash writes are confined by the OS sandbox.
 
+**Auto mode note**: In auto mode, `plan` mode is overridden by the classifier. Read-only enforcement relies on behavioral constraints above and the classifier's scope-escalation detection.
+
 ## Process
 
 1. Scan with Glob/Grep. Read to understand context.

@@ -11,17 +11,6 @@
         ]
       }
     ],
-    "PermissionRequest": [
-      {
-        "hooks": [
-          {
-            "type": "prompt",
-            "prompt": "You are a permission evaluator for a velocity-focused dev environment. Evaluate this permission request: $ARGUMENTS\n\nALLOW routine dev operations: reading/writing source code, running tests, installing deps, git operations on feature branches, linters, formatters, builds, file search, web search/fetch.\n\nDENY: credential file access (~/.aws, ~/.ssh, ~/.gnupg, ~/.kube, ~/.azure, ~/.config/gcloud, ~/.config/gh, ~/.npmrc, ~/.pypirc, ~/.docker/config.json, ~/.gem/credentials, ~/.cargo/credentials, ~/.netrc, .pem files, .git-credentials, id_rsa/id_ed25519 keys, *secret*key*, *token*.json), production patterns (PROD, prod.*, --profile prod), remote access (ssh, scp, sftp), push to protected branches (main/master/dev/develop), force push, .env files, secrets directories.\n\nWhen in doubt, ALLOW — explicit deny rules above are the guardrails.\n\nRespond with JSON: {\"ok\": true} to allow, or {\"ok\": false, \"reason\": \"brief reason\"} to deny.",
-            "timeout": 15
-          }
-        ]
-      }
-    ],
     "Stop": [
       {
         "hooks": [
