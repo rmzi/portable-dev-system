@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [4.6.0] - 2026-03-31
+## [4.6.1] - 2026-03-31
 
 ### Added
 - **Shared behavioral rules** — `agents/shared-rules.md` with `inherits: shared-rules` in all 8 agents. Common rules for polling guardrails, task claiming, error escalation, and completion protocol (#78, #71, #74)
