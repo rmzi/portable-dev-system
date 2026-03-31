@@ -27,10 +27,10 @@ Read `.claude/settings.json` and verify:
 - [ ] **Remote access denied** (5 pts) — `ssh`, `scp`, `sftp` blocked
 - [ ] **Prod patterns denied** (5 pts) — `PROD`, `prod.*`, `--profile prod`, `--profile=prod` blocked
 
-### 2. Hooks Configuration (10 points)
+### 2. Hooks & Auto Mode Configuration (10 points)
 
 - [ ] **SessionStart hook exists** (5 pts) — Linux sandbox dependency check (in plugin `hooks/hooks.json`)
-- [ ] **PermissionRequest hook exists** (5 pts) — LLM-based policy evaluation (in plugin `hooks/hooks.json`)
+- [ ] **autoMode config present** (5 pts) — `autoMode.allow` and `autoMode.environment` in `~/.claude/settings.json` (user-level, installed by PDS)
 
 ### 3. Structure Completeness (20 points)
 

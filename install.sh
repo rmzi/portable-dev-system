@@ -216,8 +216,8 @@ for event in ['SessionStart', 'PostToolUse', 'PermissionRequest', 'Stop', 'TaskC
 if not data.get('hooks'):
     data.pop('hooks', None)
     changed = True
-# Remove PDS UX keys
-for key in ['spinnerTipsOverride', 'attribution']:
+# Remove PDS UX keys + autoMode (no longer installed at project level)
+for key in ['spinnerTipsOverride', 'attribution', 'autoMode']:
     if key in data:
         data.pop(key)
         changed = True
@@ -233,6 +233,7 @@ with open(path, 'w') as f:
 
 install_security_settings() {
   target_settings="$1"
+  install_level="${2:-user}"  # "user" or "project"
   pds_settings="$SRC_DIR/.claude/settings.json"
 
   if [ ! -f "$pds_settings" ]; then
@@ -261,6 +262,7 @@ install_security_settings() {
 import json, sys
 
 pds_path, target_path = sys.argv[1], sys.argv[2]
+install_level = sys.argv[3] if len(sys.argv) > 3 else 'user'
 with open(pds_path) as f:
     pds = json.load(f)
 with open(target_path) as f:
@@ -273,16 +275,27 @@ if 'env' in pds or 'env' in user:
 
 # PDS-managed keys overwrite (security guardrails + UX)
 for key in ['sandbox', 'permissions', 'spinnerTipsOverride', 'attribution',
-            'worktree', 'autoMode', 'showClearContextOnPlanAccept',
+            'worktree', 'showClearContextOnPlanAccept',
             'plansDirectory', 'showThinkingSummaries', 'defaultView',
             'autoMemoryEnabled', 'autoDreamEnabled', 'fastModePerSessionOptIn']:
     if key in pds:
         user[key] = pds[key]
 
+# autoMode: deep-merge arrays (union + deduplicate) to preserve user customizations
+# Skip for project-level installs — classifier reads user/local settings only
+if 'autoMode' in pds and install_level != 'project':
+    user_am = user.get('autoMode', {})
+    pds_am = dict(pds['autoMode'])
+    for arr_key in ['allow', 'environment']:
+        merged = list(dict.fromkeys(pds_am.get(arr_key, []) + user_am.get(arr_key, [])))
+        if merged:
+            pds_am[arr_key] = merged
+    user['autoMode'] = pds_am
+
 with open(target_path, 'w') as f:
     json.dump(user, f, indent=2)
     f.write('\n')
-" "$pds_settings" "$target_settings"
+" "$pds_settings" "$target_settings" "$install_level"
   ok "Merged PDS security settings into $target_settings"
 }
 
@@ -369,7 +382,8 @@ install_project() {
   mkdir -p "$TARGET_DIR"
 
   # Install project-level settings (team can override deny rules, domains, etc.)
-  install_security_settings "$TARGET_DIR/settings.json"
+  # autoMode is skipped for project installs — classifier reads user/local settings only
+  install_security_settings "$TARGET_DIR/settings.json" "project"
 
   # Handle CLAUDE.md with PDS markers
   install_claude_md "$SRC_DIR/CLAUDE.md" "CLAUDE.md"
@@ -592,7 +606,7 @@ run_tests() {
   # --- Test 4: Hooks extracted ---
   info "Test: hooks in plugin, not in settings"
   assert_contains "hooks.json" "SessionStart" "$SRC_DIR/hooks/hooks.json"
-  assert_contains "hooks.json" "PermissionRequest" "$SRC_DIR/hooks/hooks.json"
+  assert_not_contains "hooks.json no PermissionRequest" "PermissionRequest" "$SRC_DIR/hooks/hooks.json"
   assert_contains "hooks.json" "Stop" "$SRC_DIR/hooks/hooks.json"
   assert_contains "hooks.json" "TaskCompleted" "$SRC_DIR/hooks/hooks.json"
   assert_contains "hooks.json" "TeammateIdle" "$SRC_DIR/hooks/hooks.json"
@@ -719,19 +733,20 @@ EOF
   "hooks": {
     "SessionStart": [{"hooks": [{"type": "command", "command": "echo version check"}]}],
     "PostToolUse": [{"hooks": [{"type": "command", "command": "echo test reminder"}]}],
-    "PermissionRequest": [{"hooks": [{"type": "prompt", "prompt": "evaluate permissions"}]}],
     "Stop": [{"hooks": [{"type": "prompt", "prompt": "check completion"}]}],
     "TaskCompleted": [{"hooks": [{"type": "command", "command": "echo gate"}]}],
     "TeammateIdle": [{"hooks": [{"type": "command", "command": "echo gate"}]}]
   },
   "spinnerTipsOverride": {"tips": ["test tip"]},
-  "attribution": {"pr": "test"}
+  "attribution": {"pr": "test"},
+  "autoMode": {"allow": ["test"], "environment": ["test"]}
 }
 EOF
   cleanup_hooks "$testdir/hooks-test.json"
   assert "hooks removed"       python3 -c "import json; d=json.load(open('$testdir/hooks-test.json')); assert 'hooks' not in d"
   assert "spinnerTips removed" python3 -c "import json; d=json.load(open('$testdir/hooks-test.json')); assert 'spinnerTipsOverride' not in d"
   assert "attribution removed" python3 -c "import json; d=json.load(open('$testdir/hooks-test.json')); assert 'attribution' not in d"
+  assert "autoMode removed"    python3 -c "import json; d=json.load(open('$testdir/hooks-test.json')); assert 'autoMode' not in d"
   assert "permissions kept"    python3 -c "import json; d=json.load(open('$testdir/hooks-test.json')); assert 'permissions' in d"
   assert "valid JSON after"    python3 -c "import json; json.load(open('$testdir/hooks-test.json'))"
 

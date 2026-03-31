@@ -1,67 +1,26 @@
 ---
-description: Routing subagent permission requests through policy evaluation. Use when configuring or understanding the PermissionRequest hook behavior.
+description: "DEPRECATED — Permission hook removed in v4.6.0. See /pds:sandbox for current security model."
 ---
-# Permission Router
+# Permission Router (Deprecated)
 
-Auto-resolve subagent permission requests via Claude Code's built-in LLM-as-judge prompt hook. No external API key needed — uses the existing session auth.
+> **Deprecated in PDS v4.6.0.** The PermissionRequest hook has been removed. Its deny patterns were 100% duplicated by static deny rules in `permissions.deny`. Auto mode's classifier provides dynamic evaluation with more context. In non-auto modes, deny rules + user prompts provide equivalent coverage.
 
-## How It Works
+## What Changed
 
-A `PermissionRequest` prompt hook in `.claude/settings.json` evaluates every permission request from subagents:
+- The `PermissionRequest` prompt hook in `hooks/hooks.json` has been removed
+- Static deny rules (`permissions.deny` in settings.json) cover all patterns the hook evaluated
+- Auto mode's transcript classifier replaces the hook's dynamic evaluation with broader context (full conversation history vs. single request)
+- In non-auto modes (default, acceptEdits, plan), Claude Code's built-in user prompts handle cases not covered by deny rules
+- The security model has been simplified from 7 layers to 6
 
-1. Subagent requests a permission (e.g., run a bash command, read a file)
-2. Claude Code fires the `PermissionRequest` hook
-3. The prompt hook evaluates the request against allow/deny rules
-4. Returns `{"ok": true}` to approve or `{"ok": false, "reason": "..."}` to deny
+## Migration
 
-No user prompting. No separate API call. The hook runs inline within Claude Code's hook system.
+No action required. Security coverage is unchanged:
+- Credential paths, protected branches, sensitive files, prod patterns → static deny rules (unchanged)
+- Git/docker operations on feature branches → user prompts (non-auto) or classifier (auto mode)
+- Sandboxed Bash → auto-approved by sandbox (unchanged)
 
-## Policy
+## See Also
 
-### Allowed (routine dev operations)
-- Reading/writing source code
-- Running tests, linters, formatters, builds
-- Installing dependencies
-- Git operations on feature branches
-- File search, web search/fetch
-
-### Denied (security guardrails)
-- Credential files: `~/.aws`, `~/.ssh`, `~/.gnupg`, `~/.config/gcloud`, `~/.netrc`, `.pem` files
-- Production patterns: `PROD`, `prod.*`, `--profile prod`
-- Remote access: `ssh`, `scp`, `sftp`
-- Push to protected branches: `main`, `master`, `dev`, `develop`
-- Force push
-- `.env` files, secrets directories
-
-### Default: ALLOW
-
-When a request doesn't match any deny rule, it's approved. The deny list is the guardrail, not the allow list.
-
-## Configuration
-
-The hook lives in `.claude/settings.json` under `hooks.PermissionRequest`. The timeout is 15 seconds — if the evaluation takes longer, the request falls through to normal permission handling.
-
-To verify the hook is configured:
-
-```bash
-jq '.hooks.PermissionRequest' .claude/settings.json
-```
-
-## Relationship to Static Permissions
-
-The static `permissions.allow` and `permissions.deny` lists in `settings.json` still apply. The prompt hook handles cases where static rules don't cover the request — it acts as a dynamic second layer for subagent permission routing.
-
-## Sandbox Interaction
-
-With the sandbox enabled and `Bash(*)` removed from the static allow list, the PermissionRequest hook is the primary gate for non-sandboxed Bash commands. The flow:
-
-1. **Sandboxed Bash** (npm, pip, ls, etc.) — `autoAllowBashIfSandboxed` auto-approves. The hook never fires.
-2. **Excluded commands** (git, docker) — bypass the sandbox entirely. The PermissionRequest hook evaluates them. This means `git commit`, `git push origin feature`, and `docker build` all flow through the hook.
-3. **Unsandboxed commands** — Commands using `dangerouslyDisableSandbox: true` also go through the hook.
-4. **Non-Bash tools** — MCP tools not covered by `mcp__*`, Read/Write on paths not in the allow list, etc.
-
-Deny rules always fire before the hook. A `git push origin main` is blocked by the static deny rule and never reaches the hook.
-
-### Why Bash(*) was removed
-
-Previously `Bash(*)` in the allow list auto-approved all Bash commands including git and docker, making the PermissionRequest hook unreachable. With the sandbox handling routine Bash safety, `Bash(*)` was redundant — and it prevented the hook from meaningfully evaluating git/docker operations. Removing it restores the hook as an active gate for excluded commands while the sandbox continues to auto-approve everything else.
+- `/pds:sandbox` — Current security model (6 layers), auto mode interaction, CI/CD guidance
+- `/pds:audit-config` — Verify your configuration after upgrade

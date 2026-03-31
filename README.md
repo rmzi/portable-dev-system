@@ -64,7 +64,7 @@ make install    # symlinks this checkout as the plugin
 | `/pds:worktree` | Git worktree workflow |
 | `/pds:instinct` | Pattern capture and lifecycle |
 | `/pds:sandbox` | OS-level sandbox configuration |
-| `/pds:permission-router` | Permission hook policy |
+| `/pds:permission-router` | **Deprecated** — see /pds:sandbox |
 | `/pds:audit-config` | Verify PDS config security |
 | `/pds:trim` | Context efficiency maintenance |
 | `/pds:contribute` | Contributing to PDS itself |
@@ -105,7 +105,7 @@ portable-dev-system/
 │   ├── swarm/SKILL.md
 │   ├── team/SKILL.md
 │   └── ...
-├── hooks/hooks.json               # SessionStart, Stop, TaskCompleted, TeammateIdle, WorktreeCreate, InstructionsLoaded hooks + PermissionRequest routing
+├── hooks/hooks.json               # SessionStart, Stop, TaskCompleted, TeammateIdle, WorktreeCreate, InstructionsLoaded hooks
 ├── .claude/settings.json          # Security settings (installed separately)
 ├── install.sh                     # Plugin installer
 ├── VERSION

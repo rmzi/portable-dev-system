@@ -24,9 +24,9 @@ OS-level enforcement for Bash commands via Claude Code's native sandbox (Seatbel
 |-------|-----------|-------|
 | **1. Sandbox** | OS-level (Seatbelt/bubblewrap) | Bash commands: filesystem writes, network |
 | **2. Deny rules** | Static pattern matching in `settings.json` | All tools: credential paths, protected branches, sensitive files |
-| **3. PermissionRequest hook** | LLM-as-judge prompt evaluation | Subagent requests not covered by static rules |
+| **3. Phase gates** | PreToolUse hooks on orchestrator | SDLC phase enforcement, artifact checks |
 | **4. Agent prompts** | Constraints in `agents/*.md` (plugin) | Role-specific behavior (read-only, stay in worktree) |
-| **5. Permission modes** | `plan`, `acceptEdits`, `default` | Tool access per agent type |
+| **5. Permission modes** | `plan`, `acceptEdits`, `default`, `auto` | Tool access per agent type (auto mode: classifier decides) |
 | **6. Human gate** | PR review before merge | All changes before production |
 
 Per-agent differentiation relies on layers 2-6. The sandbox (layer 1) is a shared floor that all agents stand on.
@@ -129,7 +129,7 @@ If a legitimate command fails with "Operation not permitted" or similar:
 
 ### Excluded commands
 
-`git` and `docker` bypass the sandbox entirely. They go through the normal permission flow (deny rules + PermissionRequest hook). This is by design — git needs arbitrary network access for remotes, and docker needs host filesystem access.
+`git` and `docker` bypass the sandbox entirely. They go through the normal permission flow (deny rules + active permission mode). This is by design — git needs arbitrary network access for remotes, and docker needs host filesystem access.
 
 ### Missing Linux dependencies
 
@@ -145,22 +145,27 @@ How a Bash command flows through the full permission stack:
 ```
 Bash command arrives
   → Matches a deny rule? → BLOCKED (credential paths, protected branches, etc.)
-  → Excluded from sandbox (git, docker)? → PermissionRequest hook evaluates
+  → Excluded from sandbox (git, docker)? → Permission mode evaluates
   → Sandboxed + autoAllowBashIfSandboxed? → AUTO-APPROVE (OS-confined)
-  → None of the above → PermissionRequest hook evaluates
+  → None of the above → Permission mode evaluates
 ```
+
+"Permission mode evaluates" means:
+- **default/acceptEdits/plan**: User is prompted to approve or deny
+- **auto**: Sonnet classifier evaluates the action against the conversation transcript
+- **dontAsk**: Auto-denied unless explicitly in the allow list
 
 | Command | Path |
 |---------|------|
 | `npm test`, `pip install`, `ls` | Sandbox auto-approve |
-| `git commit`, `git push origin feature` | PermissionRequest hook → ALLOW |
+| `git commit`, `git push origin feature` | Permission mode (user prompt / auto classifier / dontAsk) |
 | `git push origin main` | Deny rule → BLOCKED |
-| `docker build .` | PermissionRequest hook → ALLOW |
+| `docker build .` | Permission mode (user prompt / auto classifier / dontAsk) |
 | `ssh user@host` | Deny rule → BLOCKED |
 | Read/Write/Edit/Glob/Grep | Static allow list |
 | MCP tools | `mcp__*` allow list |
 
-Deny rules fire first (deny > allow). The sandbox handles routine Bash. The PermissionRequest hook handles git, docker, and anything that falls through.
+Deny rules fire first (deny > allow). The sandbox handles routine Bash. The active permission mode handles everything else.
 
 ## Hook Events
 
@@ -170,7 +175,6 @@ PDS hooks fire on lifecycle events. Relevant events for sandbox and agent auditi
 |-------|-----------|---------------|
 | `PreToolUse` | PreToolUse | Before any tool call — used for deny/allow gates |
 | `PostToolUse` | PostToolUse | After a tool call — used for audit logging |
-| `PermissionRequest` | PermissionRequest | When Claude Code needs a permission decision |
 | `SessionStart` | SessionStart | On session init — used to check Linux sandbox deps |
 | `WorktreeCreate` | PostToolUse | When a worker worktree is provisioned — logged for lifecycle audit |
 | `WorktreeRemove` | PostToolUse | When a worktree is removed after task completion — logged for lifecycle audit |
@@ -180,8 +184,71 @@ PDS hooks fire on lifecycle events. Relevant events for sandbox and agent auditi
 
 **HTTP hooks** (since 2.1.63): Hooks can now be configured as HTTP endpoints in addition to local shell scripts. Useful for centralized audit logging or team-wide permission policies.
 
+## Auto Mode Interaction
+
+Auto mode replaces user permission prompts with a Sonnet classifier that evaluates each tool call. The classifier reads `autoMode` config from `~/.claude/settings.json` (user-level) or `.claude/settings.local.json` (local). It does **not** read `.claude/settings.json` (project-level, checked in).
+
+**How auto mode interacts with PDS layers:**
+
+| Layer | Effect in Auto Mode |
+|-------|--------------------|
+| Sandbox | Unchanged — OS-level enforcement is independent of permission mode |
+| Deny rules | Unchanged — static deny fires before the classifier |
+| Phase gates | Unchanged — PreToolUse hooks run before the classifier |
+| Agent prompts | Behavioral enforcement still active; classifier uses conversation context |
+| Permission modes | Auto mode overrides agent-declared `plan`/`acceptEdits`/`default` — the classifier decides |
+| Human gate | Unchanged — PR review remains the final gate |
+
+**Key point**: Static deny rules and the sandbox provide the hard security floor. Auto mode replaces only the *interactive permission prompts* — it does not bypass deny rules, sandbox restrictions, or phase gates.
+
+### autoMode Config
+
+PDS installs `autoMode` config to `~/.claude/settings.json` via `install.sh`. The config has two sections:
+
+- **`allow`** — Operations the classifier should always permit (worktrees, tests, agent coordination)
+- **`environment`** — Trusted infrastructure descriptions (tells the classifier what "normal" looks like)
+
+To add org-specific entries, create `.claude/settings.local.json`:
+```json
+{
+  "autoMode": {
+    "environment": [
+      "Source control: github.com/your-org",
+      "Internal APIs: api.internal.your-company.com"
+    ]
+  }
+}
+```
+Entries from all scopes are combined (union).
+
+### Denial Thresholds
+
+If the classifier blocks 3 consecutive or 20 total actions in a session, auto mode pauses and falls back to user prompts. These thresholds are not configurable. In non-interactive mode (`claude -p`), the session aborts instead.
+
+## CI/CD and Headless Use
+
+Anthropic recommends `dontAsk` or `acceptEdits` + `--allowedTools` for CI/CD pipelines, **not** auto mode.
+
+**Why not auto mode for CI/CD?**
+- The classifier adds latency and cost per tool call
+- Non-interactive sessions abort on 3 consecutive denials (not configurable)
+- `dontAsk` mode is purpose-built for non-interactive use
+
+**Recommended CI/CD configuration:**
+```bash
+claude -p "your task" \
+  --permission-mode dontAsk \
+  --allowedTools "Read,Write,Edit,Glob,Grep,Bash" \
+  --bare \
+  --max-turns 50
+```
+
+- `--bare` skips auto-discovery of hooks, plugins, MCP servers for reproducibility
+- `--allowedTools` restricts the tool surface to exactly what's needed
+- Static deny rules still apply even in `dontAsk` mode
+- The sandbox still confines Bash writes to the working directory
+
 ## See Also
 
-- `/pds:permission-router` — Hook policy for the PermissionRequest layer
-- `/pds:audit-config` — Verify sandbox is properly configured
+- `/pds:audit-config` — Verify sandbox and autoMode are properly configured
 - `/pds:team` — Agent roles and permission modes
