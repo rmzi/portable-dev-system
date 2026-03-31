@@ -120,14 +120,16 @@ Agents must operate within well-defined boundaries. Unrestricted access to produ
 
 **Defense-in-Depth Model**:
 
-PDS layers six enforcement mechanisms, from OS-level sandboxing to human review:
+PDS layers eight enforcement mechanisms, from OS-level sandboxing to human review:
 
 1. **OS-level sandbox** — Claude Code's native sandbox (Seatbelt on macOS, bubblewrap on Linux) confines Bash commands: filesystem writes are restricted to the working directory, network access is limited to an allowlist of domains. This is the hard floor — no prompt injection or agent confusion can bypass OS-level enforcement.
 2. **Static deny rules** — Pattern-matched rules in `settings.json` block credential paths, protected branches, sensitive files, and production patterns across all tools. Deny rules are evaluated before any permission mode logic and cannot be overridden.
-3. **PreToolUse phase gates** — Agent-level hooks that enforce SDLC phase transitions mechanically. A forward-only phase state machine (`.claude/swarm/phase`) tracks the current phase; gates validate both phase state and required artifacts. The orchestrator's PR gate blocks `gh pr create` unless phase ≥ `consolidate` and validation + review reports exist; its teardown gate blocks `TeamDelete` unless phase = `knowledge` and all three phase artifacts exist. Phase checks are defense-in-depth — if the phase file is absent, gates fall through to artifact-only checks. The validator's Stop hook uses an LLM evaluator to verify report completeness. `WorktreeCreate`/`WorktreeRemove` hook events (Claude Code 2.1.50) provide lifecycle gates for worktree operations — creation and cleanup can be audited or blocked. `InstructionsLoaded` events (Claude Code 2.1.69) let hooks audit which rule files are active at session start. HTTP hooks (Claude Code 2.1.63) allow quality gates to call external services for policy enforcement.
-4. **Agent prompt constraints** — Each agent's `.md` file defines role-specific boundaries ("read-only", "stay in your worktree", "does not fix code").
-5. **Permission modes** — `plan`, `acceptEdits`, `default`, and `auto` control which tools each agent type can access. Orchestrators declare which agent types they can spawn via `Task(agent_type)` restriction syntax (Claude Code 2.1.33), preventing unauthorized agent escalation. In auto mode, a Sonnet classifier evaluates each tool call — agent-declared modes are overridden, but deny rules, sandbox, and phase gates remain enforced.
-6. **The human gate** — All changes flow through PR review before reaching production.
+3. **Permission hooks** — An LLM-as-judge `PermissionRequest` hook evaluates subagent requests not covered by static rules. Hooks receive `agent_id` and `agent_type` in all hook events (Claude Code 2.1.69), enabling agent-aware decisions. HTTP hooks (Claude Code 2.1.63) allow quality gates to call external services for policy enforcement.
+4. **PreToolUse phase gates** — Agent-level hooks that enforce SDLC phase transitions mechanically. A forward-only phase state machine (`.claude/swarm/phase`) tracks the current phase; gates validate both phase state and required artifacts. The orchestrator's PR gate blocks `gh pr create` unless phase ≥ `consolidate` and validation + review reports exist; its teardown gate blocks `TeamDelete` unless phase = `knowledge` and all three phase artifacts exist. Phase checks are defense-in-depth — if the phase file is absent, gates fall through to artifact-only checks. The validator's Stop hook uses an LLM evaluator to verify report completeness. `WorktreeCreate`/`WorktreeRemove` hook events provide lifecycle gates for worktree operations. `InstructionsLoaded` events let hooks audit which rule files are active at session start.
+5. **Agent prompt constraints** — Each agent's `.md` file defines role-specific boundaries ("read-only", "stay in your worktree", "does not fix code"). Shared behavioral rules (`shared-rules.md`) are inherited by all agents via `inherits:` frontmatter.
+6. **Permission modes** — `plan`, `acceptEdits`, `default`, and `auto` control which tools each agent type can access. Orchestrators declare which agent types they can spawn via `Task(agent_type)` restriction syntax, preventing unauthorized agent escalation. In auto mode, a Sonnet classifier evaluates each tool call — agent-declared modes are overridden, but deny rules, sandbox, and phase gates remain enforced.
+7. **The human gate** — All changes flow through PR review before reaching production.
+8. **Observability** — Opt-in telemetry (`.claude/telemetry.jsonl`) tracks skill invocations, agent spawns, and file modifications. Pattern detection (`scripts/detect-patterns.sh`) identifies anomalies: repeated skill invocations suggesting missing automation, agents spawned without work output, and zero-usage skills. This data feeds into the instinct lifecycle, enabling data-driven skill evolution.
 
 This approach favors lightweight isolation over heavyweight containers. The sandbox adds OS enforcement without container overhead. The blast radius of a misbehaving worker is limited to its worktree branch. No changes reach production without human approval.
 
@@ -209,7 +211,24 @@ The lexicon is persistent engineering knowledge spanning tasks and team members.
 
 This auto-evolution means the lexicon grows from work — not from manual documentation efforts. The human gate at promotion (new skill = new committed file = PR review) ensures quality.
 
+**Auto-Detection**: In addition to manual capture, the scout agent can detect instinct-worthy patterns from telemetry data. The detect-patterns script identifies: skills invoked 3+ times per session (suggesting automation opportunities), agents spawned without task completion (suggesting configuration issues), dominant file extensions (suggesting tooling needs), and zero-usage skills (suggesting deprecation candidates). These automated detections appear as draft instincts in the scout report for human review.
+
 Agents query `.claude/instincts.md` during planning (Phase 1) and execution, avoiding repeated mistakes and building on proven patterns.
+
+### Observability
+
+PDS instruments its own usage through opt-in telemetry. When enabled (PDS_TELEMETRY=1), hook scripts append JSONL events to .claude/telemetry.jsonl:
+
+- **Skill invocations**: Which skills are used, how often, by which sessions
+- **Agent spawns**: Which agent types are created during swarms
+- **File modifications**: Which files are edited, by file extension
+- **Lifecycle events**: Worktree creation, instruction loading
+
+All data is local — nothing leaves the developer's machine. The telemetry file is gitignored by default. The `/telemetry` skill provides management commands: enable, disable, view reports, and rotate logs.
+
+A pattern detection script (scripts/detect-patterns.sh) analyzes telemetry for instinct-worthy patterns: repeated skill invocations within a session, agents spawned without corresponding work output, dominant file extensions suggesting specialized tooling needs, and zero-usage skills that may warrant deprecation. The scout agent runs this analysis during Phase 6, producing draft instinct entries for human review.
+
+This closes the feedback loop between usage and methodology: PDS can now identify which parts of the system are actually used and which are dead weight, enabling data-driven decisions about skill promotion, retirement, and optimization.
 
 ---
 
@@ -362,6 +381,8 @@ Direct work favors: continuous judgment, ambiguous requirements.
 
 Agent configuration files consume context window. Compression is tempting but has a fidelity cliff — beyond a threshold, agents lose operational knowledge and produce worse results [3].
 
+**Context Preservation**: PreCompact and PostCompact hooks preserve PDS swarm state across context compaction events. Before compaction, a snapshot captures the current phase, tier, and task summary. After compaction, this snapshot is re-injected as additional context, preventing the loss of swarm coordination state during long-running sessions.
+
 ### What's Safe to Compress
 
 - **Decorative formatting**: Horizontal rule dividers (`---`), excessive blank lines, redundant section headers. Markdown headers provide sufficient hierarchy.
@@ -493,6 +514,12 @@ This is a starting point. The model evolves with implementation experience and i
 **Acceptance Criteria**: Specific, mechanically verifiable conditions defining task completion.
 
 **Phase Gate**: A mechanical enforcement point (PreToolUse hook or prompt evaluator) that blocks phase transitions unless required artifacts exist. Prevents SDLC phases from being skipped.
+
+**Telemetry**: Opt-in, local-only JSONL logging of PDS skill, agent, and file usage. Disabled by default (`PDS_TELEMETRY=0`). Managed via `/telemetry` skill.
+
+**Context Preservation**: PreCompact/PostCompact hook pair that snapshots and re-injects PDS swarm state across context compaction events.
+
+**Auto-Instinct**: Scout-driven pattern detection from telemetry data during Phase 6 (Knowledge). `scripts/detect-patterns.sh` proposes instinct entries for recurring usage patterns.
 
 **Swarm Artifacts**: Phase reports written to `.claude/swarm/` during a swarm — `validation-report.md` (Phase 4), `review-report.md` (Phase 5), `scout-report.md` (Phase 6). Required by phase gates for PR creation and team teardown.
 

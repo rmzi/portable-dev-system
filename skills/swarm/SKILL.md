@@ -187,7 +187,7 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
    ```
    Task(scout, team_name="project-name", name="scout",
         model="<tier-model>",
-        prompt="Read .claude/instincts.md. Update counts for re-observed patterns. Propose new instincts. Flag high-confidence patterns for skill promotion. Run /pds:eval on skills exercised in this swarm. Write report to .claude/swarm/scout-report.md. Send summary via SendMessage when done.")
+        prompt="Read .claude/instincts.md. Update counts for re-observed patterns. Propose new instincts. Flag high-confidence patterns for skill promotion. Run /pds:eval on skills exercised in this swarm. If telemetry exists, run scripts/detect-patterns.sh and include results in the report. Write report to .claude/swarm/scout-report.md. Send summary via SendMessage when done.")
    ```
    Tier models — lite: `model="haiku"` (default). Med: omit (haiku default). Heavy: `model="sonnet"`.
 2. **Heavy tier only**: Spawn auditor for tech debt scan:
@@ -197,14 +197,15 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
    ```
 3. Scout writes report to `.claude/swarm/scout-report.md` **(required — TeamDelete gate checks for this file)**
 4. Scout updates observation counts, proposes new patterns, flags promotions (human-gated — new skill = new file = PR review). Scout also runs skill evals per `/pds:eval`.
-5. **Shutdown all agents** before cleanup:
+5. **Telemetry analysis**: If `.claude/telemetry.jsonl` exists, scout runs `scripts/detect-patterns.sh` to detect usage patterns and proposes instinct entries for recurring patterns. Results appear in `### Telemetry-Detected Patterns` section of the scout report.
+6. **Shutdown all agents** before cleanup:
    ```
    SendMessage(type="shutdown_request", recipient="worker-auth", content="Work complete, shutting down.")
    SendMessage(type="shutdown_request", recipient="validator", content="Work complete, shutting down.")
    # ... for each active agent
    ```
    Wait for `shutdown_response` from each agent before proceeding.
-6. Clean up: `TeamDelete`
+7. Clean up: `TeamDelete`
    **Note:** The teardown gate blocks `TeamDelete` unless phase is `knowledge` AND all 3 reports exist. TeamDelete also **fails if agents are still active** — always shut down first.
 
 ## Phase Gates

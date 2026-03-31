@@ -18,7 +18,7 @@ PDS is a Claude Code plugin. Skills and agents are distributed via the plugin sy
 
 **Before performing ANY action, check if a skill exists for it. If a relevant skill exists, read it FIRST.**
 
-### Available Skills (21)
+### Available Skills (23)
 
 | Skill | When to Use |
 |-------|-------------|
@@ -39,6 +39,8 @@ PDS is a Claude Code plugin. Skills and agents are distributed via the plugin sy
 | `/pds:bugfix` | Test-first bug fix loop |
 | `/pds:bump` | Version bump and changelog update |
 | `/pds:eval` | Test whether skills produce correct agent behavior |
+| `/pds:telemetry` | Manage usage telemetry — enable, disable, view reports |
+| `/pds:inspect` | Check current PDS state — swarm, telemetry, agents |
 | `/pds:bcp` | Finalize work — bump, commit, push |
 | `/pds:rebase` | Focused rebase against target branch |
 | `/pds:pr-review` | Address PR review comments systematically |
@@ -53,8 +55,9 @@ See `/pds:team` for the 8-agent roster (orchestrator, researcher, worker, valida
 ```
 .claude-plugin/    — Plugin manifest (plugin.json)
 agents/            — 8 agent definitions + shared-rules.md
-skills/            — 21 workflow skills (dir/SKILL.md format)
-hooks/             — Quality gates (SessionStart, Stop, TaskCompleted, TeammateIdle, WorktreeCreate, InstructionsLoaded)
+skills/            — 23 workflow skills (dir/SKILL.md format)
+hooks/             — Quality gates (SessionStart, Stop, TaskCompleted, TeammateIdle, SubagentStart, PreCompact, PostCompact, UserPromptSubmit, PostToolUse, WorktreeCreate, InstructionsLoaded) + PermissionRequest routing
+scripts/           — Utility scripts (telemetry-summary, detect-patterns)
 .claude/           — Security settings (deny rules, sandbox config) — optional per-project
 docs/              — Philosophy, whitepaper, team setup
 install.sh         — Plugin installer + security settings
