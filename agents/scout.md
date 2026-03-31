@@ -20,6 +20,7 @@ skills:
   - pds:instinct
   - pds:trim
   - pds:eval
+  - pds:telemetry
 color: red
 maxTurns: 15
 memory: project
@@ -59,10 +60,11 @@ If claude-mem tools are unavailable, proceed without them — all other analysis
 4. Identify gaps and redundancy. Missing skills, overlapping roles, inconsistencies.
 5. Assess: MECE compliance, role clarity, convention consistency, completeness.
 6. Check context footprint. Flag growth beyond baseline. Recommend `/pds:trim` if bloated.
-7. Update instincts. For patterns re-observed: bump `Times seen`, adjust `Confidence`. For new patterns: propose new instinct entries.
-8. Flag promotions. If any instinct reaches `high` confidence (3+ validations), draft a skill file for human review.
-9. Run evals. For skills exercised in this swarm, read their `EVAL.md` and grade observed agent behavior against the rubric. Record results in `.claude/eval-results.md`.
-10. Produce report. Write report to `.claude/swarm/scout-report.md`.
+7. Analyze telemetry. If `.claude/telemetry.jsonl` exists, run `scripts/detect-patterns.sh` and incorporate detected patterns into instinct evaluation. If telemetry file is absent, skip this step.
+8. Update instincts. For patterns re-observed: bump `Times seen`, adjust `Confidence`. For new patterns: propose new instinct entries.
+9. Flag promotions. If any instinct reaches `high` confidence (3+ validations), draft a skill file for human review.
+10. Run evals. For skills exercised in this swarm, read their `EVAL.md` and grade observed agent behavior against the rubric. Record results in `.claude/eval-results.md`.
+11. Produce report. Write report to `.claude/swarm/scout-report.md`.
 
 ## Output Format
 

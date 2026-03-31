@@ -50,7 +50,7 @@ make install    # symlinks this checkout as the plugin
 
 ---
 
-## Skills (21)
+## Skills (23)
 
 | Skill | Purpose |
 |-------|---------|
@@ -63,6 +63,8 @@ make install    # symlinks this checkout as the plugin
 | `/pds:merge` | Merging subtask worktrees back |
 | `/pds:worktree` | Git worktree workflow |
 | `/pds:instinct` | Pattern capture and lifecycle |
+| `/pds:telemetry` | Usage telemetry — enable, disable, view reports, rotate |
+| `/pds:inspect` | Real-time PDS state — swarm phase, tier, agents, telemetry |
 | `/pds:sandbox` | OS-level sandbox configuration |
 | `/pds:permission-router` | **Deprecated** — see /pds:sandbox |
 | `/pds:audit-config` | Verify PDS config security |
@@ -101,13 +103,18 @@ make install    # symlinks this checkout as the plugin
 portable-dev-system/
 ├── .claude-plugin/plugin.json     # Plugin manifest
 ├── agents/                        # 8 agent definitions + shared-rules.md
-├── skills/                        # 21 skills (dir/SKILL.md format)
+├── skills/                        # 23 skills (dir/SKILL.md format)
 │   ├── swarm/SKILL.md
-│   ├── team/SKILL.md
+│   ├── telemetry/SKILL.md         # Usage telemetry management
+│   ├── inspect/SKILL.md           # Real-time PDS state viewer
 │   └── ...
-├── hooks/hooks.json               # SessionStart, Stop, TaskCompleted, TeammateIdle, WorktreeCreate, InstructionsLoaded hooks
+├── hooks/hooks.json               # 12 hook events: SessionStart, Stop, TaskCompleted, TeammateIdle, PostToolUse, SubagentStart, PreCompact, PostCompact, UserPromptSubmit, WorktreeCreate, InstructionsLoaded + PermissionRequest
+├── hooks/scripts/                 # Hook implementation scripts
+├── scripts/                       # Utility scripts (telemetry-summary, detect-patterns)
+├── docs/                          # Philosophy, whitepaper, team setup, source analysis
 ├── .claude/settings.json          # Security settings (installed separately)
 ├── install.sh                     # Plugin installer
+├── Makefile                       # make telemetry, make install
 ├── VERSION
 └── CHANGELOG.md
 ```
@@ -147,6 +154,9 @@ Most projects need **zero local PDS files**. The plugin provides everything. Add
 | [Philosophy](docs/philosophy.md) | Principles and motivation |
 | [Team Setup](docs/teams.md) | Agent roster, permissions, team onboarding |
 | [Whitepaper](docs/whitepaper.md) | Full technical depth — phases, isolation, governance |
+| [Claude Code Source Analysis](docs/claude-code-source-analysis.md) | Architecture reverse-engineering (March 2026 snapshot) |
+| [Extension Point Catalog](docs/claude-code-extension-catalog.md) | Hook events, settings hierarchy, plugin capabilities reference |
+| [Competitive Analysis](docs/competitive-analysis.md) | Market positioning vs. other AI dev tools |
 
 ---
 

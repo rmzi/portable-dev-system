@@ -2,7 +2,7 @@
 
 Skills encode team knowledge and workflows. Claude reads and follows them automatically. PDS skills are namespaced with `pds:` prefix.
 
-## Plugin Skills (21)
+## Plugin Skills (23)
 
 | Skill | Purpose | When to Use |
 |-------|---------|-------------|
@@ -23,6 +23,8 @@ Skills encode team knowledge and workflows. Claude reads and follows them automa
 | `/pds:bugfix` | Test-first bug fix loop | When a bug needs a verified fix |
 | `/pds:bump` | Version and changelog updates | Releasing new versions |
 | `/pds:eval` | Skill evaluation and testing | After skill changes, periodic review, model upgrades |
+| `/pds:inspect` | Real-time PDS state inspection | Checking swarm status, telemetry, agent health |
+| `/pds:telemetry` | Usage telemetry management | Enabling/disabling telemetry, viewing reports |
 | `/pds:bcp` | Finalize work — bump, commit, push | Quick ship: work done, ready to push |
 | `/pds:rebase` | Focused branch rebase | Updating feature branch with upstream changes |
 | `/pds:pr-review` | Address PR review comments | PR has review feedback to resolve |

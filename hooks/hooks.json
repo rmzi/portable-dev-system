@@ -44,12 +44,78 @@
         ]
       }
     ],
+    "PostToolUse": [
+      {
+        "matcher": "Skill|Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/telemetry-log.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/file-telemetry-log.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/roster-check.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/pre-compact-snapshot.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/post-compact-inject.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/skill-hint.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
     "WorktreeCreate": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "INPUT=$(cat); NAME=$(echo \"$INPUT\" | jq -r '.name // \"unknown\"'); echo \"[PDS] Worktree created: $NAME at $(date -u +%Y-%m-%dT%H:%M:%SZ)\" >> .claude/swarm/worktree-events.log"
+            "command": "INPUT=$(cat); NAME=$(echo \"$INPUT\" | jq -r '.name // \"unknown\"'); [ \"${PDS_TELEMETRY:-0}\" = \"1\" ] && mkdir -p .claude && printf '{\"ts\":\"%s\",\"event\":\"worktree_created\",\"name\":\"%s\",\"session\":\"%s\"}\\n' \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\" \"$NAME\" \"${CLAUDE_SESSION_ID:-unknown}\" >> .claude/telemetry.jsonl; exit 0"
           }
         ]
       }
@@ -59,7 +125,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo \"[PDS] Instructions loaded at $(date -u +%Y-%m-%dT%H:%M:%SZ)\" >> .claude/swarm/audit.log"
+            "command": "[ \"${PDS_TELEMETRY:-0}\" = \"1\" ] && mkdir -p .claude && printf '{\"ts\":\"%s\",\"event\":\"instructions_loaded\",\"session\":\"%s\"}\\n' \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\" \"${CLAUDE_SESSION_ID:-unknown}\" >> .claude/telemetry.jsonl; exit 0"
           }
         ]
       }
