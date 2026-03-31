@@ -515,6 +515,12 @@ This is a starting point. The model evolves with implementation experience and i
 
 **Phase Gate**: A mechanical enforcement point (PreToolUse hook or prompt evaluator) that blocks phase transitions unless required artifacts exist. Prevents SDLC phases from being skipped.
 
+**Telemetry**: Opt-in, local-only JSONL logging of PDS skill, agent, and file usage. Disabled by default (`PDS_TELEMETRY=0`). Managed via `/telemetry` skill.
+
+**Context Preservation**: PreCompact/PostCompact hook pair that snapshots and re-injects PDS swarm state across context compaction events.
+
+**Auto-Instinct**: Scout-driven pattern detection from telemetry data during Phase 6 (Knowledge). `scripts/detect-patterns.sh` proposes instinct entries for recurring usage patterns.
+
 **Swarm Artifacts**: Phase reports written to `.claude/swarm/` during a swarm — `validation-report.md` (Phase 4), `review-report.md` (Phase 5), `scout-report.md` (Phase 6). Required by phase gates for PR creation and team teardown.
 
 **Swarm Tier**: One of three cost/capability levels (lite, med, heavy) that control model selection and specialist inclusion for a swarm. Set during Phase 1 grill, stored in `.claude/swarm/tier`. Lite uses haiku workers for routine tasks. Med uses sonnet workers (the default). Heavy uses opus for reasoning-heavy roles with full specialist roster.

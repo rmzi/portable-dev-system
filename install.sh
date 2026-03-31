@@ -34,6 +34,12 @@ ok()    { printf '  \033[1;32m✓\033[0m %s\n' "$1"; }
 warn()  { printf '  \033[1;33m!\033[0m %s\n' "$1"; }
 err()   { printf '  \033[1;31m✗\033[0m %s\n' "$1" >&2; }
 
+check_jq() {
+  if ! command -v jq >/dev/null 2>&1; then
+    warn "jq not found. PDS telemetry requires jq. Install: brew install jq (macOS) or apt install jq (Linux)"
+  fi
+}
+
 # --- Usage ---
 usage() {
   cat <<'EOF'
@@ -277,7 +283,8 @@ if 'env' in pds or 'env' in user:
 for key in ['sandbox', 'permissions', 'spinnerTipsOverride', 'attribution',
             'worktree', 'showClearContextOnPlanAccept',
             'plansDirectory', 'showThinkingSummaries', 'defaultView',
-            'autoMemoryEnabled', 'autoDreamEnabled', 'fastModePerSessionOptIn']:
+            'autoMemoryEnabled', 'autoDreamEnabled', 'fastModePerSessionOptIn',
+            'statusLine']:
     if key in pds:
         user[key] = pds[key]
 
@@ -304,6 +311,8 @@ with open(target_path, 'w') as f:
 install_plugin() {
   PLUGIN_TARGET="$HOME/.claude/plugins/pds"
   SETTINGS_TARGET="$HOME/.claude/settings.json"
+
+  check_jq
 
   mkdir -p "$PLUGIN_TARGET"
 
@@ -341,11 +350,43 @@ install_plugin() {
   fi
 
   echo ""
-  ok "PDS v4 plugin installed!"
+  ok "PDS v5 plugin installed!"
   echo "    Plugin: ~/.claude/plugins/pds/"
   echo "    Settings: ~/.claude/settings.json"
-  echo "    Skills: /pds:swarm, /pds:grill, /pds:verify, etc."
-  echo "    Agents: orchestrator, worker, validator, etc."
+  echo "    Skills: /pds:swarm, /pds:grill, /pds:verify, /pds:telemetry, etc."
+  echo "    Agents: orchestrator, worker, validator, scout, etc."
+
+  # Telemetry opt-in
+  printf '\n'
+  printf '  Enable usage telemetry? (local-only, opt-in) [y/N] '
+  if [ -t 0 ]; then
+    read -r telemetry_choice
+  else
+    telemetry_choice="n"
+  fi
+  case "$telemetry_choice" in
+    [yY]|[yY][eE][sS])
+      if command -v python3 >/dev/null 2>&1; then
+        python3 -c "
+import json, sys
+path = sys.argv[1]
+try:
+    with open(path) as f: data = json.load(f)
+except: data = {}
+data.setdefault('env', {})['PDS_TELEMETRY'] = '1'
+with open(path, 'w') as f:
+    json.dump(data, f, indent=2)
+    f.write('\n')
+" "$SETTINGS_TARGET"
+        ok "Telemetry enabled (PDS_TELEMETRY=1 in settings)"
+      else
+        warn "Set PDS_TELEMETRY=1 in ~/.claude/settings.json to enable"
+      fi
+      ;;
+    *)
+      info "Telemetry disabled (default). Enable later with /pds:telemetry on"
+      ;;
+  esac
 
   # Check for sandbox dependencies on Linux
   if [ "$(uname)" = "Linux" ]; then

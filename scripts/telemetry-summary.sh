@@ -53,8 +53,8 @@ echo ""
 
 # File modifications by extension
 echo "File Modifications by Extension:"
-jq -r 'select(.event == "file_modified") | .name' "$TELEMETRY_FILE" 2>/dev/null \
-  | sed 's/.*\./\./' | sort | uniq -c | sort -rn \
+jq -r 'select(.event == "file_modified") | .ext // (.path | split(".") | last)' "$TELEMETRY_FILE" 2>/dev/null \
+  | sort | uniq -c | sort -rn \
   | while read -r count ext; do
       printf "  %-20s %s\n" "$ext" "$count"
     done

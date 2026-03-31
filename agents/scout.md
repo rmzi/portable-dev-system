@@ -8,6 +8,7 @@ tools:
   - Glob
   - Grep
   - Write
+  - Edit
   - TaskGet
   - SendMessage
   - mcp__plugin_claude-mem_mcp-search__search
@@ -60,7 +61,8 @@ If claude-mem tools are unavailable, proceed without them — all other analysis
 4. Identify gaps and redundancy. Missing skills, overlapping roles, inconsistencies.
 5. Assess: MECE compliance, role clarity, convention consistency, completeness.
 6. Check context footprint. Flag growth beyond baseline. Recommend `/pds:trim` if bloated.
-7. Analyze telemetry. If `.claude/telemetry.jsonl` exists, run `scripts/detect-patterns.sh` and incorporate detected patterns into instinct evaluation. If telemetry file is absent, skip this step.
+7. Analyze telemetry. If `.claude/telemetry.jsonl` exists, run `scripts/detect-patterns.sh` (or `$CLAUDE_PLUGIN_ROOT/scripts/detect-patterns.sh`) and incorporate detected patterns into instinct evaluation. If telemetry file is absent, skip this step.
+7a. Include detect-patterns.sh output in the report under `### Telemetry-Detected Patterns` and summarize usage stats under `### Usage`.
 8. Update instincts. For patterns re-observed: bump `Times seen`, adjust `Confidence`. For new patterns: propose new instinct entries.
 9. Flag promotions. If any instinct reaches `high` confidence (3+ validations), draft a skill file for human review.
 10. Run evals. For skills exercised in this swarm, read their `EVAL.md` and grade observed agent behavior against the rubric. Record results in `.claude/eval-results.md`.
@@ -85,6 +87,13 @@ If claude-mem tools are unavailable, proceed without them — all other analysis
 - **Passed**: [skill] — all scenarios pass
 - **Regressed**: [skill] — [scenario] failed, was passing
 - **New**: [skill] — first eval run, results: [summary]
+### Usage
+- **Date range**: [first entry] to [last entry]
+- **Top skills**: [skill]: N invocations, ...
+- **Top agents**: [type]: N spawns, ...
+- **File hotspots**: [ext]: N edits, ...
+### Telemetry-Detected Patterns
+- **[Pattern]**: [type] — [evidence summary]
 ### Observations
 - [Patterns or insights worth noting]
 ```
