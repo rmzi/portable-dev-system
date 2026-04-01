@@ -2,40 +2,49 @@
 
 Reference for Claude Code's hook lifecycle events, settings hierarchy, and plugin capabilities. Cross-references docs/claude-code-source-analysis.md for deeper context.
 
-## Hook Events (28)
+## Hook Events
 
-| Event | Category | When It Fires | Input Fields | PDS Status |
-|-------|----------|--------------|-------------|------------|
-| SessionStart | Session | Session begins | session_id, cwd | Active — injects PDS context |
-| SessionEnd | Session | Session ends | session_id, duration | Not used |
-| Setup | Session | First-time setup | — | Not used |
-| PreToolUse | Tool | Before tool executes | tool_name, tool_input | Active — orchestrator phase gates |
-| PostToolUse | Tool | After tool succeeds | tool_name, tool_input, tool_output | Active — telemetry logger (Skill|Agent), file telemetry (Write|Edit) |
-| PostToolUseFailure | Tool | After tool fails | tool_name, tool_input, error | Not used |
-| SubagentStart | Agent | Agent/subagent spawned | agent_type, agent_id, parent_id | Active — roster check |
-| SubagentStop | Agent | Agent/subagent exits | agent_type, agent_id, exit_reason | Not used |
-| TeammateIdle | Agent | Teammate has no work | agent_id, agent_type | Active — uncommitted changes check |
-| TaskCreated | Task | Task created | task_id, task_subject | Not used |
-| TaskCompleted | Task | Task marked complete | task_id, task_subject, cwd | Active — test runner gate |
-| PreCompact | Context | Before context compaction | — | Active — swarm state snapshot |
-| PostCompact | Context | After context compaction | — | Active — state re-injection |
-| InstructionsLoaded | Context | CLAUDE.md/rules files loaded | file_paths | Active — telemetry (JSONL) |
-| PermissionRequest | Permission | Tool needs permission | tool_name, arguments | Active — LLM-based allow/deny |
-| PermissionDenied | Permission | Permission was denied | tool_name, reason | Not used |
-| FileChanged | File | Watched file modified | file_path | Not used |
-| CwdChanged | File | Working directory changed | old_cwd, new_cwd | Not used |
-| WorktreeCreate | File | Git worktree created | name, path | Active — telemetry (JSONL) |
-| WorktreeRemove | File | Git worktree removed | name, path | Not used |
-| Stop | Lifecycle | Model wants to stop | arguments | Active — completion verifier |
-| StopFailure | Lifecycle | Stop hook rejected | reason | Not used |
-| Notification | Lifecycle | System notification | message | Not used |
-| ConfigChange | Lifecycle | Settings changed | changed_keys | Not used |
-| UserPromptSubmit | Interaction | User sends a message | prompt | Active — skill hints |
-| Elicitation | Interaction | Model asks user question | question | Not used |
-| ElicitationResult | Interaction | User answers elicitation | answer | Not used |
-| Custom | Internal | Internal callbacks | varies | Not used |
+Claude Code provides **28 hook events**. PDS uses **12** of them. The table below shows all events — active PDS hooks are marked with their purpose.
 
-Note: 'Input Fields' are approximations based on source analysis. Exact schemas may vary.
+### Active in PDS (12)
+
+| Event | Category | When It Fires | PDS Hook |
+|-------|----------|--------------|----------|
+| SessionStart | Session | Session begins | Context injection (`session-start.sh`) |
+| PreToolUse | Tool | Before tool executes | Orchestrator phase gates |
+| PostToolUse | Tool | After tool succeeds | Telemetry logger (Skill\|Agent), file telemetry (Write\|Edit) |
+| SubagentStart | Agent | Agent/subagent spawned | Roster check (`roster-check.sh`) |
+| TeammateIdle | Agent | Teammate has no work | Uncommitted changes check (`teammate-idle-gate.sh`) |
+| TaskCompleted | Task | Task marked complete | Test runner gate (`task-completed-gate.sh`) |
+| PreCompact | Context | Before context compaction | Swarm state snapshot (`pre-compact-snapshot.sh`) |
+| PostCompact | Context | After context compaction | State re-injection (`post-compact-inject.sh`) |
+| InstructionsLoaded | Context | CLAUDE.md/rules files loaded | Telemetry (`instructions-telemetry.sh`) |
+| WorktreeCreate | File | Git worktree created | Telemetry (`worktree-telemetry.sh`) |
+| Stop | Lifecycle | Model wants to stop | Completion verifier (prompt hook) |
+| UserPromptSubmit | Interaction | User sends a message | Skill hints (`skill-hint.sh`) |
+
+### Unused (16)
+
+| Event | Category | When It Fires |
+|-------|----------|--------------|
+| SessionEnd | Session | Session ends |
+| Setup | Session | First-time setup |
+| PostToolUseFailure | Tool | After tool fails |
+| SubagentStop | Agent | Agent/subagent exits |
+| TaskCreated | Task | Task created |
+| PermissionRequest | Permission | Tool needs permission |
+| PermissionDenied | Permission | Permission was denied |
+| FileChanged | File | Watched file modified |
+| CwdChanged | File | Working directory changed |
+| WorktreeRemove | File | Git worktree removed |
+| StopFailure | Lifecycle | Stop hook rejected |
+| Notification | Lifecycle | System notification |
+| ConfigChange | Lifecycle | Settings changed |
+| Elicitation | Interaction | Model asks user question |
+| ElicitationResult | Interaction | User answers elicitation |
+| Custom | Internal | Internal callbacks |
+
+Note: Input field schemas are approximations based on source analysis. Exact schemas may vary.
 
 ### Hook Types
 | Type | Mechanism | Example |
@@ -77,9 +86,9 @@ Claude Code uses a 4-layer settings system:
 
 | Component | Mechanism | PDS Uses? |
 |-----------|-----------|-----------|
-| Skills | skills/ directory with SKILL.md files | Yes — 20 skills |
+| Skills | skills/ directory with SKILL.md files | Yes — 23 skills |
 | Agents | agents/ directory with .md files | Yes — 8 agents |
-| Hooks | hooks.json in plugin root | Yes — 12+ hook entries |
+| Hooks | hooks.json in plugin root | Yes — 11 events in hooks.json (+1 PreToolUse in orchestrator agent) |
 | MCP servers | MCP config in plugin manifest | No |
 | Settings overlay | Plugin-scoped settings | Partially — env vars |
 

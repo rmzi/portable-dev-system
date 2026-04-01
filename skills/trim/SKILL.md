@@ -52,4 +52,9 @@ When content appears in multiple files:
 
 ## Baseline
 
-After the initial trim (commit `45b3a59`): ~1,442 lines across skills + agents. Track drift from this.
+| Version | Lines | Commit | Notes |
+|---------|-------|--------|-------|
+| v4.3 (initial) | ~1,442 | `45b3a59` | Post-first-trim baseline |
+| v5.0 | ~3,180 | `a586caa` | +15 skills (telemetry, inspect, swarm tiers, instinct, eval, trim, preflight, sandbox, bugfix, bcp, rebase, pr-review, bump, worktree, audit-config), 12 hooks, observability layer |
+
+Current baseline: **~3,180 lines**. Growth is structural — new skills and agents, not bloat in existing files. Track drift from this.

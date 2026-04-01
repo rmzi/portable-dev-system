@@ -40,6 +40,12 @@ check_jq() {
   fi
 }
 
+check_python3() {
+  if ! command -v python3 >/dev/null 2>&1; then
+    warn "python3 not found. PDS hooks and install require python3 for JSON processing. Install: brew install python3 (macOS) or apt install python3 (Linux)"
+  fi
+}
+
 # --- Usage ---
 usage() {
   cat <<'EOF'
@@ -313,6 +319,7 @@ install_plugin() {
   SETTINGS_TARGET="$HOME/.claude/settings.json"
 
   check_jq
+  check_python3
 
   mkdir -p "$PLUGIN_TARGET"
 
