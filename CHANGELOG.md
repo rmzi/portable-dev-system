@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.6.2] - 2026-04-01
+
+### Fixed
+- **Telemetry + inspect skills** — rewritten from descriptive stubs to procedural skills with concrete tool calls (`Read`, `Bash`, `Edit`, `TaskList`)
+- **detect-patterns.sh** — fixed subshell variable bug where `PATTERNS_FOUND` incremented inside piped `while` loop never propagated; replaced with temp file + `grep -c`
+- **Inline hooks extracted** — WorktreeCreate/InstructionsLoaded 200+ char inline commands extracted to `hooks/scripts/worktree-telemetry.sh` and `instructions-telemetry.sh`
+- **python3 dependency** — added `check_python3()` to install.sh alongside `check_jq()`, documented in README requirements section
+- **Extension catalog** — restructured from flat table to Active (12) / Unused (16) split; fixed skill count 20→23
+- **Stale PermissionRequest refs** — removed from CLAUDE.md and README hooks list
+
+### Added
+- **trim/EVAL.md** — 4 test scenarios (baseline comparison, cross-ref validation, style rules, no-op)
+- **Trim interactive Q&A** — rewritten to follow grill's pattern: enter plan mode, present findings step-by-step, wait for human approval before editing
+
+### Changed
+- **Trim baseline** — updated from ~1,442 to ~3,180 with version history table documenting growth justification
+
 ## [4.6.1] - 2026-03-31
 
 ### Added
