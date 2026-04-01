@@ -9,7 +9,8 @@ TELEMETRY_FILE="${1:-.claude/telemetry.jsonl}"
 SKILLS_DIR="${2:-${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/}skills}"
 SKILLS_DIR="${SKILLS_DIR:-skills}"
 TODAY=$(date +%Y-%m-%d)
-PATTERNS_FOUND=0
+OUTPUT_FILE="${TMPDIR:-/tmp}/pds-detect-patterns-$$.out"
+: > "$OUTPUT_FILE"
 
 # --- Preflight ---
 
@@ -36,7 +37,6 @@ if [ -n "$repeated_skills" ]; then
     session_skill=$(echo "$line" | awk '{print $2}')
     session=$(echo "$session_skill" | cut -d'|' -f1)
     skill=$(echo "$session_skill" | cut -d'|' -f2)
-    PATTERNS_FOUND=$((PATTERNS_FOUND + 1))
     cat <<ENTRY
 
 ### Repeated Skill Invocation: $skill
@@ -49,7 +49,7 @@ if [ -n "$repeated_skills" ]; then
 - **Status**: draft
 ENTRY
   done
-fi
+fi >> "$OUTPUT_FILE"
 
 # --- Pattern 2: Agent spawned but no task completed ---
 
@@ -79,7 +79,7 @@ if [ -n "$orphan_sessions" ]; then
 ENTRY
     fi
   done
-fi
+fi >> "$OUTPUT_FILE"
 
 # --- Pattern 3: Dominant file extension (60%+) ---
 
@@ -109,7 +109,7 @@ ENTRY
       fi
     done
   fi
-fi
+fi >> "$OUTPUT_FILE"
 
 # --- Pattern 4: Zero-usage skills ---
 
@@ -141,32 +141,12 @@ if [ -d "$SKILLS_DIR" ]; then
 - **Status**: draft
 ENTRY
   fi
-fi
+fi >> "$OUTPUT_FILE"
 
-# --- Summary ---
+# --- Output and Summary ---
 
-# Count pattern blocks in our output (each starts with ###)
-# We use a simple heuristic: count the pattern headers we might have emitted
-count=0
-[ -n "$repeated_skills" ] && count=$((count + $(echo "$repeated_skills" | wc -l | tr -d ' ')))
-
-if [ -n "$orphan_sessions" ]; then
-  for session in $orphan_sessions; do
-    has_file_mod=$(jq -r --arg s "$session" '
-      select(.session == $s and .event == "file_modified") | .session
-    ' "$TELEMETRY_FILE" 2>/dev/null | head -1)
-    [ -z "$has_file_mod" ] && count=$((count + 1))
-  done
-fi
-
-if [ -n "$extension_counts" ] && [ "$total" -gt 0 ] 2>/dev/null; then
-  dominant=$(echo "$extension_counts" | awk -v t="$total" '$1 * 100 / t >= 60' | wc -l | tr -d ' ')
-  count=$((count + dominant))
-fi
-
-if [ -d "$SKILLS_DIR" ] && [ -n "$unused" ]; then
-  count=$((count + 1))
-fi
+cat "$OUTPUT_FILE"
+count=$(grep -c '^### ' "$OUTPUT_FILE" 2>/dev/null || echo 0)
 
 echo ""
 echo "---"
@@ -175,4 +155,5 @@ if [ "$count" -gt 0 ]; then
   echo "Review these draft instincts before adding to .claude/instincts.md"
 fi
 
+rm -f "$OUTPUT_FILE"
 exit 0

@@ -3,49 +3,49 @@ description: Real-time PDS state inspection — swarm status, telemetry, agent h
 ---
 # /inspect — PDS State Inspector
 
-Shows the current state of PDS. Adapts output based on whether a swarm is active.
+Shows current PDS state. Adapts output based on whether a swarm is active.
 
-## During Swarm
+## Procedure
 
-When `.claude/swarm/phase` exists, show:
+### Step 1: Gather state
 
 ```
-PDS v{version} — Swarm Active
-Phase: {phase} | Tier: {tier}
+1. Read("VERSION") → $VERSION (fallback: echo $PDS_VERSION or "unknown")
+2. Bash("test -f .claude/swarm/phase && echo active || echo inactive") → $SWARM_STATE
+3. If swarm active:
+   a. Read(".claude/swarm/phase") → $PHASE
+   b. Read(".claude/swarm/tier") → $TIER
+   c. TaskList() → count tasks by status (in_progress, pending, completed)
+4. Bash("echo ${PDS_TELEMETRY:-0}") → $TELEMETRY_ENABLED
+5. If telemetry enabled:
+   Bash("wc -l < .claude/telemetry.jsonl 2>/dev/null || echo 0") → $ENTRY_COUNT
+6. Bash("test -d ~/.claude/plugins/pds && echo installed || (test -L ~/.claude/plugins/pds && echo linked || echo missing)") → $PLUGIN_STATUS
+```
+
+### Step 2: Format output
+
+**During swarm:**
+
+```
+PDS v{VERSION} — Swarm Active
+Phase: {PHASE} | Tier: {TIER}
 Tasks: {in_progress} in_progress, {pending} pending, {completed} completed
-Agents: {agent-1} (active), {agent-2} (idle), {agent-3} (pending)
-Telemetry: {enabled|disabled} ({count} entries)
+Telemetry: {enabled|disabled} ({ENTRY_COUNT} entries)
 ```
 
-How to gather:
-- **Phase**: read `.claude/swarm/phase`
-- **Tier**: read `.claude/swarm/tier`
-- **Tasks**: use `TaskList` if available, summarize counts by status
-- **Agents**: from team config if available
-- **Telemetry**: check `PDS_TELEMETRY` env and `wc -l .claude/telemetry.jsonl`
-
-## During Non-Swarm
-
-When no swarm is active (`.claude/swarm/phase` does not exist), show:
+**No swarm:**
 
 ```
-PDS v{version} — No Swarm Active
-Telemetry: {enabled|disabled}
-Plugin: {installed|linked|missing} at {path}
+PDS v{VERSION} — No Swarm Active
+Telemetry: {enabled|disabled}{" (N entries)" if enabled}
+Plugin: {installed|linked|missing}
 ```
 
-How to gather:
-- **Version**: read `VERSION` file or `PDS_VERSION` env
-- **Telemetry**: check `PDS_TELEMETRY` env; if enabled, report entry count and date range from `.claude/telemetry.jsonl`
-- **Plugin**: check if `~/.claude/plugins/pds/` exists
-
-## How to Check
-
-Read the following files:
+## Files Read
 
 | File | Purpose |
 |------|---------|
+| `VERSION` | PDS version |
 | `.claude/swarm/phase` | Swarm active if exists |
 | `.claude/swarm/tier` | Current swarm tier |
-| `VERSION` | PDS version |
-| `.claude/telemetry.jsonl` | Telemetry data (`wc -l` for count) |
+| `.claude/telemetry.jsonl` | Entry count via `wc -l` |

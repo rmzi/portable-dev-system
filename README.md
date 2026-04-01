@@ -40,6 +40,12 @@ curl -sfL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/instal
 
 See [Migration Guide](docs/migration-v4.md) for details.
 
+### Requirements
+
+- **Claude Code** (CLI, desktop, or IDE extension)
+- **jq** — used by telemetry hooks and pattern detection (`brew install jq` / `apt install jq`)
+- **python3** — used by install script and hook scripts for JSON processing (`brew install python3` / `apt install python3`)
+
 ### Dev mode
 
 ```bash
@@ -108,7 +114,7 @@ portable-dev-system/
 │   ├── telemetry/SKILL.md         # Usage telemetry management
 │   ├── inspect/SKILL.md           # Real-time PDS state viewer
 │   └── ...
-├── hooks/hooks.json               # 12 hook events: SessionStart, Stop, TaskCompleted, TeammateIdle, PostToolUse, SubagentStart, PreCompact, PostCompact, UserPromptSubmit, WorktreeCreate, InstructionsLoaded + PermissionRequest
+├── hooks/hooks.json               # 11 hook events: SessionStart, Stop, TaskCompleted, TeammateIdle, PostToolUse, SubagentStart, PreCompact, PostCompact, UserPromptSubmit, WorktreeCreate, InstructionsLoaded
 ├── hooks/scripts/                 # Hook implementation scripts
 ├── scripts/                       # Utility scripts (telemetry-summary, detect-patterns)
 ├── docs/                          # Philosophy, whitepaper, team setup, source analysis

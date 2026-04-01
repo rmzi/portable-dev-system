@@ -56,7 +56,7 @@ See `/pds:team` for the 8-agent roster (orchestrator, researcher, worker, valida
 .claude-plugin/    — Plugin manifest (plugin.json)
 agents/            — 8 agent definitions + shared-rules.md
 skills/            — 23 workflow skills (dir/SKILL.md format)
-hooks/             — Quality gates (SessionStart, Stop, TaskCompleted, TeammateIdle, SubagentStart, PreCompact, PostCompact, UserPromptSubmit, PostToolUse, WorktreeCreate, InstructionsLoaded) + PermissionRequest routing
+hooks/             — Quality gates (SessionStart, Stop, TaskCompleted, TeammateIdle, SubagentStart, PreCompact, PostCompact, UserPromptSubmit, PostToolUse, WorktreeCreate, InstructionsLoaded)
 scripts/           — Utility scripts (telemetry-summary, detect-patterns)
 .claude/           — Security settings (deny rules, sandbox config) — optional per-project
 docs/              — Philosophy, whitepaper, team setup

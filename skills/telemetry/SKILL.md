@@ -3,42 +3,49 @@ description: Usage telemetry management — enable, disable, view reports, rotat
 ---
 # /telemetry — Usage Telemetry
 
-PDS telemetry tracks which skills, agents, and hooks are used. All data is local — nothing leaves your machine. Disabled by default.
+PDS telemetry tracks which skills, agents, and hooks are used. All data is local. Disabled by default.
 
 ## Subcommands
 
 ### on
 
-Enable telemetry by adding `PDS_TELEMETRY=1` to project settings:
-
-1. Read `.claude/settings.json` (or `.claude/settings.local.json`)
-2. Add or update `env.PDS_TELEMETRY` to `"1"`
-3. Confirm: **Telemetry enabled. Usage data will be logged to `.claude/telemetry.jsonl`**
+```
+1. Read(".claude/settings.local.json")
+   — If file missing or no "env" key, treat as empty object
+2. Edit(".claude/settings.local.json")
+   — Set or add: "env": { "PDS_TELEMETRY": "1" }
+   — Preserve all other keys
+3. Output: "Telemetry enabled. Usage data logged to .claude/telemetry.jsonl"
+```
 
 ### off
 
-Disable telemetry:
-
-1. Set `env.PDS_TELEMETRY` to `"0"` in settings
-2. Confirm: **Telemetry disabled. Existing data preserved.**
-3. Note: does not delete existing `.claude/telemetry.jsonl`
+```
+1. Read(".claude/settings.local.json")
+2. Edit(".claude/settings.local.json")
+   — Set: "env": { "PDS_TELEMETRY": "0" }
+   — Preserve all other keys
+3. Output: "Telemetry disabled. Existing data preserved in .claude/telemetry.jsonl"
+```
 
 ### view
 
-Show usage report:
-
-1. Run `scripts/telemetry-summary.sh`
-2. If `.claude/telemetry.jsonl` doesn't exist or is empty, show: **No telemetry data. Enable with `/pds:telemetry on`**
+```
+1. Bash("wc -l < .claude/telemetry.jsonl 2>/dev/null || echo 0")
+   — If 0: output "No telemetry data. Enable with /pds:telemetry on" and stop
+2. Bash("${CLAUDE_PLUGIN_ROOT:-$(git rev-parse --path-format=absolute --git-common-dir | sed 's|/.git$||')}/scripts/telemetry-summary.sh .claude/telemetry.jsonl")
+3. Output the summary report
+```
 
 ### rotate
 
-Archive old entries:
-
-- If `.claude/telemetry.jsonl` has > 10,000 lines:
-  1. Move current file to `.claude/telemetry-{date}.jsonl.bak`
-  2. Keep last 10,000 lines in new `.claude/telemetry.jsonl`
-  3. Report: **Rotated N entries to archive**
-- If <= 10,000 lines: **No rotation needed (N entries)**
+```
+1. Bash("wc -l < .claude/telemetry.jsonl 2>/dev/null || echo 0")
+   — If <= 10000: output "No rotation needed (N entries)" and stop
+2. Bash("DATE=$(date +%Y%m%d); cp .claude/telemetry.jsonl .claude/telemetry-${DATE}.jsonl.bak && tail -10000 .claude/telemetry.jsonl > .claude/telemetry.jsonl.tmp && mv .claude/telemetry.jsonl.tmp .claude/telemetry.jsonl")
+3. Bash("wc -l < .claude/telemetry-*.jsonl.bak | tail -1")
+4. Output: "Rotated N entries to .claude/telemetry-{date}.jsonl.bak. Active file: 10,000 entries."
+```
 
 ## Data Format
 
