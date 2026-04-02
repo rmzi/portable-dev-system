@@ -1,6 +1,6 @@
 #!/bin/bash
 # PDS TeammateIdle hook — checks for uncommitted work before allowing idle.
-# Exit 0 = allow idle, Exit 2 = keep working (stderr fed back to agent).
+# Exit 0 = allow idle, Exit 2 = keep working (stderr message + JSON alert in stdout).
 # Input: JSON on stdin with teammate_name, team_name, cwd.
 
 INPUT=$(cat)
@@ -19,14 +19,22 @@ UNSTAGED_CLEAN=true
 
 if $STAGED_CLEAN && $UNSTAGED_CLEAN; then
   exit 0
-else
-  TEAMMATE=$(echo "$INPUT" | jq -r '.teammate_name // "agent"')
-  if ! $STAGED_CLEAN && ! $UNSTAGED_CLEAN; then
-    echo "$TEAMMATE has staged and unstaged uncommitted changes. Commit before going idle." >&2
-  elif ! $STAGED_CLEAN; then
-    echo "$TEAMMATE has staged uncommitted changes. Commit before going idle." >&2
-  else
-    echo "$TEAMMATE has unstaged uncommitted changes. Commit before going idle." >&2
-  fi
-  exit 2
 fi
+
+TEAMMATE=$(echo "$INPUT" | jq -r '.teammate_name // "agent"')
+UNCOMMITTED=$(cd "$CWD" && git status --porcelain 2>/dev/null | wc -l | tr -d ' ')
+
+if ! $STAGED_CLEAN && ! $UNSTAGED_CLEAN; then
+  echo "$TEAMMATE has staged and unstaged uncommitted changes. Commit before going idle." >&2
+elif ! $STAGED_CLEAN; then
+  echo "$TEAMMATE has staged uncommitted changes. Commit before going idle." >&2
+else
+  echo "$TEAMMATE has unstaged uncommitted changes. Commit before going idle." >&2
+fi
+
+# Emit structured alert to stdout — orchestrator uses this for backpressure (#103)
+ALERT=$(jq -cn --arg w "$TEAMMATE" --argjson n "$UNCOMMITTED" \
+  '{"alert":"worker_idle_with_changes","worker":$w,"uncommitted_files":$n}')
+printf '{"additionalContext":%s}\n' "$(printf '%s' "$ALERT" | jq -Rs .)"
+
+exit 2

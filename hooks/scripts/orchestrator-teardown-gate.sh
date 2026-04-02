@@ -62,4 +62,18 @@ if [ -n "$MISSING" ]; then
   exit 2
 fi
 
+# Worktree cleanup check (#106) — all swarm worktrees must be removed before teardown
+if [ -d "$CWD/.worktrees" ] && [ -n "$(ls -A "$CWD/.worktrees" 2>/dev/null)" ]; then
+  printf "BLOCKED: Cannot tear down team — worktrees still exist in .worktrees/:\n" >&2
+  ls "$CWD/.worktrees" | sed 's/^/  - /' >&2
+  printf "Remove each worktree with: git worktree remove .worktrees/<name>" >&2
+  exit 2
+fi
+
+# Artifact archival check (#106) — docs/swarm-reports/ must exist before teardown
+if [ ! -d "$CWD/docs/swarm-reports" ]; then
+  printf "BLOCKED: Cannot tear down team — docs/swarm-reports/ does not exist.\nArchive phase artifacts there before cleanup." >&2
+  exit 2
+fi
+
 exit 0
