@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.9.0] - 2026-04-02
+
+### Added
+- **SDLC Phase 1: Parallel grill + research** — Grill (sync, human-facing) and researcher (async, codebase exploration) now run concurrently, converging before Phase 2 (#101)
+- **SDLC Phase 2: Decomposition conventions** — Structured acceptance criteria (checklist format), DAG cycle/orphan validation, Agent Zone formalization (#102)
+- **SDLC Phase 3: Backpressure** — TeammateIdle triggers orchestrator review, configurable health timeouts, TaskStop for runaway workers, health reporting in shared-rules (#103)
+- **SDLC Phase 4: Pipeline validation** — Validator starts on first task completion (not last), structured JSON-checkable report fields (#104)
+- **SDLC Phase 5: Parallel /finish** — Concurrent branch finalization across worktrees, structured human approval gate via ExitPlanMode (#105)
+- **SDLC Phase 6: Cleanup sub-phase** — Scout before shutdown, instinct feedback to Phase 1, worktree deletion, artifact archival to `docs/swarm-reports/`, state validation, branch cleanup (#106)
+- **Checkpoint protocol** — Orchestrator writes `.claude/swarm/checkpoint.json` at phase transitions for failure recovery (#108)
+- **Claude Code primitive integration** — TaskStop, ExitWorktree, TeammateIdle remediation, TaskCompleted triggers wired into SDLC phases (#107)
+- **Research: auto-claude** — Analysis of cloud/desktop/loop scheduling tiers and PDS relevance (`docs/auto-claude-research.md`) (#80)
+- **Research: model-agnostic strategy** — Proxy paths, community gateways, PDS portability recommendations (`docs/model-agnostic-research.md`) (#94)
+- **Research: orchestrator redesign** — Dedicated orchestrator agent architecture, DAG visualization, heartbeat protocol (`docs/orchestrator-redesign-research.md`) (#111)
+
+### Changed
+- **Hook: teammate-idle-gate.sh** — Emits structured JSON alert for orchestrator backpressure (#103)
+- **Hook: orchestrator-teardown-gate.sh** — Verifies worktree cleanup and artifact archival before TeamDelete (#106)
+- **Whitepaper** — All 6 phase Known Gap sections updated to Implemented status, removed stale PermissionRequest references (#93)
+- **CLAUDE.md** — Project structure updated with `docs/swarm-reports/` and `.claude/swarm/` (#92)
+- **README.md** — Hook event table expanded from 7 to 11 entries (#92)
+
+### Fixed
+- **Status line settings** — Added missing `statusLine` key to `.claude/settings.json` (#97)
+
 ## [4.8.1] - 2026-04-02
 
 ### Added
