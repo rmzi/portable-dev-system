@@ -134,10 +134,14 @@ PDS registers handlers for the following Claude Code hook events:
 | `SessionStart` | `session-start.sh` | Inject PDS version, key skills, worktree context |
 | `Stop` | Prompt evaluator | Verify completion for implementation sessions |
 | `TaskCompleted` | `task-completed-gate.sh` | Run tests on completed tasks |
-| `TeammateIdle` | `teammate-idle-gate.sh` | Detect uncommitted changes |
-| `WorktreeCreate` | `worktree-create-log.sh` | Audit log worktree provisioning |
-| `InstructionsLoaded` | `instructions-loaded-log.sh` | Audit log rule file loading |
-| `PermissionRequest` | LLM-as-judge | Route subagent permission requests |
+| `TeammateIdle` | `teammate-idle-gate.sh` | Backpressure — detect idle workers, trigger remediation |
+| `PostToolUse` | `telemetry-log.sh`, `file-telemetry-log.sh` | Track skill invocations and file modifications |
+| `SubagentStart` | `roster-check.sh` | Enforce agent roster — warn on unknown agent types |
+| `PreCompact` | `pre-compact-snapshot.sh` | Snapshot context before compaction |
+| `PostCompact` | `post-compact-inject.sh` | Re-inject critical context after compaction |
+| `UserPromptSubmit` | `skill-hint.sh` | Suggest relevant PDS skills based on prompt |
+| `WorktreeCreate` | `worktree-telemetry.sh` | Telemetry for worktree provisioning |
+| `InstructionsLoaded` | `instructions-telemetry.sh` | Telemetry for rule file loading |
 
 The orchestrator agent additionally uses `PreToolUse` hooks for SDLC phase gates.
 

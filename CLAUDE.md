@@ -59,7 +59,9 @@ skills/            — 23 workflow skills (dir/SKILL.md format)
 hooks/             — Quality gates (SessionStart, Stop, TaskCompleted, TeammateIdle, SubagentStart, PreCompact, PostCompact, UserPromptSubmit, PostToolUse, WorktreeCreate, InstructionsLoaded)
 scripts/           — Utility scripts (telemetry-summary, detect-patterns)
 .claude/           — Security settings (deny rules, sandbox config) — optional per-project
+.claude/swarm/     — Active swarm state (phase, tier, checkpoint.json, reports) — runtime only
 docs/              — Philosophy, whitepaper, team setup
+docs/swarm-reports/ — Archived swarm artifacts (post-cleanup, per-swarm timestamped dirs)
 install.sh         — Plugin installer + security settings
 VERSION            — Current version (semver)
 CHANGELOG.md       — Release history
