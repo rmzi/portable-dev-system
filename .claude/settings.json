@@ -70,6 +70,8 @@
       "Bash(* --profile=prod*)",
       "Bash(*PROD*)",
       "Bash(*prod.*)",
+      "Bash(* /proc/*/environ*)",
+      "Bash(*/proc/self/environ*)",
       "Bash(ssh *)",
       "Bash(scp *)",
       "Bash(sftp *)",
