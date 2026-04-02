@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.8.1] - 2026-04-02
+
+### Added
+- **`/pds:export` skill** — Export Claude Code session JSONL to human-readable markdown with role markers (👤 Human, 🔵 Claude, 🤖 Agent, ⚙️ System), timestamps, and compact tool call summaries. Supports `--list`, `--session`, `--repo`, `-o` flags.
+- **7 instincts recorded** — First lexicon entries: context loss as transport waste, orchestrator idle time, squash-before-push, source analysis compound returns, user-level telemetry, plugin.json sync, stale cache cleanup.
+
 ## [4.8.0] - 2026-04-02
 
 ### Added
