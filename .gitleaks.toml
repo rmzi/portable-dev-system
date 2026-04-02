@@ -1,0 +1,87 @@
+title = "PDS Secret Scanning"
+
+# Extend gitleaks default ruleset — catches generic high-entropy secrets,
+# common provider patterns, and more out of the box.
+[extend]
+useDefault = true
+
+# ---------------------------------------------------------------------------
+# Custom rules (supplement the default ruleset)
+# ---------------------------------------------------------------------------
+
+[[rules]]
+id = "openai-api-key"
+description = "OpenAI / Anthropic-style API key (sk- prefix)"
+regex = '''(?i)(sk-[A-Za-z0-9\-_]{20,})'''
+tags = ["api-key", "openai", "anthropic"]
+
+[[rules]]
+id = "github-pat-classic"
+description = "GitHub personal access token (ghp_ prefix)"
+regex = '''ghp_[A-Za-z0-9]{36}'''
+tags = ["api-key", "github"]
+
+[[rules]]
+id = "github-fine-grained-pat"
+description = "GitHub fine-grained personal access token (github_pat_ prefix)"
+regex = '''github_pat_[A-Za-z0-9_]{82}'''
+tags = ["api-key", "github"]
+
+[[rules]]
+id = "aws-access-key-id"
+description = "AWS access key ID"
+regex = '''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}'''
+tags = ["api-key", "aws"]
+
+[[rules]]
+id = "slack-bot-token"
+description = "Slack bot OAuth token"
+regex = '''xoxb-[0-9]+-[0-9A-Za-z]+'''
+tags = ["token", "slack"]
+
+[[rules]]
+id = "jwt"
+description = "JSON Web Token (eyJ header)"
+regex = '''eyJ[A-Za-z0-9+/]{10,}={0,3}\.[A-Za-z0-9+/]{10,}={0,3}\.[A-Za-z0-9+/_.~-]+'''
+tags = ["token", "jwt"]
+
+[[rules]]
+id = "password-in-config"
+description = "Plaintext password assignment in config files"
+regex = '''(?i)(password|passwd|pwd)\s*[=:]\s*["']?[^\s"']{8,}'''
+path = '''(?i)\.(env|conf|config|cfg|ini|yaml|yml|toml|json)$'''
+tags = ["password", "config"]
+
+# ---------------------------------------------------------------------------
+# Global allowlist
+# ---------------------------------------------------------------------------
+
+[allowlist]
+description = "Paths and patterns safe to ignore in PDS"
+
+# docs/ — whitepaper, research notes, and conversation archives may contain
+# example patterns that look like secrets but are illustrative only.
+# hooks/scripts/ — hook scripts contain regex patterns for secret detection;
+# these patterns are not real secrets.
+# test fixtures inside install.sh self-tests — synthetic JSON blobs.
+paths = [
+  '''^docs/''',
+  '''^hooks/scripts/''',
+  '''\.gitleaks\.toml$''',
+  '''CHANGELOG\.md$''',
+  '''install\.sh$''',
+]
+
+# Regex patterns that are clearly non-secret (example/placeholder values).
+regexes = [
+  '''sk-\*''',
+  '''ghp_\*''',
+  '''AKIA\*''',
+  '''xoxb-\*''',
+  '''eyJ\*''',
+  '''your[-_]?api[-_]?key''',
+  '''<your[-_]?.*>''',
+  '''EXAMPLE''',
+  '''PLACEHOLDER''',
+  '''REDACTED''',
+]

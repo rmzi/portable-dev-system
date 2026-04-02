@@ -46,6 +46,58 @@ check_python3() {
   fi
 }
 
+check_gitleaks() {
+  if command -v gitleaks >/dev/null 2>&1; then
+    return
+  fi
+  info "gitleaks not found — attempting install (recommended for secret scanning)..."
+  case "$(uname)" in
+    Darwin)
+      if command -v brew >/dev/null 2>&1; then
+        brew install gitleaks && ok "gitleaks installed" || warn "gitleaks install failed. Install manually: brew install gitleaks"
+      else
+        warn "gitleaks not found and brew unavailable. Install: brew install gitleaks or https://github.com/gitleaks/gitleaks/releases"
+      fi
+      ;;
+    Linux)
+      if command -v go >/dev/null 2>&1; then
+        go install github.com/gitleaks/gitleaks/v8@latest && ok "gitleaks installed" || warn "gitleaks install failed. Install manually: https://github.com/gitleaks/gitleaks/releases"
+      else
+        warn "gitleaks not found. Install via Go or download from: https://github.com/gitleaks/gitleaks/releases"
+      fi
+      ;;
+    *)
+      warn "gitleaks not found. Install from: https://github.com/gitleaks/gitleaks/releases"
+      ;;
+  esac
+}
+
+check_age() {
+  if command -v age >/dev/null 2>&1; then
+    return
+  fi
+  info "age not found — attempting install (recommended for telemetry encryption)..."
+  case "$(uname)" in
+    Darwin)
+      if command -v brew >/dev/null 2>&1; then
+        brew install age && ok "age installed" || warn "age install failed. Install manually: brew install age"
+      else
+        warn "age not found and brew unavailable. Install: brew install age or https://github.com/FiloSottile/age/releases"
+      fi
+      ;;
+    Linux)
+      if command -v go >/dev/null 2>&1; then
+        go install filippo.io/age/cmd/...@latest && ok "age installed" || warn "age install failed. Install manually: https://github.com/FiloSottile/age/releases"
+      else
+        warn "age not found. Install via Go or download from: https://github.com/FiloSottile/age/releases"
+      fi
+      ;;
+    *)
+      warn "age not found. Install from: https://github.com/FiloSottile/age/releases"
+      ;;
+  esac
+}
+
 # --- Usage ---
 usage() {
   cat <<'EOF'
@@ -320,6 +372,8 @@ install_plugin() {
 
   check_jq
   check_python3
+  check_gitleaks
+  check_age
 
   mkdir -p "$PLUGIN_TARGET"
 
