@@ -79,6 +79,24 @@ The OS-level sandbox confines Bash writes to CWD. `git` and `docker` are exclude
 - **Cross-worktree coordination**: Use SendMessage for inter-agent communication, not filesystem writes to other worktrees.
 - **Network**: Only `allowedDomains` are reachable from Bash. If a task needs additional domains, document them for human approval before dispatch.
 
+## Checkpoint Protocol
+
+Write `.claude/swarm/checkpoint.json` at each phase transition before advancing the phase file:
+
+```bash
+cat > .claude/swarm/checkpoint.json << 'EOF'
+{
+  "phase": "decompose",
+  "tier": "heavy",
+  "tasks": ["task-1", "task-2"],
+  "assignments": {"task-1": "worker-1"},
+  "timestamp": "2026-04-02T10:00:00Z"
+}
+EOF
+```
+
+**Restart recovery**: If a new orchestrator is spawned mid-swarm, read `checkpoint.json` to identify the last completed phase and resume from there. Workers commit frequently — no work is lost if the orchestrator fails mid-phase.
+
 ## Principles
 
 Core principles: See /pds:team and shared-rules. Additionally:

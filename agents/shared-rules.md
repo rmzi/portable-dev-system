@@ -16,6 +16,14 @@ Behavioral rules that apply to all PDS agents. Individual agent definitions inhe
 - **Plain text is invisible to teammates.** Always use `SendMessage` to communicate with other agents. Direct output is only visible to the user.
 - **Report blockers immediately.** Commit current progress, update task status, send details to the orchestrator via `SendMessage`.
 
+## Health Reporting
+
+Workers must report progress periodically so the orchestrator can detect stalls:
+
+- After each completed subtask or meaningful checkpoint, send a brief status via `SendMessage` to the orchestrator
+- If you haven't made visible progress in 5+ turns, send a status update explaining why
+- The orchestrator uses these signals for backpressure — idle workers without updates may receive a `TaskStop` and have their task reassigned
+
 ## Error Escalation
 
 - **Fix specific issues, don't retry blindly.** Diagnose the root cause before attempting a fix.

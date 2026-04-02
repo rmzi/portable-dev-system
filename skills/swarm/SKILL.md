@@ -70,35 +70,42 @@ Initialize at swarm start:
 mkdir -p .claude/swarm && echo "plan" > .claude/swarm/phase && echo "<tier>" > .claude/swarm/tier
 ```
 
-Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the first step of each phase. The PR gate and teardown gate enforce phase state (defense-in-depth alongside artifact checks). If the phase file is absent, gates fall through to artifact-only checks.
+Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the first step of each phase. **Write a checkpoint** at each transition — see orchestrator.md for the checkpoint protocol. The PR gate and teardown gate enforce phase state (defense-in-depth alongside artifact checks). If the phase file is absent, gates fall through to artifact-only checks.
 
 ## Phase 1: Plan
 
-1. **Grill is mandatory.** Run `/pds:grill` to validate requirements and get a tier recommendation. If the caller already provided a tier override, grill still runs (for requirement validation) but the tier output is overridden.
+1. **Parallel tracks.** For Med/Heavy tiers, launch both tracks concurrently at Phase 1 init:
+   - **Grill track** (sync, human-facing): Run `/pds:grill` to validate requirements and get a tier recommendation. If a tier override was provided, grill still runs for requirement validation. Load `.claude/instincts.md` (if it exists) and include high-confidence patterns in the grill context.
+   - **Research track** (async, codebase exploration): Spawn researcher immediately — it explores while grill runs:
+     ```
+     Task(researcher, model="<tier-model>",
+          prompt="Analyze the codebase for X. Query .claude/instincts.md for relevant prior patterns.
+                  Send findings via SendMessage.")
+     ```
+     Tier models — med: omit `model` (sonnet default). Heavy: `model="opus"`.
+     If the researcher calls `ExitPlanMode`, respond with `plan_approval_response` to approve or reject its plan.
+
+   Both tracks must complete before Phase 2 begins. **Lite tier**: skip researcher; orchestrator self-researches after grill.
+
 2. Write the tier to state: `echo "<tier>" > .claude/swarm/tier`
-3. **Lite tier**: Orchestrator self-researches (skip researcher spawn). **Med/Heavy tier**: Spawn a researcher for codebase context:
-   ```
-   Task(researcher, model="<tier-model>",
-        prompt="Analyze the codebase for X. Query .claude/instincts.md for relevant prior patterns.")
-   ```
-   Tier models — med: omit `model` (sonnet default). Heavy: `model="opus"`.
-   The researcher sends findings back via `SendMessage`. If it calls `ExitPlanMode`, respond with `plan_approval_response` to approve or reject its plan.
-4. Synthesize findings into **mechanically verifiable acceptance criteria** — each criterion must be checkable by running a command or reading output (no subjective criteria)
-5. **If spawned as Phase 1 only** (plan prompt): Return the plan + criteria + tier. The parent conversation handles human approval and spawns a Phase 2+ orchestrator.
+3. Synthesize grill output + researcher findings into acceptance criteria (see Phase 2 for format).
+4. **If spawned as Phase 1 only** (plan prompt): Return the plan + criteria + tier. The parent handles human approval and spawns a Phase 2+ orchestrator.
    **If spawned with pre-approval** (full execution prompt): Proceed directly to Phase 2.
 
 ## Phase 2: Decompose
 
 1. Split along architecture boundaries. If CLAUDE.md defines **Agent Zones** (a table mapping zones to paths and merge order), use them to guide decomposition — one task per zone, foundation-first merge order.
-2. Use TaskCreate for each work unit. Put acceptance criteria in the `description` field — this is what workers and the validator check against:
+2. Use TaskCreate for each work unit. Acceptance criteria in the `description` field must use **checklist format** so they can be mechanically verified:
    ```
    TaskCreate(
      subject: "Implement auth module",
-     description: "JWT login endpoint at POST /auth/login. Token validation middleware on protected routes. Tests for both.",
+     description: "- [ ] JWT login endpoint at POST /auth/login\n- [ ] Token validation middleware on protected routes\n- [ ] Tests pass for both",
      activeForm: "Implementing auth module"
    )
    ```
-3. Use TaskUpdate to set dependencies between tasks (`addBlockedBy`, `addBlocks`). Workers respect blocked status and prefer tasks in ID order.
+3. **DAG validation.** After setting dependencies with `TaskUpdate(addBlockedBy/addBlocks)`:
+   - Verify no dependency cycles (if A blocks B, B must not directly or transitively block A)
+   - Warn on orphan tasks — tasks with no `blocks` relationship (may be missing connections)
 4. When zones cross a boundary (e.g., backend <-> frontend), write a **contract** to `.claude/swarm/contracts.md` defining the interface before dispatching.
 5. Write decomposition plan to `.claude/swarm/plan.md`.
 6. **Write context file.** Before dispatching workers, write `.claude/swarm/context.md` containing:
@@ -148,19 +155,30 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
    - Mark task completed: `TaskUpdate(taskId="1", status="completed")`
    - Check `TaskList` and **self-claim** next unblocked task (prefer lowest ID)
    - Create new tasks via `TaskCreate` if they discover additional work
-5. Monitor progress via `TaskList`. Agents go idle between turns — this is normal. Send a message to wake an idle agent.
+5. **Monitor and backpressure.** Check progress via `TaskList`. On `TeammateIdle` events:
+   - Check `TaskGet` first — if the agent awaits a blocked dependency, no action needed
+   - If the agent has an unblocked task and is idle, send a `SendMessage` to re-activate
+   - **Health timeout**: default is 2× the task's estimated turns. On first timeout, send a warning via `SendMessage`. On second timeout, use `TaskStop` and reassign the task
+   - If 3+ workers are idle simultaneously with blocked tasks, the bottleneck task may need decomposition or priority escalation
 
 **Hook note:** PDS hooks log `WorktreeCreate` and `WorktreeRemove` events as workers start and finish. These appear in the audit log for lifecycle traceability.
 
 ## Phase 4: Validate
 
-1. Workers run `/pds:verify` (self-check) before reporting task complete
-2. Spawn a validator:
+1. Workers run `/pds:verify` (self-check) before reporting task complete.
+2. **Pipeline validation** — spawn the validator when the FIRST task completes (don't wait for all workers):
    ```
    Task(validator, team_name="project-name", name="validator",
-        prompt="Check TaskList for all task branches. Merge them, run full test suite, produce structured pass/fail report. Write report to .claude/swarm/validation-report.md.")
+        prompt="Check TaskList for completed tasks. Merge branches as they complete, run tests
+                incrementally. Write structured report to .claude/swarm/validation-report.md.")
    ```
-3. Validator uses `TaskList` to find all tasks, `TaskGet` to read acceptance criteria, merges branches, runs tests, writes structured report to `.claude/swarm/validation-report.md` **(required — PR gate checks for this file)**
+3. The validator monitors `TaskList` continuously, merges and tests incrementally. The report must include these JSON-checkable fields:
+   - `merge_status`: `"merged" | "conflict" | "failed"` per branch
+   - `test_counts`: `{ "total": N, "passed": N, "failed": N, "skipped": N }`
+   - `criteria_verdicts`: `[ { "criterion": "...", "status": "pass"|"fail", "evidence": "..." } ]`
+   - `overall`: `"ready" | "needs_fixes"`
+
+   LLM evaluation (the validator's Stop hook) supplements these mechanical checks — it does not replace them.
 4. If issues found:
    - Update tasks: `TaskUpdate(taskId="1", status="in_progress", description="Fix: ...")`
    - Dispatch targeted workers to fix specific failures
@@ -169,7 +187,7 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
 
 ## Phase 5: Consolidate
 
-1. Run `/pds:finish` on each task branch (rebase, clean history, post-rebase tests)
+1. **Parallel `/finish`.** Run `/pds:finish` on each task branch simultaneously — each branch gets its own finish (rebase, clean history, post-rebase tests) in parallel. Wait for all to complete before proceeding.
 2. **Med/Heavy tier**: Spawn a reviewer for pre-human code review:
    ```
    Task(reviewer, team_name="project-name", name="reviewer",
@@ -186,16 +204,21 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
    Task(documenter, team_name="project-name", name="documenter",
         prompt="Update docs for the changes in this PR. Send summary via SendMessage when done.")
    ```
-5. Create PR with full context:
+5. **Human approval gate.** Present the consolidated package before creating the PR:
+   ```
+   ExitPlanMode(plan="## Proposed Merge\n<diff summary>\n\n## Validation\n<key results from validation-report.md>\n\n## Review\n<key findings from review-report.md>")
+   ```
+   The parent responds with `plan_approval_response`. On approval, create PR. On rejection, return to earlier phases as directed.
+6. Create PR with full context:
    ```bash
    gh pr create --title "feat: ..." --body "## Summary\n...\n## Acceptance Criteria\n...\n## Validation\n...\n## Issues\n..."
    ```
    **Note:** The PR gate blocks `gh pr create` unless phase is `consolidate`+ AND both `validation-report.md` and `review-report.md` exist.
-6. **Do not merge.** The PR is the human gate. The orchestrator creates the PR and reports it — the human merges after review.
+7. **Do not merge.** The PR is the human gate. The orchestrator creates the PR and reports it — the human merges after review.
 
 ## Phase 6: Knowledge
 
-1. Spawn scout with tier-appropriate model:
+1. **Scout spawns before agent shutdown** — workers are still active so scout can query them for clarification:
    ```
    Task(scout, team_name="project-name", name="scout",
         model="<tier-model>",
@@ -210,7 +233,7 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
 3. Scout writes report to `.claude/swarm/scout-report.md` **(required — TeamDelete gate checks for this file)**
 4. Scout updates observation counts, proposes new patterns, flags promotions (human-gated — new skill = new file = PR review). Scout also runs skill evals per `/pds:eval`.
 5. **Telemetry analysis**: If `.claude/telemetry.jsonl` exists, scout runs `scripts/detect-patterns.sh` to detect usage patterns and proposes instinct entries for recurring patterns. Results appear in `### Telemetry-Detected Patterns` section of the scout report.
-6. **Shutdown all agents** before cleanup:
+6. **Shutdown all agents** after scout and auditor complete:
    ```
    SendMessage(type="shutdown_request", recipient="worker-auth", content="Work complete, shutting down.")
    SendMessage(type="shutdown_request", recipient="validator", content="Work complete, shutting down.")
@@ -219,6 +242,11 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
    Wait for `shutdown_response` from each agent before proceeding.
 7. Clean up: `TeamDelete`
    **Note:** The teardown gate blocks `TeamDelete` unless phase is `knowledge` AND all 3 reports exist. TeamDelete also **fails if agents are still active** — always shut down first.
+8. **Cleanup sub-phase.** After TeamDelete:
+   - **Worktree deletion**: For each `.worktrees/` directory created during the swarm, run `git worktree remove <path>` (call `ExitWorktree` if the orchestrator is inside a worktree)
+   - **Artifact archival**: Copy `.claude/swarm/*.md` to `docs/swarm-reports/<YYYY-MM-DD-HHmm>/`
+   - **State validation**: Verify all tasks have status `completed` and all branches are merged
+   - **Branch cleanup**: Delete merged feature branches: `git branch -d <branch>`
 
 ## Phase Gates
 
@@ -243,6 +271,7 @@ All phase artifacts are written to `.claude/swarm/`:
 | `plan.md` | 2 | orchestrator | — |
 | `context.md` | 2 | orchestrator | Worker init |
 | `contracts.md` | 2 | orchestrator | — |
+| `checkpoint.json` | all | orchestrator | Restart recovery |
 | `validation-report.md` | 4 | validator | PR gate, teardown gate |
 | `review-report.md` | 5 | reviewer (or orchestrator at lite tier) | PR gate, teardown gate |
 | `scout-report.md` | 6 | scout | Teardown gate |

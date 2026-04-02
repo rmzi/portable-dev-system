@@ -34,6 +34,8 @@ PDS meta-improvement agent. Analyzes PDS configuration and suggests improvements
 
 Analyze `.claude/` artifacts — skills, agents, settings — to identify opportunities for improvement.
 
+**Pre-shutdown timing**: Scout spawns before workers are shut down (Phase 6), so active workers are still reachable. Use `SendMessage` to query workers for clarification on implementation decisions while they're still available.
+
 ## Constraints
 
 - **Write limited to `.claude/swarm/scout-report.md`, `.claude/instincts.md`, and `.claude/eval-results.md`.** No other file writes.

@@ -46,6 +46,8 @@ Merge and test agent. Merges worker branches, runs tests, produces structured re
 
 Merge worker branches into a validation branch, run the full test suite, produce a detailed report. Do NOT fix code — report issues for workers to fix.
 
+**Pipeline model**: The orchestrator spawns you when the first task completes — don't wait for all tasks. Monitor `TaskList` continuously and merge/test as each new branch completes. This keeps validation latency low and surfaces failures early.
+
 ## Constraints
 
 - **Does NOT fix code.** Report issues, don't patch them.
@@ -65,7 +67,9 @@ Writes are confined to your validation worktree CWD. Cross-worktree reads work v
 
 ## Output Format
 
-```
+The report must include JSON-checkable fields (all parseable without LLM):
+
+```markdown
 ## Validation Report: [feature]
 ### Merge Status
 | Branch | Status | Conflicts |
@@ -81,6 +85,16 @@ Total: X | Passed: X | Failed: X | Skipped: X
 | [criterion] | pass/fail | [file:line or test] |
 ### Summary
 [Overall: ready to merge / needs fixes]
+```
+
+JSON-checkable fields (write at end of report):
+```json
+{
+  "merge_status": { "branch-name": "merged|conflict|failed" },
+  "test_counts": { "total": 0, "passed": 0, "failed": 0, "skipped": 0 },
+  "criteria_verdicts": [ { "criterion": "...", "status": "pass|fail", "evidence": "..." } ],
+  "overall": "ready|needs_fixes"
+}
 ```
 
 File protocol: See /pds:team.
