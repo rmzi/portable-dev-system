@@ -689,6 +689,44 @@ Skills themselves need testing — a modified skill that silently degrades is wo
 
 ---
 
+## Testing and Resilience
+
+Enforcement without testing creates false confidence. A hook that should block secret leakage but has an untested regex gap provides worse security than acknowledged open exposure — it eliminates vigilance while providing none. PDS applies the same discipline to its own enforcement infrastructure that it applies to production code.
+
+### Three Testing Layers
+
+**Unit tests** verify hook correctness deterministically — no LLM required. Each hook script receives JSON input (tool name, arguments, agent context) and produces a decision (block/allow/scrub). Test fixtures supply known inputs and assert expected outputs. A hook that scrubs `GITHUB_TOKEN=abc123` should produce `GITHUB_TOKEN=***REDACTED***`, not silence. Shell-based test runners execute in milliseconds and are suitable for pre-commit gates. See `hooks/tests/` for the fixture structure and test runner.
+
+**Skill evals** measure whether skills produce correct agent behavior. Unlike unit tests, skills are non-deterministic — the same prompt yields different outputs across runs. Statistical rigor is required. PDS uses LLM-as-judge grading with Wilson score confidence intervals across N executions per scenario. Each skill carries a companion `EVAL.md` defining scenarios, expected behaviors (binary checklist), and anti-patterns. See `/pds:eval` and `scripts/run-eval.sh` for the full methodology, including run-count guidance (3 for smoke, 5 for default, 10 for serious checks, 20 for regression baselines) and cost model (haiku execution + sonnet grading ≈ $0.10/run).
+
+**Integration tests** validate the installation itself. Smoke tests confirm that `install.sh` produces a working plugin: hooks fire on expected events, skills load via the Skill tool, agents spawn with correct permissions.
+
+### Why Hook Testing Matters
+
+Hooks are the mechanical enforcement layer. They fire automatically, independent of agent instructions. A failing hook silently downgrades enforcement — the agent receives no error, the developer sees no indication the gate they rely on is non-functional.
+
+Three hook categories warrant particular rigor:
+
+- **Security**: Secret scrubbing hooks (PostToolUse, UserPromptSubmit) must redact credential patterns reliably. A gap in regex coverage is a vulnerability, not a minor bug.
+- **Quality**: Task-completion gates and post-write lint hooks enforce standards across all agents. An untested gate can silently pass on the exact failure case it was designed to catch.
+- **Phase gates**: PreToolUse gates block PR creation and team teardown unless required artifacts exist. An untested edge case could allow a swarm to exit a phase prematurely, skipping validation or review.
+
+Unit tests prove correctness of the hook logic. Evals prove effectiveness in agent context — that agents respond to hook output as intended, not just that the hook output is technically correct.
+
+### The Improvement Cycle
+
+Testing closes the loop between observation and improvement:
+
+1. **Telemetry** surfaces usage patterns and anomalies (`scripts/detect-patterns.sh`)
+2. **Scout (Phase 6)** analyzes the swarm: evals skills exercised, updates instinct confidence, flags regressions
+3. **Instincts** accumulate evidence — observations gain confidence across swarms (low → medium → high at 3+ validations), then promote to skills via `/pds:instinct`
+4. **Evals narrow confidence intervals** each cycle — N=5 gives a wide CI; N=20 gives an actionable one
+5. **Skills and hooks improve** based on evidence, not intuition
+
+This is measured improvement. The Wilson score CI tracks progress quantitatively. A skill that regresses from 90% to 60% pass rate after a modification is a detected regression, not a silent degradation. Each cycle builds the evidence base that distinguishes genuine improvement from random variation — the same standard PDS applies to production code.
+
+---
+
 ## Resolved Questions
 
 These questions from v1.0 have been resolved through research and implementation experience:
