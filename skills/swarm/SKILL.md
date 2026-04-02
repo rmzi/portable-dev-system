@@ -101,6 +101,14 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
 3. Use TaskUpdate to set dependencies between tasks (`addBlockedBy`, `addBlocks`). Workers respect blocked status and prefer tasks in ID order.
 4. When zones cross a boundary (e.g., backend <-> frontend), write a **contract** to `.claude/swarm/contracts.md` defining the interface before dispatching.
 5. Write decomposition plan to `.claude/swarm/plan.md`.
+6. **Write context file.** Before dispatching workers, write `.claude/swarm/context.md` containing:
+   - **Plan summary** — what we're building and why
+   - **Research findings** — key codebase facts from the researcher
+   - **Acceptance criteria** — the mechanically verifiable criteria from Phase 1
+   - **Key decisions** — architectural choices made during planning, with rationale
+   - **Contracts** — interface boundaries between zones (if any)
+
+   This file bridges the context gap — workers read it on init to recover the orchestrator's reasoning without requiring fork-level context inheritance. Keep it concise (under 200 lines) and factual.
 
 ## Phase 3: Dispatch
 
@@ -122,6 +130,10 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
    # Heavy — workers stay sonnet (no override), but use more workers for parallelism
    ```
    Use `Task(validator)` for validation tasks, `Task(researcher)` for research, etc. The typed syntax restricts which agent definitions can fulfill the spawn. Always pass the tier-appropriate `model` override — see the Swarm Tiers table above.
+
+   **Dual-dispatch guidance:** Choose the dispatch mode based on task characteristics:
+   - **Team teammate** (`Task(worker)`) — Long-running implementation, needs its own worktree and task tracking. Default for all swarm work units.
+   - **Fork subagent** — Quick, invisible subtasks that benefit from the orchestrator's full context (e.g., "check if this function exists", "summarize this file"). No task tracking, no team visibility. Use when the answer is needed inline and the work is under 2-3 turns.
 
    **Worktree isolation:** If workers will edit overlapping files, spawn them with `isolation: "worktree"` so each gets an isolated copy of the repo. If workers touch non-overlapping files (different modules/skills), they can share the current worktree — but document the boundary in each worker's prompt to prevent collisions.
 3. Assign initial tasks to workers:
@@ -187,7 +199,7 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
    ```
    Task(scout, team_name="project-name", name="scout",
         model="<tier-model>",
-        prompt="Read .claude/instincts.md. Update counts for re-observed patterns. Propose new instincts. Flag high-confidence patterns for skill promotion. Run /pds:eval on skills exercised in this swarm. If telemetry exists, run scripts/detect-patterns.sh and include results in the report. Write report to .claude/swarm/scout-report.md. Send summary via SendMessage when done.")
+        prompt="Read .claude/instincts.md. Update counts for re-observed patterns. Propose new instincts. Flag high-confidence patterns for skill promotion. Run /pds:eval on skills exercised in this swarm. If telemetry exists, run scripts/detect-patterns.sh and scripts/efficiency-chart.sh — include pattern results and efficiency ratio in the report. Write report to .claude/swarm/scout-report.md. Send summary via SendMessage when done.")
    ```
    Tier models — lite: `model="haiku"` (default). Med: omit (haiku default). Heavy: `model="sonnet"`.
 2. **Heavy tier only**: Spawn auditor for tech debt scan:
@@ -229,6 +241,7 @@ All phase artifacts are written to `.claude/swarm/`:
 | `phase` | all | orchestrator | PR gate, teardown gate |
 | `tier` | 1 | orchestrator | Dispatch (model selection) |
 | `plan.md` | 2 | orchestrator | — |
+| `context.md` | 2 | orchestrator | Worker init |
 | `contracts.md` | 2 | orchestrator | — |
 | `validation-report.md` | 4 | validator | PR gate, teardown gate |
 | `review-report.md` | 5 | reviewer (or orchestrator at lite tier) | PR gate, teardown gate |

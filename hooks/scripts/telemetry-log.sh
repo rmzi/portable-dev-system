@@ -30,7 +30,16 @@ case "$TOOL_NAME" in
     ;;
 esac
 
+AGENT=${CLAUDE_AGENT_TYPE:-main}
+
+# Project-level telemetry (may be lost with worktrees)
 mkdir -p .claude
-printf '{"ts":"%s","event":"%s","name":"%s","session":"%s"}\n' "$TS" "$EVENT" "$NAME" "$SESSION" >> .claude/telemetry.jsonl
+printf '{"ts":"%s","event":"%s","name":"%s","agent":"%s","session":"%s"}\n' "$TS" "$EVENT" "$NAME" "$AGENT" "$SESSION" >> .claude/telemetry.jsonl
+
+# User-level telemetry (survives worktree cleanup)
+USER_TELEM_DIR="${HOME}/.claude/telemetry"
+mkdir -p "$USER_TELEM_DIR"
+REPO=$(basename "$(git rev-parse --show-toplevel 2>/dev/null || echo unknown)")
+printf '{"ts":"%s","event":"%s","name":"%s","agent":"%s","session":"%s","repo":"%s"}\n' "$TS" "$EVENT" "$NAME" "$AGENT" "$SESSION" "$REPO" >> "$USER_TELEM_DIR/sessions.jsonl"
 
 exit 0

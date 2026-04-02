@@ -1,12 +1,16 @@
 # Agentic SDLC: A Technical Whitepaper
 
-**Version 2.1 | February 2026**
+**v3.0 | April 2026**
 
 ---
 
 ## Executive Summary
 
 This whitepaper details a model for software development where AI agents operate as autonomous collaborators. Rather than treating AI as sophisticated autocomplete, we propose infrastructure where agents plan, execute, validate, and document work with minimal human intervention.
+
+PDS (Portable Development System) implements this model as a **Claude Code plugin** — distributing skills, agents, hooks, and security settings through the native plugin system. The methodology is encoded as configuration: install it once, and every Claude Code session gains the full agentic SDLC workflow.
+
+A key insight from deep source analysis of Claude Code's internals (March 2026): Claude Code is deeply coupled to Anthropic's API with no model abstraction layer. The "multi-provider" support (Bedrock, Vertex, Foundry) is multi-deployment of Claude, not multi-model. However, PDS's extension points — CLAUDE.md, skills, agents, hooks — are already expressed in model-agnostic markdown and JSON. PDS is more portable than the platform it runs on.
 
 The goal is amplification, not replacement. A single engineer orchestrates multiple agents working in parallel, each in isolated environments, producing work that flows through automated validation before human review. The human remains architect and final authority. The agents become a scalable workforce. This central orchestrator + specialist sub-agents pattern is emerging as the industry standard for agentic development [1][6].
 
@@ -18,7 +22,7 @@ This document provides the technical depth required to implement this model: the
 
 Traditional development workflows hit fundamental limits as AI capabilities improve:
 
-**Human attention becomes the bottleneck.** When AI generates code faster than humans can review it, cognitive bandwidth—not typing speed—becomes the constraint.
+**Human attention becomes the bottleneck.** When AI generates code faster than humans can review it, cognitive bandwidth — not typing speed — becomes the constraint.
 
 **Context switching destroys productivity.** Supervising multiple agents fragments attention. The cost compounds throughout the day.
 
@@ -34,6 +38,8 @@ The agentic SDLC addresses these limitations by restructuring development around
 
 Six phases, each with clear inputs, outputs, and transition criteria. Human involvement concentrates at phase boundaries. A **phase state machine** tracks forward-only transitions (plan → decompose → dispatch → validate → consolidate → knowledge) via `.claude/swarm/phase`. Phase gates enforce this mechanically — the PR gate blocks creation before `consolidate`, the teardown gate blocks cleanup before `knowledge`.
 
+This model is honest about its current gaps. Each phase description below notes known limitations and the path to closing them. The six-phase structure is stable; the enforcement mechanisms are evolving.
+
 ### Phase 1: Requirements and Planning
 
 Work begins when requirements arrive. The developer engages with an orchestrating agent to refine requirements into an actionable plan.
@@ -44,31 +50,43 @@ The grill protocol also recommends a **swarm tier** (lite, med, heavy) based on 
 
 The orchestrator may spawn a **researcher** agent to gather context: querying documentation, searching codebases, accessing external APIs. The orchestrator synthesizes this research and produces a structured task specification.
 
-The critical output is explicit acceptance criteria—unambiguous and mechanically verifiable. "The API should be fast" becomes "p99 latency for /users under 200ms with 1000 concurrent connections."
+The critical output is explicit acceptance criteria — unambiguous and mechanically verifiable. "The API should be fast" becomes "p99 latency for /users under 200ms with 1000 concurrent connections."
+
+**Known gap:** Phase 1 currently conflates two orthogonal concerns — the grill (synchronous requirement validation with the human) and research (asynchronous codebase exploration by a researcher agent). Separating these would allow the researcher to explore the codebase while the human refines requirements with the orchestrator, rather than serializing them. **Path forward:** Split Phase 1 into grill (sync, human-facing) and research (async, agent-facing) as parallel tracks that converge before decomposition.
 
 ### Phase 2: Task Decomposition and Dispatch
 
 The orchestrator decomposes the plan into discrete work units for parallel execution. Each unit becomes a task assigned to a worker agent.
 
-The orchestrator uses TaskCreate to build a task DAG, defining dependencies between work units. It then spawns worker agents via the Task tool, each receiving its own git worktree—complete, independent working directories sharing the underlying git object store. Each worker operates on its own branch, in its own directory, with no merge conflicts during execution.
+The orchestrator uses TaskCreate to build a task DAG, defining dependencies between work units. It then spawns worker agents via the Task tool, each receiving its own git worktree — complete, independent working directories sharing the underlying git object store. Each worker operates on its own branch, in its own directory, with no merge conflicts during execution.
 
 The orchestrator records session metadata: which agents work on which worktrees, which branches they correspond to, expected deliverables, and task dependencies. This enables monitoring, recovery, and coordination.
 
+**Known gap:** Decomposition conventions — Agent Zones (path-to-zone mappings), acceptance criteria schemas, and DAG validation — are currently advisory, not mechanical. An orchestrator can skip Agent Zones or write vague acceptance criteria without any enforcement catching it. **Path forward:** Structured acceptance criteria with a JSON schema that gates TaskCreate. DAG validation that rejects cycles and unreachable tasks. Agent Zone formalization via CLAUDE.md configuration that the orchestrator reads during decomposition.
+
 ### Phase 3: Parallel Execution
 
-Workers execute independently. Each worker agent declares `isolation: worktree` in its agent definition — a Claude Code 2.1.50 feature that provisions a dedicated git worktree declaratively, without manual setup. Workers access the codebase within their worktree, read documentation, and write code.
+Workers execute independently. Each worker agent declares `isolation: worktree` in its agent definition — a Claude Code feature that provisions a dedicated git worktree declaratively, without manual setup. Workers access the codebase within their worktree, read documentation, and write code.
 
 **Workers use a pull model for task claiming.** The orchestrator assigns initial tasks, but workers self-claim subsequent unblocked tasks by checking TaskList and claiming the lowest-ID available task via TaskUpdate. This reduces orchestrator bottleneck — workers stay productive without waiting for assignment. Workers can communicate via SendMessage when tasks require cross-agent coordination, and create new tasks via TaskCreate when they discover additional work.
 
+Workers benefit from a platform optimization: Claude Code's `StreamingToolExecutor` enables tool execution to overlap with response generation. When the model emits multiple tool_use blocks in a single response, Claude Code begins executing them before the full response completes. This means workers that chain multiple tool calls (read file, edit, run tests) don't pay a serial penalty for multi-tool turns — execution pipelines naturally while the model continues generating.
+
 Each worker produces a result artifact: code changes, summary, issues encountered. Workers commit to their branches but do not merge.
+
+**Known gap:** No backpressure mechanism exists. Workers terminate when they return output — there is no health monitoring during execution. The TeammateIdle hook event fires when a worker goes idle, but it currently only logs; it does not trigger remediation. If a worker hangs or loops, the orchestrator has no timeout or kill switch beyond the agent's maxTurns limit. **Path forward:** Use TeammateIdle events for remediation (detect stuck workers, reassign tasks). Implement worker health timeouts. Use TaskStop to terminate runaway workers. Claude Code already provides these primitives; PDS does not yet wire them up.
 
 ### Phase 4: Validation
 
 A validator agent examines all worker output by monitoring TaskUpdate status changes. The validator operates in its own worktree, merging worker branches and running comprehensive tests.
 
-Responsibilities: writing tests based on acceptance criteria, running the existing test suite, performing static analysis, checking for defects. Workers run `/verify` before declaring tasks done — a structured self-check covering acceptance criteria, test suite, debug artifacts, git status, and diff review. The validator does not fix issues—it produces a structured report (via TaskUpdate) identifying failures, localizing them, and suggesting remediation. The validator writes its report to `.claude/swarm/validation-report.md` — a required artifact enforced by an LLM prompt evaluator on the validator's Stop hook.
+Responsibilities: writing tests based on acceptance criteria, running the existing test suite, performing static analysis, checking for defects. Workers run `/verify` before declaring tasks done — a structured self-check covering acceptance criteria, test suite, debug artifacts, git status, and diff review. The validator does not fix issues — it produces a structured report (via TaskUpdate) identifying failures, localizing them, and suggesting remediation. The validator writes its report to `.claude/swarm/validation-report.md` — a required artifact enforced by an LLM prompt evaluator on the validator's Stop hook.
+
+A platform detail affects report structure: Claude Code stores large tool results externally and replaces them with references in the conversation. When the validator runs comprehensive test suites, large test outputs may be stored externally rather than inline. The validation report should reference specific test results by name rather than assuming full output is inline, ensuring the report remains useful even after tool result storage kicks in.
 
 If validation fails, the report flows to the orchestrator, which updates the task DAG and dispatches targeted fix requests. This cycle continues until validation passes or human intervention is required.
+
+**Known gap:** The boundary between Phase 3 (dispatch/execution) and Phase 4 (validation) is fuzzy. Currently, validation starts only after all workers complete — but in practice, the validator could begin checking completed tasks while other workers are still executing, creating a pipeline rather than a batch. The validator's report completeness is evaluated by an LLM prompt, not a mechanical schema check. **Path forward:** Pipeline validation — start the validator when the first task completes, not when the last one does. Define a structured validation report schema that can be mechanically checked alongside the LLM evaluation.
 
 ### Phase 5: Consolidation and Human Review
 
@@ -76,17 +94,21 @@ Once Phase 4 validation passes, the orchestrator consolidates worker branches us
 
 The orchestrator writes the reviewer's report to `.claude/swarm/review-report.md` — a required artifact. A PreToolUse gate on `gh pr create` blocks PR creation unless both the validation and review reports exist. The developer reviews with full context: requirements, plan, validation results, reviewer findings, issues encountered. The developer can request changes (flowing back through the orchestrator) or approve for merge. The reviewer's automated pre-review supplements but never replaces the human gate.
 
+**Known gap:** `/finish` runs sequentially — one branch at a time. For swarms with many workers, this is a bottleneck. The human approval gate is informal: the orchestrator creates a PR and waits for human action, but there is no structured protocol for the human to approve or reject with feedback that flows back programmatically. Claude Code provides `plan_approval_request` for exactly this kind of structured approval flow, but PDS does not use it for the Phase 5 human gate. **Path forward:** Parallelize `/finish` across branches (each in its own worktree). Use `plan_approval_request`/`plan_approval_response` to formalize the human approval gate with structured feedback that the orchestrator can act on without ambiguity.
+
 ### Phase 6: Knowledge Capture
 
 Before merging, the orchestrator reviews what happened: patterns emerged, architectural decisions made, unexpected challenges. A **scout** agent analyzes the completed swarm for meta-improvements — workflow optimizations, skill gaps, configuration updates. The scout writes its report to `.claude/swarm/scout-report.md` and can access cross-session memory via claude-mem MCP tools (when available) to enrich analysis with historical context.
 
 A PreToolUse gate on `TeamDelete` blocks team teardown unless all three phase artifacts exist (validation, review, scout reports). This ensures no phase is skipped during swarm completion.
 
-This knowledge flows into the lexicon—a persistent repository of engineering knowledge spanning tasks, repositories, and team members. The lexicon captures lessons learned, gotchas, and patterns.
+This knowledge flows into the lexicon — a persistent repository of engineering knowledge spanning tasks, repositories, and team members. The lexicon captures lessons learned, gotchas, and patterns.
 
 An **auditor** agent may be spawned periodically (not per-swarm) to scan for tech debt, code smells, and missing tests, filing findings as GitHub issues.
 
-Agents query the lexicon during future planning and execution, avoiding repeated mistakes and building on proven patterns.
+Agents query the lexicon during future planning and execution, avoiding repeated mistakes and building on proven patterns [5].
+
+**Known gap:** The scout runs post-mortem — after all other agents have shut down. This means the scout cannot ask workers clarifying questions about decisions they made. There is also no feedback loop from Phase 6 knowledge back to Phase 1 grill — patterns discovered in one swarm don't automatically inform the next swarm's requirement validation. **Path forward:** Run the scout before shutting down other agents so it can query them. Establish a feedback loop where instincts captured in Phase 6 are injected into Phase 1 grill context, so the orchestrator's requirement validation benefits from accumulated knowledge.
 
 ---
 
@@ -114,6 +136,72 @@ The protocol uses JSON-RPC over stdio or SSE. Servers can be written in any lang
 
 This ecosystem reduces the barrier to agent integration significantly.
 
+### Plugin Architecture
+
+PDS distributes as a **Claude Code plugin** — a first-class extension mechanism that bundles skills, agents, hooks, and MCP server configurations into a single installable unit.
+
+**Plugin manifest** (`plugin.json`): Declares the plugin's name, version, and description. Claude Code discovers the plugin at `~/.claude/plugins/pds/` and loads its contents automatically.
+
+**What a plugin provides:**
+- **Skills** (`skills/` directory): 24 workflow protocols in markdown format. Each skill is loaded on demand when invoked (e.g., `/pds:swarm`). Skills encode multi-step procedures that would bloat passive context if always present.
+- **Agents** (`agents/` directory): 8 role definitions with model selection, permission mode, tool access, and behavioral constraints. Agents are spawnable via the Task tool with type restrictions (`Task(worker)`, `Task(validator)`).
+- **Hooks** (`hooks/hooks.json`): Lifecycle event handlers that fire on specific Claude Code events. PDS uses hooks for quality gates (Stop, TaskCompleted, TeammateIdle), audit logging (WorktreeCreate, InstructionsLoaded), session setup (SessionStart), and permission routing (PermissionRequest).
+- **MCP servers**: Tool integrations declared in the plugin manifest, available to agents based on role permissions.
+
+**Plugin sources**: Claude Code supports three plugin sources — builtin (ships with the CLI), marketplace (git repositories installable via `claude mcp install-marketplace`), and local (symlinked for development). PDS is available through the marketplace and as a local dev install.
+
+**Why plugins matter for PDS**: Before the plugin system, PDS required copying files into each project's `.claude/` directory. Plugins provide user-level installation — install once, available across all projects. Project-level overrides (`.claude/settings.json`, `CLAUDE.md`) layer on top for team-specific configuration.
+
+### Hook Lifecycle
+
+Claude Code provides **28 hook lifecycle events** that plugins and project configuration can subscribe to. Hooks are the mechanical enforcement layer — they fire automatically at specific points in the agent lifecycle, independent of agent prompts or instructions.
+
+**Event categories:**
+
+| Category | Events | PDS Usage |
+|----------|--------|-----------|
+| **Tool lifecycle** | PreToolUse, PostToolUse, PostToolUseFailure | Phase gates (PR gate, teardown gate), post-write lint |
+| **Session lifecycle** | SessionStart, SessionEnd, Stop, StopFailure, Setup | Version check, context injection, completion verification |
+| **Agent lifecycle** | SubagentStart, SubagentStop, TeammateIdle, TaskCreated, TaskCompleted | Quality gates, idle detection, task completion verification |
+| **Permission** | PermissionRequest, PermissionDenied | LLM-as-judge permission routing |
+| **Configuration** | ConfigChange, WorktreeCreate, WorktreeRemove, InstructionsLoaded, CwdChanged, FileChanged | Audit logging, lifecycle tracking |
+| **Context** | PreCompact, PostCompact, UserPromptSubmit, Notification | Context management |
+| **Interaction** | Elicitation, ElicitationResult | User input handling |
+
+**Hook types**: Hooks can be implemented as bash commands (run a script), agent hooks (spawn a Claude instance to evaluate), HTTP hooks (call an external webhook — available since Claude Code 2.1.63), or internal callbacks.
+
+**Hook responses**: Depending on the event, hooks can continue or stop execution, approve or deny permissions, inject additional context, or modify tool input/output. Two powerful response capabilities remain untapped by PDS: `updatedInput` can modify tool parameters before execution (e.g., ensuring Bash commands run in the correct worktree), and `updatedMCPToolOutput` can modify MCP tool results after execution (e.g., sanitizing or enriching outputs). These represent enforcement opportunities beyond simple approve/deny decisions.
+
+**PDS hook usage**: PDS registers hooks for SessionStart (inject version and context), Stop (verify completion for implementation sessions), TaskCompleted (run tests), TeammateIdle (detect uncommitted changes), WorktreeCreate (audit logging), InstructionsLoaded (audit logging), and PermissionRequest (LLM-as-judge routing). The orchestrator's PreToolUse hooks enforce phase gates — blocking `gh pr create` and `TeamDelete` unless required artifacts exist.
+
+All 28 events receive `agent_id` and `agent_type` in their payloads (since Claude Code 2.1.69), enabling agent-aware policy decisions — the same hook can apply different rules depending on whether the requestor is a worker, validator, or orchestrator.
+
+**Known gap:** PDS uses 7 of 28 available hook events. High-value unused events include: PreToolUse (gate tool calls with PDS policy beyond phase gates), PostToolUse (usage telemetry and pattern tracking), SubagentStart (enforce agent roster — warn on unknown types), and UserPromptSubmit (suggest relevant PDS skills based on user prompt keywords). **Path forward:** Prioritize PostToolUse for telemetry and SubagentStart for roster enforcement as the highest-impact additions.
+
+### LLM Independence
+
+**The coupling reality:** Claude Code is deeply coupled to Anthropic's API. The `services/api/claude.ts` module (126k lines) uses `@anthropic-ai/sdk` types throughout — `BetaMessageStreamParams`, `BetaMessage`, `BetaToolUnion`, `ToolResultBlockParam`. Streaming uses Anthropic's `Stream<BetaRawMessageStreamEvent>`. Extended thinking, prompt caching (`cache_control`), and tool results all use Anthropic-specific formats. There is no abstraction layer between business logic and the Anthropic SDK.
+
+The four providers (firstParty, Bedrock, Vertex, Foundry) are different deployment targets for the same Claude models, not a multi-model architecture. Model configs map each Claude model to provider-specific identifiers. No OpenAI, no local model support, no generic LLM interface exists in the codebase.
+
+**What PDS already owns that's portable:** PDS's extension points are expressed in model-agnostic formats:
+- **CLAUDE.md** — plain markdown, injected into system prompt as `userContext.claudeMd`
+- **Skills** — markdown files loaded by `loadSkillsDir.ts`, provided to the Skill tool
+- **Agents** — markdown files loaded by `loadAgentsDir.ts`, spawnable via Agent tool
+- **Hooks** — JSON configuration triggering bash/HTTP/agent handlers
+- **Settings** — JSON configuration for permissions, sandbox, environment
+- **MCP servers** — JSON-RPC protocol, already LLM-agnostic by design
+
+PDS is already more model-agnostic than Claude Code itself. The methodology (six phases, human gates, isolation) is pure process — it transfers to any agent runtime that supports worktrees, tasks, and inter-agent messaging.
+
+**The abstraction boundary strategy:** PDS does not need Claude Code to become LLM-agnostic. PDS needs to own the abstraction boundary:
+1. **Message format translator** — Convert between Anthropic message format and a PDS-internal format. Key challenge: tool_use blocks, thinking blocks, content arrays.
+2. **Tool schema translator** — Claude Code tools use Anthropic's `ToolInputJSONSchema`. OpenAI uses JSON Schema with `function` wrapping. Local models use varying formats.
+3. **Streaming protocol adapter** — Anthropic SSE events differ from OpenAI SSE events.
+4. **Context window management** — Claude Code's compact/microcompact/reactive-compact system (61k `compact.ts`) is sophisticated. Any alternative runtime would need equivalent compression.
+
+This is a vision-forward strategy. Today, PDS runs on Claude Code and benefits from its deep Claude integration. The portable markdown/JSON layer means PDS could migrate to another runtime without rewriting its methodology — only the runtime adapter would change.
+
 ### Agent Isolation
 
 Agents must operate within well-defined boundaries. Unrestricted access to production systems is unacceptable risk.
@@ -125,8 +213,8 @@ PDS layers eight enforcement mechanisms, from OS-level sandboxing to human revie
 1. **OS-level sandbox** — Claude Code's native sandbox (Seatbelt on macOS, bubblewrap on Linux) confines Bash commands: filesystem writes are restricted to the working directory, network access is limited to an allowlist of domains. This is the hard floor — no prompt injection or agent confusion can bypass OS-level enforcement.
 2. **Static deny rules** — Pattern-matched rules in `settings.json` block credential paths, protected branches, sensitive files, and production patterns across all tools. Deny rules are evaluated before any permission mode logic and cannot be overridden.
 3. **Permission hooks** — An LLM-as-judge `PermissionRequest` hook evaluates subagent requests not covered by static rules. Hooks receive `agent_id` and `agent_type` in all hook events (Claude Code 2.1.69), enabling agent-aware decisions. HTTP hooks (Claude Code 2.1.63) allow quality gates to call external services for policy enforcement.
-4. **PreToolUse phase gates** — Agent-level hooks that enforce SDLC phase transitions mechanically. A forward-only phase state machine (`.claude/swarm/phase`) tracks the current phase; gates validate both phase state and required artifacts. The orchestrator's PR gate blocks `gh pr create` unless phase ≥ `consolidate` and validation + review reports exist; its teardown gate blocks `TeamDelete` unless phase = `knowledge` and all three phase artifacts exist. Phase checks are defense-in-depth — if the phase file is absent, gates fall through to artifact-only checks. The validator's Stop hook uses an LLM evaluator to verify report completeness. `WorktreeCreate`/`WorktreeRemove` hook events provide lifecycle gates for worktree operations. `InstructionsLoaded` events let hooks audit which rule files are active at session start.
-5. **Agent prompt constraints** — Each agent's `.md` file defines role-specific boundaries ("read-only", "stay in your worktree", "does not fix code"). Shared behavioral rules (`shared-rules.md`) are inherited by all agents via `inherits:` frontmatter.
+4. **PreToolUse phase gates** — Agent-level hooks that enforce SDLC phase transitions mechanically. A forward-only phase state machine (`.claude/swarm/phase`) tracks the current phase; gates validate both phase state and required artifacts. The orchestrator's PR gate blocks `gh pr create` unless phase >= `consolidate` and validation + review reports exist; its teardown gate blocks `TeamDelete` unless phase = `knowledge` and all three phase artifacts exist. Phase checks are defense-in-depth — if the phase file is absent, gates fall through to artifact-only checks. The validator's Stop hook uses an LLM evaluator to verify report completeness. `WorktreeCreate`/`WorktreeRemove` hook events provide lifecycle gates for worktree operations — creation and cleanup can be audited or blocked. `InstructionsLoaded` events let hooks audit which rule files are active at session start.
+5. **Agent prompt constraints** — Each agent's `.md` file defines role-specific boundaries ("read-only", "stay in your worktree", "does not fix code"). Shared behavioral rules (`shared-rules.md`) are inherited by all agents via `inherits:` frontmatter. This shared-rules pattern has a hidden benefit: agents with byte-identical system prompt prefixes get better prompt cache efficiency. Placing shared rules at the top of agent definitions maximizes the shared prefix, reducing per-agent cache warming cost across a swarm.
 6. **Permission modes** — `plan`, `acceptEdits`, `default`, and `auto` control which tools each agent type can access. Orchestrators declare which agent types they can spawn via `Task(agent_type)` restriction syntax, preventing unauthorized agent escalation. In auto mode, a Sonnet classifier evaluates each tool call — agent-declared modes are overridden, but deny rules, sandbox, and phase gates remain enforced.
 7. **The human gate** — All changes flow through PR review before reaching production.
 8. **Observability** — Opt-in telemetry (`.claude/telemetry.jsonl`) tracks skill invocations, agent spawns, and file modifications. Pattern detection (`scripts/detect-patterns.sh`) identifies anomalies: repeated skill invocations suggesting missing automation, agents spawned without work output, and zero-usage skills. This data feeds into the instinct lifecycle, enabling data-driven skill evolution.
@@ -148,15 +236,19 @@ This approach favors lightweight isolation over heavyweight containers. The sand
 
 ### Native Agent Teams
 
-Agents execute as native Claude Code teams—no containers, no file synchronization, no heavyweight orchestration.
+Agents execute as native Claude Code teams — no containers, no file synchronization, no heavyweight orchestration.
 
 **TeamCreate** establishes a team with a shared task list. The orchestrator uses this to coordinate multiple agents working on related tasks.
 
 **TaskCreate** defines work units with dependencies, forming task DAGs. Workers can depend on each other's completion, enabling sophisticated workflows while maintaining clarity about execution order.
 
-**Task tool** spawns worker agents. Each worker receives its own git worktree (via `isolation: "worktree"`), providing filesystem isolation without containerization overhead. Claude Code handles worktree creation, path resolution, and cleanup automatically.
+**Task tool** spawns worker agents. Each worker receives its own git worktree (via `isolation: "worktree"`), providing filesystem isolation without containerization overhead. Claude Code handles worktree creation, path resolution, and cleanup automatically. Agents follow a spawn-execute-return-die lifecycle — they are ephemeral by design. A worker spawned for a task executes until completion (or maxTurns), returns its output, and terminates. This simplicity is a strength (no zombie processes, no session management) but means workers cannot be queried after completion.
 
 **SendMessage** enables direct and broadcast communication. Workers can ask questions, share findings, or coordinate when decomposition requires it. The orchestrator receives all messages and can route or respond as needed.
+
+**PDS's specialized-agent model vs. fork subagents:** Claude Code's `FORK_SUBAGENT` feature flag enables a different agent spawning pattern — forking the parent's full conversation context into a child agent. The child inherits the parent's system prompt (byte-exact for cache efficiency) and full conversation history. This contrasts with PDS's model where each agent starts fresh with its own role-specific system prompt. Fork subagents optimize for "do this subtask with full context" while PDS agents optimize for "play this specialized role with focused behavior."
+
+**Known gap: Three-system disconnect.** Claude Code provides three agent spawning systems — specialized team agents (`Task(worker)`), fork subagents (`FORK_SUBAGENT`), and coordinator mode (`COORDINATOR_MODE`) — but they address different problems and cannot be composed. Specialized agents get role constraints but lose the orchestrator's accumulated context. Fork subagents inherit full context but have no role specialization. Coordinator mode enables collaboration but does not differentiate agents by capability. Community evidence confirms this is a pain point: anthropics/claude-code#24316 (27 upvotes, requesting fork + specialization), #16153 (context inheritance for spawned agents), #4908 (subagent memory sharing), #6825 (agent context bootstrapping), #17283 (passing conversation context to subagents). No hidden combination exists in the codebase — `fork` and `agent_type` are separate code paths. **Path forward:** A dual-dispatch model where the orchestrator chooses fork (quick, invisible, context-inheriting) vs. team teammate (long-running, visible, role-specialized) at runtime based on task characteristics. For context loss on teammate spawn, PDS introduces a structured context protocol: the orchestrator writes `.claude/swarm/context.md` containing the plan, research findings, acceptance criteria, and key decisions before dispatching workers. Workers read this file on initialization, recovering the orchestrator's reasoning without requiring fork-level context inheritance. This bridges the gap pragmatically while the platform evolves toward native context sharing.
 
 This approach eliminates Docker/container overhead while maintaining isolation through git worktrees and Claude Code's permission system. Agents run natively with full access to local tools (language servers, build tools, formatters) without the complexity of mounting volumes or synchronizing files.
 
@@ -169,7 +261,11 @@ PDS uses a dual-layer approach informed by these findings:
 - **Passive context** (`CLAUDE.md`) — Always loaded. Carries rules, the skills table, and conventions that apply across all tasks. This is the horizontal layer.
 - **Explicit skills** (plugin `skills/` directory) — User-triggered vertical workflows (`/pds:swarm`, `/pds:grill`, `/pds:finish`). Loaded on demand when the user or orchestrator invokes them. These encode multi-step protocols that would bloat passive context if always present.
 
-The passive layer tells the agent *what skills exist and when to use them*. The skills themselves contain the detailed protocol. This avoids the failure mode identified in Vercel's research — agents not discovering skills during general tasks — while keeping context lean.
+The passive layer tells the agent *what skills exist and when to use them*. The skills themselves contain the detailed protocol. This avoids the failure mode identified in Vercel's research — agents not discovering skills during general tasks — while keeping context lean [4].
+
+**Platform alignment:** PDS's dual-layer pattern independently converged on the same optimization Claude Code uses for its own tool system. Claude Code defers tool schemas via `ToolSearch` — less-commonly-used tools appear only as names in a system reminder, with full schemas loaded on demand when the model needs them. PDS lists skills in CLAUDE.md (names and descriptions), with full skill content loaded when invoked via the Skill tool. Both systems solve the same problem: rich capability without context bloat. This convergence validates PDS's instruction architecture as aligned with platform-native patterns, not fighting them.
+
+**System prompt assembly** (observed from source analysis): Claude Code builds the system prompt through a multi-stage pipeline. Sections are cached via `systemPromptSection()` for prompt cache efficiency — unchanged sections hit the cache, reducing cost. The pipeline assembles: system prompt base + user context (CLAUDE.md files, current date) + system context (git status snapshot). The QueryEngine layer adds coordinator context, memory mechanics, and any custom system prompts. PDS's CLAUDE.md content enters this pipeline as `userContext.claudeMd`, alongside skills and agent definitions loaded from the plugin directory. This caching-aware assembly means PDS's passive context benefits from prompt caching automatically — the skills table in CLAUDE.md is cached across turns when unchanged.
 
 ### Data Source Registry
 
@@ -196,6 +292,35 @@ mcp_servers:
 
 This ensures workers never receive GitHub tokens and orchestrators don't get database access beyond what coordination requires.
 
+**Note:** The data source registry is currently aspirational configuration — PDS uses it as a design pattern for teams to follow, but there is no mechanical enforcement mapping agent roles to MCP server access at runtime. Role-based access control is enforced via static deny rules and permission hooks, not via the registry schema. This is a vision-forward design that would benefit from Claude Code adding agent-role-aware MCP server filtering.
+
+### Headless Agents
+
+Not all agent work requires an interactive session. Some tasks — preflight validation, instinct capture, telemetry analysis, scheduled audits, post-swarm cleanup — are better suited to background or scheduled execution without a human present.
+
+**Three dispatch modes:**
+
+| Mode | Mechanism | Visibility | Use Case |
+|------|-----------|------------|----------|
+| **Team teammate** | `Task(worker)` | Visible in team, tracked via TaskList | Long-running implementation, validation, review |
+| **Fork subagent** | `FORK_SUBAGENT` | Invisible to team, inherits parent context | Quick subtasks, ad-hoc queries, inline research |
+| **Headless** | `CronCreate`, `run_in_background`, SessionStart/Stop hooks | No interactive session required | Preflight checks, telemetry analysis, scheduled audits, instinct capture |
+
+**What headless agents can do today** (from source analysis):
+- **`CronCreate`** — Schedule recurring agent execution on a cron expression. The agent runs independently of any active session.
+- **`run_in_background`** — Launch a long-running command that continues after the parent returns. Results are available later via notification.
+- **SessionStart hooks** — Execute validation, context injection, or environment checks at every session start. PDS already uses this for version checking and context injection.
+- **Stop hooks** — Execute verification or cleanup when a session ends.
+
+**Use cases:**
+- **Preflight validation** — Run `/pds:preflight` via SessionStart hook before any work begins.
+- **Instinct capture** — After a swarm completes, a headless agent analyzes the session for patterns worth recording as instincts.
+- **Telemetry analysis** — Scheduled analysis of `.claude/telemetry.jsonl` to detect efficiency trends and waste patterns.
+- **Cleanup** — Post-swarm worktree removal, stale branch pruning, artifact archival.
+- **Scheduled audits** — Periodic codebase scanning for tech debt, dependency updates, or configuration drift.
+
+Headless agents are the least mature dispatch mode — `CronCreate` and background execution exist in the platform but PDS does not yet wrap them in workflow-aware skills. The `/pds:dispatch` skill documents when to use each mode and provides the dispatch protocol.
+
 ### The Lexicon
 
 The lexicon is persistent engineering knowledge spanning tasks and team members.
@@ -213,7 +338,7 @@ This auto-evolution means the lexicon grows from work — not from manual docume
 
 **Auto-Detection**: In addition to manual capture, the scout agent can detect instinct-worthy patterns from telemetry data. The detect-patterns script identifies: skills invoked 3+ times per session (suggesting automation opportunities), agents spawned without task completion (suggesting configuration issues), dominant file extensions (suggesting tooling needs), and zero-usage skills (suggesting deprecation candidates). These automated detections appear as draft instincts in the scout report for human review.
 
-Agents query `.claude/instincts.md` during planning (Phase 1) and execution, avoiding repeated mistakes and building on proven patterns.
+Agents query `.claude/instincts.md` during planning (Phase 1) and execution, avoiding repeated mistakes and building on proven patterns [5].
 
 ### Observability
 
@@ -226,9 +351,78 @@ PDS instruments its own usage through opt-in telemetry. When enabled (PDS_TELEME
 
 All data is local — nothing leaves the developer's machine. The telemetry file is gitignored by default. The `/telemetry` skill provides management commands: enable, disable, view reports, and rotate logs.
 
+**Dual-level persistence:** Telemetry events are written to both project-level (`.claude/telemetry.jsonl`) and user-level (`~/.claude/telemetry/sessions.jsonl`). Project-level telemetry lives in the working directory and may be lost when worktrees are cleaned up after a swarm. User-level telemetry persists across sessions, repositories, and worktree lifecycles — enabling retrospective analysis of any past session. Each user-level event includes a `repo` field for filtering. The efficiency chart script (`scripts/efficiency-chart.sh`) supports `--user` to read user-level telemetry, `--session <id>` to filter to a specific session, and `--repo <name>` to filter by repository.
+
 A pattern detection script (scripts/detect-patterns.sh) analyzes telemetry for instinct-worthy patterns: repeated skill invocations within a session, agents spawned without corresponding work output, dominant file extensions suggesting specialized tooling needs, and zero-usage skills that may warrant deprecation. The scout agent runs this analysis during Phase 6, producing draft instinct entries for human review.
 
 This closes the feedback loop between usage and methodology: PDS can now identify which parts of the system are actually used and which are dead weight, enabling data-driven decisions about skill promotion, retirement, and optimization.
+
+### Efficiency Measurement
+
+Agentic workflows introduce new categories of waste invisible to traditional development metrics. Lines of code, velocity points, and commit frequency measure output but not the efficiency of the process that produced it. A swarm may produce correct code while spending 60% of its wall-clock time on non-value-creating activity: agents waiting for permission prompts, re-reading files already analyzed by the researcher, serializing context between agents, or iterating through failed validation cycles.
+
+**Value Stream Mapping** — a technique from the Toyota Production System [13] — provides the analytical framework. Ohno defined seven categories of waste (muda) in manufacturing; these map directly to agentic software development:
+
+| TPS Waste | Agentic SDLC Equivalent | Example |
+|-----------|------------------------|---------|
+| **Waiting** | Agent idle during review or approval | Worker blocked on orchestrator assignment; validator waiting for all workers to finish |
+| **Transport** | Context serialization between agents | Orchestrator's research lost when worker spawns fresh; findings re-discovered from scratch |
+| **Over-processing** | Re-reading files already analyzed | Worker re-reads files the researcher already summarized; validator re-analyzes code the reviewer already checked |
+| **Defects** | Failed validation cycles | Worker produces code that fails validation; fix-revalidate cycle repeats |
+| **Inventory** | Stale worktrees and branches | Completed worktrees not cleaned up; branches lingering after merge |
+| **Motion** | Permission prompts and tool approval friction | Interactive permission prompts interrupting autonomous flow; sandbox denials requiring reconfiguration |
+| **Overproduction** | Gold-plating beyond acceptance criteria | Worker adds features not in the spec; documenter writes docs for internal-only changes |
+
+Beck's Extreme Programming [14] and Poppendieck's Lean Software Development [15] both identify waste elimination as a core principle — but neither anticipated waste categories specific to multi-agent coordination. The transport waste (context loss between agents) and the motion waste (permission prompt friction) are unique to agentic workflows and have no equivalent in human-only development.
+
+**Efficiency ratio:** The fundamental metric is the ratio of value-creating time to total elapsed time per agent:
+
+```
+η = Σ(value-creating time) / Σ(total elapsed time)
+```
+
+A value-creating event is one that advances the work product: writing code, running tests, producing reports. An idle event is everything else: waiting for assignment, re-reading context, blocked on permissions, serializing between phases.
+
+**Efficiency chart:** A binary signal over time for each agent — 1 when creating value, 0 when idle. Gaps between value events are waste to be investigated and reduced:
+
+```
+orchestrator: ████░░░░████░░████████░░░░████
+worker-1:     ░░░░░░░░████████████░░░░░░░░░░
+worker-2:     ░░░░░░░░░░████████████████░░░░░
+validator:    ░░░░░░░░░░░░░░░░░░░░████████░░░
+              ─────────────────────────────────
+              0    5    10   15   20   25   30  (minutes)
+
+█ = value-creating   ░ = idle/waiting
+Overall η = 0.52 (52% efficiency)
+Top waste: worker-1 idle 0:00-0:08 (waiting for dispatch)
+```
+
+The chart makes waste visible. The leading idle gap for workers (waiting for dispatch) and the trailing idle gap for the orchestrator (waiting for validation) are structural — they exist in every swarm. The question is whether they can be compressed: pipeline validation (start checking completed tasks early), pre-warm worker context (write context file before dispatch), parallelize consolidation.
+
+**PDS telemetry as measurement mechanism:** The existing telemetry infrastructure (`.claude/telemetry.jsonl`) captures timestamped events per agent. The efficiency chart script (`scripts/efficiency-chart.sh`) reads these events, classifies each as value-creating or idle based on event type, produces the per-agent binary signal chart, calculates η, and identifies the top waste points. The scout agent runs this analysis during Phase 6 (Knowledge), including efficiency findings in its report alongside instinct analysis.
+
+This grounds PDS's self-improvement cycle in quantitative evidence rather than subjective assessment. A swarm that achieves η=0.7 is measurably better than one at η=0.4, and the waste breakdown shows exactly where to invest optimization effort.
+
+---
+
+## Platform Positioning
+
+Understanding where PDS leads and where the platform leads is essential for strategic investment. Source analysis of Claude Code's internals reveals a clear competitive split:
+
+**Where PDS leads:**
+- **Structured agent workflows** — PDS's 6-phase SDLC with role-specific agents (orchestrator, researcher, worker, validator, reviewer, documenter, scout, auditor) is more opinionated and more structured than Claude Code's generic coordinator mode. The coordinator provides the platform; PDS provides the methodology.
+- **Workflow enforcement** — PDS's grill → implement → verify → finish pipeline has no Claude Code equivalent. Phase gates, artifact requirements, and the forward-only state machine are PDS innovations.
+- **Quality gates** — PDS hooks enforce SDLC stages mechanically; Claude Code's hooks are general-purpose event handlers without workflow semantics.
+- **Swarm tiers** — Cost-aware model selection per agent role. Claude Code provides the model override mechanism; PDS provides the tier abstraction that makes it usable.
+
+**Where Anthropic leads:**
+- **Context management** — 61k lines of compaction code across 5 modes (auto-compact, micro-compact, reactive compact, context collapse, history snip) vs. PDS's zero investment. PDS gets this for free as a platform benefit.
+- **Intelligence** — ML-powered classifiers for bash command safety (`BASH_CLASSIFIER`) and auto-mode permission decisions (`TRANSCRIPT_CLASSIFIER`). These reduce permission prompting without PDS needing to implement its own classification.
+- **IDE integration** — Native VS Code and JetBrains bridge via WebSocket protocol (`BRIDGE_MODE`). PDS doesn't need to replicate UI.
+- **Memory extraction** — Auto-memory extraction from conversations (`EXTRACT_MEMORIES`). PDS's instinct system has similar goals but is currently unused. Anthropic's implementation is automatic; PDS requires explicit `/instinct` invocation.
+
+**The synergy:** PDS methodology + Claude Code platform creates a stack that neither provides alone. Claude Code handles the hard engineering problems (context compression, caching, IDE integration, model API). PDS handles the hard methodology problems (SDLC enforcement, agent specialization, human gates, quality assurance). Feature flags like `COORDINATOR_MODE`, `AGENT_TRIGGERS`, and `WORKFLOW_SCRIPTS` signal that Anthropic is investing in PDS-adjacent territory — but with generic primitives, not opinionated methodology. PDS remains the methodology layer.
 
 ---
 
@@ -243,7 +437,7 @@ The terminal provides a powerful interface for multi-worktree workflows. Graphic
 - **yazi** or similar: Terminal file manager for worktree navigation
 - **neovim + telescope**: Editor with multi-worktree support
 
-Claude Code handles agent lifecycle natively through TeamCreate/TaskCreate/Task tools. tmux and terminal tools enhance the workflow but are not required for agent orchestration.
+Claude Code handles agent lifecycle natively through TeamCreate/TaskCreate/Task tools. tmux and terminal tools enhance the developer's monitoring experience but are not required for agent orchestration.
 
 ### Version Control
 
@@ -260,9 +454,13 @@ Each worktree needs dependencies. Prefer tools that make environment creation fa
 
 ### Agent Runtime
 
-- **Claude**: Underlying model with extended thinking and tool use
-- **Agent frameworks**: Scaffolding for autonomous operation
-- **MCP servers**: Configured per agent type with appropriate permissions
+**Claude Code** is the agent runtime. It provides the execution environment for agents: spawning (Task tool), coordination (TeamCreate, TaskCreate, SendMessage), isolation (worktree provisioning), permissions (sandbox, deny rules, hooks), and lifecycle management (agent start, stop, idle detection) [7].
+
+Claude Code requires:
+- **Claude model access**: API key or organization account with Anthropic, Bedrock, Vertex, or Foundry
+- **MCP servers**: Configured per agent type with appropriate permissions. The Docker MCP Catalog provides 200+ verified servers for common integrations.
+
+Terminal tools (tmux, yazi, neovim) are optional enhancements for the developer's workflow — they are not required for agent operation.
 
 ### Monitoring
 
@@ -282,11 +480,15 @@ Engineers master git worktrees and terminal workflows. Establish conventions for
 
 **Deliverable**: Every engineer can create a worktree, make changes, commit, and merge using terminal tools.
 
+**Achievable today** with Claude Code and PDS installed. No additional infrastructure required.
+
 ### Phase 1: Supervised Single-Agent
 
 One agent, active human oversight. Build familiarity with agent behavior, effective prompts, failure modes.
 
 **Deliverable**: Each engineer completes five supervised agent tasks across different work types.
+
+**Achievable today** — this is the default Claude Code experience with PDS skills guiding the workflow.
 
 ### Phase 2: Multi-Agent Local
 
@@ -294,17 +496,23 @@ Parallel workers on local machines. Learn task decomposition and resource manage
 
 **Deliverable**: Each engineer completes three multi-agent tasks. Team documents best practices.
 
+**Achievable today** using Claude Code's native TeamCreate/TaskCreate/Task tools with PDS's swarm skill. Requires sufficient local compute for concurrent agents.
+
 ### Phase 3: Cloud Infrastructure
 
-Agents run in isolated pods. Implement governance framework with IAM roles and network policies.
+Agents run in isolated cloud environments. Implement governance framework with IAM roles and network policies.
 
 **Deliverable**: Infrastructure supports ten concurrent agents. At least one overnight execution without supervision.
+
+**Partially achievable today.** Claude Code runs locally, but headless agent primitives (`CronCreate`, `run_in_background`, SessionStart/Stop hooks) enable a subset of Phase 3 capabilities without cloud infrastructure: scheduled local agents for overnight audits, preflight validation at session start, and background telemetry analysis. Full cloud execution (agents in persistent pods, remote monitoring) requires infrastructure that does not yet exist in the Claude Code ecosystem. The primitives are there (agent spawning, task coordination, hook-based governance), but the deployment model is local-first. Teams pursuing full Phase 3 would need custom infrastructure around Claude Code's CLI.
 
 ### Phase 4: Full Autonomy
 
 Agents execute complete tasks from requirements to PR. Human attention focuses on review and architecture.
 
 **Deliverable**: Measurable increase in development capacity.
+
+**Vision-forward.** Requires Phase 3 infrastructure plus matured governance: automated escalation, cost controls, quality thresholds that trigger human intervention. This is the end state the model aims for; Phases 0-2 are the achievable foundation today.
 
 ---
 
@@ -327,6 +535,16 @@ Agents write code, run tests, create PRs. They cannot merge, deploy, or affect u
 **Credentials**: Scoped to role. No agent receives production credentials. Credential paths are blocked by both deny rules and sandbox filesystem restrictions.
 
 **Resources**: CPU/memory limits prevent runaway processes. Token budgets prevent unbounded costs.
+
+### Enterprise Readiness
+
+PDS's plugin architecture positions it well for enterprise environments, but three Claude Code enterprise controls affect deployment:
+
+- **`strictPluginOnlyCustomization`** — Blocks non-plugin skills, agents, hooks, and MCP servers. PDS survives this control because it distributes as a plugin. Non-plugin customizations (project-level CLAUDE.md, hooks) would be blocked.
+- **`strictKnownMarketplaces`** — Only plugins from approved marketplace sources can be installed. PDS needs marketplace presence for enterprise adoption.
+- **`allowManagedHooksOnly`** — Only hooks defined in `managed-settings.json` execute. This would block PDS hooks unless PDS is distributed as a managed-settings-compatible package. Enterprise IT would need to include PDS hook configurations in their managed settings.
+
+**Path forward:** For enterprise deployments, PDS should provide a managed-settings overlay that IT administrators can merge into their `managed-settings.json`. This preserves the full PDS hook lifecycle while satisfying enterprise lockdown requirements.
 
 ### Runtime Security
 
@@ -354,19 +572,40 @@ Git commits record code and timing. Agent logs record actions and reasoning. Tok
 
 ### API Tokens
 
-Complex tasks: millions of tokens across phases. Substantial task: $10-50. Heavy daily usage: $100-500.
+Token costs vary dramatically by model tier. Real per-model pricing (per million tokens, input/output):
 
-Token budgets provide control—tasks pause and request intervention when exhausted.
+| Model | Input | Output | Typical Role |
+|-------|-------|--------|-------------|
+| Haiku 3.5 | $0.80 | $4.00 | Lite-tier workers, scout |
+| Haiku 4.5 | $1.00 | $5.00 | Lite-tier workers |
+| Sonnet | $3.00 | $15.00 | Med-tier workers, validator, reviewer |
+| Opus 4 / 4.1 | $15.00 | $75.00 | Orchestrator (med/heavy), researcher (heavy) |
+| Opus 4.5 | $5.00 | $25.00 | Cost-effective reasoning |
+| Opus 4.6 fast | $30.00 | $150.00 | Maximum capability orchestrator |
 
-**Swarm tiers** provide cost control at the architectural level. A lite tier swarm using haiku workers costs roughly 10-20x less than a heavy tier swarm using opus for reasoning-heavy roles, for the same number of turns. The grill protocol recommends the appropriate tier based on problem complexity, preventing over-spending on routine tasks while ensuring complex work gets adequate model capability.
+**Cost examples by swarm tier:**
+
+- **Lite swarm** (haiku workers, sonnet orchestrator): A 2-worker swarm with ~50k turns total. Workers at haiku ($0.80/$4 per Mtok) plus orchestrator at sonnet ($3/$15 per Mtok). Estimated: $5-15 for a routine task.
+- **Med swarm** (sonnet workers, opus orchestrator): A 3-worker swarm with ~100k turns total. Workers at sonnet ($3/$15) plus orchestrator at opus ($15/$75). Estimated: $20-60 for a substantial task.
+- **Heavy swarm** (sonnet workers, opus orchestrator, full specialists): A 4-worker swarm with full specialist roster. Estimated: $50-150 for a complex multi-boundary refactor.
+
+**Swarm tiers** provide cost control at the architectural level. A lite tier swarm using haiku workers costs roughly 10-20x less than a heavy tier swarm for the same number of turns. The grill protocol recommends the appropriate tier based on problem complexity, preventing over-spending on routine tasks while ensuring complex work gets adequate model capability.
+
+Token budgets provide control — tasks pause and request intervention when exhausted.
+
+### Prompt Cache Economics
+
+Prompt caching significantly reduces effective cost for PDS workflows. Each `systemPromptSection()` wrapping in Claude Code's system prompt assembly enables per-section caching — unchanged sections across turns hit the cache at 10% of the base input price. In a typical multi-turn agent session, 60-80% of input tokens may hit the cache.
+
+**The swarm cache tax:** Each agent spawn creates a new conversation with its own prompt cache. Cache efficiency is per-agent, not shared across the swarm. A 4-worker swarm builds 4 separate caches — the orchestrator's cache doesn't benefit workers, and workers don't benefit each other. The first few turns of each agent pay full input price while the cache warms. PDS mitigates this through `shared-rules.md` — agents with byte-identical system prompt prefixes get better cache alignment. Placing shared rules at the top of agent definitions maximizes the shared prefix length, reducing per-agent cache warming cost. But fundamentally, more agents means more total cache warming cost — a key reason swarm tiers exist. Lite tiers are not just about cheaper per-token pricing; they also reduce the number of separate caches that need warming.
 
 ### Compute
 
-Cloud execution scales with concurrent agents and duration. Spot instances work for ephemeral workers. On-demand for orchestrators and validators.
+Cloud execution scales with concurrent agents and duration. Spot instances work for ephemeral workers. On-demand for orchestrators and validators. Today, most PDS usage is local — cloud cost applies only when Phase 3 infrastructure is built.
 
 ### Storage
 
-Worktrees duplicate working files. 500MB repo with ten worktrees: ~5GB peak. Ephemeral—deleted on completion.
+Worktrees duplicate working files. 500MB repo with ten worktrees: ~5GB peak. Ephemeral — deleted on completion.
 
 ### Economics
 
@@ -381,7 +620,17 @@ Direct work favors: continuous judgment, ambiguous requirements.
 
 Agent configuration files consume context window. Compression is tempting but has a fidelity cliff — beyond a threshold, agents lose operational knowledge and produce worse results [3].
 
-**Context Preservation**: PreCompact and PostCompact hooks preserve PDS swarm state across context compaction events. Before compaction, a snapshot captures the current phase, tier, and task summary. After compaction, this snapshot is re-injected as additional context, preventing the loss of swarm coordination state during long-running sessions.
+**Platform support for compression:** Claude Code provides a sophisticated context compression system internally. Source analysis reveals five compaction modes, not the three documented publicly:
+
+1. **Auto-compact** (`autoCompact.ts`, 13k) — Monitors token usage, triggers compaction before hitting the limit
+2. **Micro-compact** (`microCompact.ts`, 20k) — Targeted compaction of individual tool results
+3. **Reactive compact** (feature-gated: `REACTIVE_COMPACT`) — Real-time compaction during streaming
+4. **Context collapse** (feature-gated: `CONTEXT_COLLAPSE`) — Aggressive context folding
+5. **History snip** (feature-gated: `HISTORY_SNIP`) — Trim old conversation history entirely
+
+The main compaction uses the LLM itself to summarize old messages, creating a compact boundary — everything before is summarized into a single message, everything after is preserved verbatim. The prompt caching mechanism (`cache_control` on message blocks) means unchanged context — including PDS's CLAUDE.md and skill content — is cached across turns, reducing both cost and latency. PDS benefits from compaction and caching automatically without explicit configuration.
+
+**Context Preservation**: PreCompact and PostCompact hooks preserve PDS swarm state across context compaction events. Before compaction, a snapshot captures the current phase, tier, and task summary. After compaction, this snapshot is re-injected as additional context, preventing the loss of swarm coordination state during long-running sessions. This is critical because long swarms will hit compaction mid-phase — when the LLM's summary of earlier messages may lose PDS-specific context (current phase, task statuses, coordination decisions made). The PreCompact/PostCompact hook pair ensures this state survives compression.
 
 ### What's Safe to Compress
 
@@ -449,6 +698,8 @@ These questions from v1.0 have been resolved through research and implementation
 | **Failure recovery** | Frequent commits + orchestrator checkpoints to manifest file. Worktree itself preserves partial work. |
 | **Metrics** | Primary: tokens per task, validation cycles before pass, human intervention rate. Secondary: PRs merged, time to deployment. |
 | **Organizational integration** | PR-based workflow is the integration point. Agents produce PRs that flow through existing review processes. No changes to sprint planning or on-call. |
+| **How does PDS plug into Claude Code?** | Via the plugin system. PDS installs as a marketplace plugin to `~/.claude/plugins/pds/`. The plugin manifest (`plugin.json`) declares skills, agents, hooks, and MCP servers. Claude Code loads these automatically at session start. Project-level `.claude/settings.json` and `CLAUDE.md` provide team overrides. |
+| **What does PDS own vs. Claude Code?** | Claude Code owns the runtime: model API, tool execution, sandbox, agent spawning, worktree management. PDS owns the methodology: SDLC phases, human gates, agent roles, skill protocols, quality gate hooks, context engineering patterns. This separation means PDS configuration is portable — it's markdown and JSON, not Anthropic SDK types. |
 
 ---
 
@@ -456,11 +707,11 @@ These questions from v1.0 have been resolved through research and implementation
 
 The agentic SDLC is a structural change in development. AI agents operate autonomously within well-defined boundaries. Infrastructure provides those boundaries. Clear interfaces separate humans and agents. Rigorous governance maintains safety.
 
-The path is incremental: foundational skills, supervised use, parallel execution, cloud infrastructure, full autonomy.
+The path is incremental: foundational skills, supervised use, parallel execution — achievable today with Claude Code and PDS. Cloud infrastructure and full autonomy remain vision-forward goals that the model is designed to support when the platform catches up.
 
-The investment is substantial. The return—a step-change in development velocity with maintained quality—justifies it.
+The investment is substantial. The return — a step-change in development velocity with maintained quality — justifies it.
 
-This is a starting point. The model evolves with implementation experience and improving AI capabilities. What matters now is to begin.
+This is a living document. The model evolves with implementation experience, improving AI capabilities, and deeper platform understanding. What matters now is to begin.
 
 ---
 
@@ -475,13 +726,13 @@ This is a starting point. The model evolves with implementation experience and i
 | Version Control | lazygit | Terminal UI |
 | Dependencies | uv | Python (fast) |
 | Dependencies | pnpm | Node.js (efficient) |
-| Agent Runtime | Claude | Underlying model |
+| Agent Runtime | Claude Code | Agent execution environment |
 | Agent Runtime | MCP servers | Tool integrations |
 | Agent Coordination | TeamCreate | Team setup and task list |
 | Agent Coordination | TaskCreate/TaskUpdate | Task DAG management |
 | Agent Coordination | SendMessage | Inter-agent communication |
 | Agent Coordination | Task (worker) | Worker agent spawning |
-| Infrastructure | Kubernetes | Cloud orchestration |
+| Infrastructure | Kubernetes | Cloud orchestration (vision-forward) |
 
 ---
 
@@ -505,7 +756,17 @@ This is a starting point. The model evolves with implementation experience and i
 
 **Worktree**: Git feature providing independent working directory sharing the repository's object store.
 
-**MCP**: Model Context Protocol—standard for agent interaction with external tools.
+**MCP**: Model Context Protocol — standard for agent interaction with external tools.
+
+**Plugin**: A Claude Code extension unit that bundles skills, agents, hooks, and MCP server configurations. Installed once at the user level, available across all projects. PDS distributes as a plugin.
+
+**Hook**: A lifecycle event handler that fires automatically at specific points in the agent lifecycle. Claude Code provides 28 hook events. PDS uses hooks for quality gates, audit logging, and permission routing.
+
+**Settings Hierarchy**: Claude Code's 4-layer settings merge system: policy settings (enterprise admin, highest priority) > user settings (`~/.claude/settings.json`) > project settings (`.claude/settings.json`) > local settings (`.claude/settings.local.json`). Deny rules are additive — lower layers cannot remove higher-layer denies.
+
+**Prompt Cache**: Claude Code's mechanism for caching unchanged system prompt sections across turns. PDS's passive context (CLAUDE.md, skills table) benefits from prompt caching automatically, reducing cost and latency for repeated turns.
+
+**Compact**: Claude Code's context compression system for managing long conversations. Five modes: auto-compact (summarize older context), micro-compact (targeted tool result compression), reactive compact (real-time during streaming), context collapse (aggressive folding), and history snip (trim old history). PDS does not configure compact directly — it operates automatically.
 
 **Lexicon**: Persistent repository of engineering knowledge, queryable by agents. Implemented as instincts in `.claude/instincts.md`.
 
@@ -525,6 +786,14 @@ This is a starting point. The model evolves with implementation experience and i
 
 **Swarm Tier**: One of three cost/capability levels (lite, med, heavy) that control model selection and specialist inclusion for a swarm. Set during Phase 1 grill, stored in `.claude/swarm/tier`. Lite uses haiku workers for routine tasks. Med uses sonnet workers (the default). Heavy uses opus for reasoning-heavy roles with full specialist roster.
 
+**Efficiency Ratio (η)**: The ratio of value-creating time to total elapsed time per agent. Calculated from telemetry events: η = Σ(value-creating time) / Σ(total elapsed time). Higher values indicate less waste.
+
+**Headless Agent**: An agent that runs without an interactive session — via `CronCreate`, `run_in_background`, or lifecycle hooks. Used for preflight validation, scheduled audits, telemetry analysis, and post-swarm cleanup.
+
+**Dual-Dispatch**: The orchestrator's runtime decision to use fork (quick, invisible, context-inheriting) vs. team teammate (long-running, visible, role-specialized) based on task characteristics. See Native Agent Teams.
+
+**Context Protocol**: A structured file (`.claude/swarm/context.md`) written by the orchestrator before worker dispatch, containing the plan, research findings, acceptance criteria, and key decisions. Workers read it on init to recover orchestrator context without fork-level inheritance.
+
 **Human Gate**: Principle that no agent work reaches production without human approval.
 
 **SendMessage**: Tool for direct and broadcast communication between agents in a team.
@@ -541,7 +810,7 @@ This is a starting point. The model evolves with implementation experience and i
 
 2. Vercel Engineering. (2025). "AGENTS.md outperforms skills in our agent evals." *Vercel Blog.* https://vercel.com/blog/agents-md-outperforms-skills-in-our-agent-evals — Passive context (always-loaded AGENTS.md) achieves 100% pass rate for horizontal knowledge; skills without invocation instructions scored 53%; carefully worded skills reached 79%.
 
-3. Böckeler, B. & Fowler, M. (2026). "Context Engineering for Coding Agents." *martinfowler.com.* https://martinfowler.com/articles/exploring-gen-ai/context-engineering-coding-agents.html — Defines context engineering as curating model input for better output. Notes over-stuffing context hurts more than helps.
+3. Boeckeler, B. & Fowler, M. (2026). "Context Engineering for Coding Agents." *martinfowler.com.* https://martinfowler.com/articles/exploring-gen-ai/context-engineering-coding-agents.html — Defines context engineering as curating model input for better output. Notes over-stuffing context hurts more than helps.
 
 4. Anthropic. (2025). "Effective Context Engineering for AI Agents." *Anthropic Engineering Blog.* https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents
 
@@ -560,3 +829,101 @@ This is a starting point. The model evolves with implementation experience and i
 11. Shankar, S. et al. (2024). "Who Validates the Validators? Aligning LLM-Assisted Evaluation of LLM Outputs with Human Preferences." *UIST 2024.* https://arxiv.org/abs/2404.12272 — Criteria drift: evaluation criteria evolve upon observing model outputs, even when defined a priori. Eval authors need to iterate criteria against actual behavior.
 
 12. Husain, H. (2026). "Your AI Product Needs Evals." https://hamel.dev/blog/posts/evals/ — Write evaluators for errors you discover, not errors you imagine. Observe model behavior before finalizing criteria. Binary pass/fail forces clarity over subjective Likert scales.
+
+13. Ohno, T. (1988). *Toyota Production System: Beyond Large-Scale Production.* Productivity Press. — Value Stream Mapping, seven wastes (muda), continuous flow, just-in-time production. The foundational framework for identifying and eliminating non-value-creating activity in any process.
+
+14. Beck, K. (2004). *Extreme Programming Explained: Embrace Change.* 2nd ed. Addison-Wesley. — Feedback loops, eliminate waste, simplicity, sustainable pace. XP's waste elimination principle applied to software development predates but aligns with lean software thinking.
+
+15. Poppendieck, M. & T. (2003). *Lean Software Development: An Agile Toolkit.* Addison-Wesley. — Bridges Toyota Production System to software: eliminate waste, amplify learning, deliver fast, empower the team. Maps manufacturing waste categories to software development equivalents.
+
+---
+
+## Appendix D: Platform Architecture (Observed 2026-03-31)
+
+This appendix documents Claude Code's internal architecture as observed through source analysis on March 31, 2026. This is a snapshot — Claude Code is actively developed and internals may change. PDS treats these as implementation details informing its design, not guaranteed APIs.
+
+### System Prompt Assembly Pipeline
+
+Claude Code builds the system prompt through a cached, multi-stage pipeline:
+
+1. **`getSystemPrompt()`** in `constants/prompts.ts` builds an array of prompt sections
+2. **`systemPromptSection()`** wraps each section with caching metadata (`cache_control`) for Anthropic's prompt cache — unchanged sections across turns hit the cache, reducing cost
+3. **`fetchSystemPromptParts()`** in `utils/queryContext.ts` assembles three components: system prompt base + user context + system context
+4. **`getUserContext()`** loads all CLAUDE.md files (user, project, local) plus the current date
+5. **`getSystemContext()`** captures a git status snapshot for repository awareness
+6. **QueryEngine** adds: coordinator context (for multi-agent mode), memory mechanics prompt, and any `--system-prompt` override
+7. Custom system prompts (`--system-prompt` flag) replace the default pipeline entirely
+
+PDS enters this pipeline at step 4: CLAUDE.md content is loaded as `userContext.claudeMd`. Skills and agent definitions are loaded separately by `loadSkillsDir.ts` and `loadAgentsDir.ts` from the plugin directory.
+
+### Settings Hierarchy
+
+Four layers with strict merge rules:
+
+| Layer | Location | Priority | Purpose |
+|-------|----------|----------|---------|
+| **Policy** | `managed-settings.json` | Highest (deny rules) | Enterprise admin controls |
+| **User** | `~/.claude/settings.json` | User preferences | Personal overrides |
+| **Project** | `.claude/settings.json` | Repo-level | Team-shared configuration |
+| **Local** | `.claude/settings.local.json` | Machine-specific | Per-machine overrides |
+
+**Merge rules**: Deny rules are additive — a lower layer can add stricter rules but cannot remove a higher layer's denies. Allow rules are intersective at the policy layer. Other settings follow standard override precedence (higher layer wins for conflicts).
+
+Key settings: permissions (allow/deny/ask rules), hooks, environment variables, model selection, sandbox configuration, worktree config, MCP servers, plugins, status line.
+
+### Hook Lifecycle Events
+
+28 events in 7 categories:
+
+| Category | Events |
+|----------|--------|
+| Tool lifecycle | `PreToolUse`, `PostToolUse`, `PostToolUseFailure` |
+| Session lifecycle | `SessionStart`, `SessionEnd`, `Stop`, `StopFailure`, `Setup` |
+| Agent lifecycle | `SubagentStart`, `SubagentStop`, `TeammateIdle`, `TaskCreated`, `TaskCompleted` |
+| Permission | `PermissionRequest`, `PermissionDenied` |
+| Configuration | `ConfigChange`, `WorktreeCreate`, `WorktreeRemove`, `InstructionsLoaded`, `CwdChanged`, `FileChanged` |
+| Context | `PreCompact`, `PostCompact`, `UserPromptSubmit`, `Notification` |
+| Interaction | `Elicitation`, `ElicitationResult` |
+
+**Hook implementation types**: bash command, agent hook (spawn Claude to evaluate), HTTP webhook (since 2.1.63), internal callback.
+
+**Hook response types**: continue/stop execution, approve/deny permission, inject context (`additionalContext`), modify tool input/output.
+
+**Agent awareness**: All events include `agent_id` and `agent_type` since Claude Code 2.1.69.
+
+### Plugin Loading
+
+Three sources:
+
+| Source | Location | Use Case |
+|--------|----------|----------|
+| **Builtin** | Ships with Claude Code CLI | Core functionality |
+| **Marketplace** | Git repositories, installed via `claude mcp install-marketplace` | Community plugins (PDS) |
+| **Local** | Symlinked directory | Development and testing |
+
+Plugin manifest (`plugin.json`) declares: name, description, version. The plugin directory provides: `skills/` (loaded by Skill tool), `agents/` (loaded by Agent tool), `hooks/hooks.json` (merged into hook event handlers), MCP server configurations.
+
+Enterprise environments can restrict customization to plugins only via `strictPluginOnlyCustomization` — ensuring all agent configuration comes through approved plugin channels.
+
+### Feature Flags
+
+Claude Code uses GrowthBook for feature flag management. Active experiments observed as of 2026-03-31 (this list is a point-in-time snapshot):
+
+REACTIVE_COMPACT, CONTEXT_COLLAPSE, EXPERIMENTAL_SKILL_SEARCH, TEMPLATES, HISTORY_SNIP, FORK_SUBAGENT, COORDINATOR_MODE, BASH_CLASSIFIER, TRANSCRIPT_CLASSIFIER, TOKEN_BUDGET, KAIROS, BRIDGE_MODE, BUDDY, VOICE_MODE, EXTRACT_MEMORIES, BG_SESSIONS, AGENT_TRIGGERS, REVIEW_ARTIFACT, WORKFLOW_SCRIPTS, MONITOR_TOOL, PROACTIVE, CACHED_MICROCOMPACT, among others.
+
+Notable for PDS: `COORDINATOR_MODE` (multi-agent orchestration), `FORK_SUBAGENT` (agent spawning model), `REACTIVE_COMPACT` and `CACHED_MICROCOMPACT` (context compression), `AGENT_TRIGGERS` (event-driven agent spawning).
+
+### Cost Model Internals
+
+Per-model pricing as defined in `modelCost.ts` (per million tokens):
+
+| Model | Input | Output | Cache Write | Cache Read |
+|-------|-------|--------|-------------|------------|
+| Haiku 3.5 | $0.80 | $4.00 | $1.00 | $0.08 |
+| Haiku 4.5 | $1.00 | $5.00 | $1.25 | $0.10 |
+| Sonnet | $3.00 | $15.00 | $3.75 | $0.30 |
+| Opus 4 / 4.1 | $15.00 | $75.00 | $18.75 | $1.50 |
+| Opus 4.5 | $5.00 | $25.00 | $6.25 | $0.50 |
+| Opus 4.6 fast | $30.00 | $150.00 | $37.50 | $3.00 |
+
+Prompt caching significantly reduces effective cost for PDS workflows — the CLAUDE.md content, skills table, and system prompt sections are cached across turns. In a typical multi-turn agent session, 60-80% of input tokens may hit the cache at 10% of the base input price.

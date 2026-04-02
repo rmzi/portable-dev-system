@@ -114,7 +114,7 @@ portable-dev-system/
 │   ├── telemetry/SKILL.md         # Usage telemetry management
 │   ├── inspect/SKILL.md           # Real-time PDS state viewer
 │   └── ...
-├── hooks/hooks.json               # 11 hook events: SessionStart, Stop, TaskCompleted, TeammateIdle, PostToolUse, SubagentStart, PreCompact, PostCompact, UserPromptSubmit, WorktreeCreate, InstructionsLoaded
+├── hooks/hooks.json               # Hook event handlers (see below)
 ├── hooks/scripts/                 # Hook implementation scripts
 ├── scripts/                       # Utility scripts (telemetry-summary, detect-patterns)
 ├── docs/                          # Philosophy, whitepaper, team setup, source analysis
@@ -124,6 +124,24 @@ portable-dev-system/
 ├── VERSION
 └── CHANGELOG.md
 ```
+
+### Hook Events
+
+PDS registers handlers for the following Claude Code hook events:
+
+| Event | Handler | Purpose |
+|-------|---------|---------|
+| `SessionStart` | `session-start.sh` | Inject PDS version, key skills, worktree context |
+| `Stop` | Prompt evaluator | Verify completion for implementation sessions |
+| `TaskCompleted` | `task-completed-gate.sh` | Run tests on completed tasks |
+| `TeammateIdle` | `teammate-idle-gate.sh` | Detect uncommitted changes |
+| `WorktreeCreate` | `worktree-create-log.sh` | Audit log worktree provisioning |
+| `InstructionsLoaded` | `instructions-loaded-log.sh` | Audit log rule file loading |
+| `PermissionRequest` | LLM-as-judge | Route subagent permission requests |
+
+The orchestrator agent additionally uses `PreToolUse` hooks for SDLC phase gates.
+
+See `/pds:sandbox` for full permission and hook configuration.
 
 ---
 
@@ -160,9 +178,9 @@ Most projects need **zero local PDS files**. The plugin provides everything. Add
 | [Philosophy](docs/philosophy.md) | Principles and motivation |
 | [Team Setup](docs/teams.md) | Agent roster, permissions, team onboarding |
 | [Whitepaper](docs/whitepaper.md) | Full technical depth — phases, isolation, governance |
+| [Competitive Analysis](docs/competitive-analysis.md) | Landscape scan and PDS positioning |
 | [Claude Code Source Analysis](docs/claude-code-source-analysis.md) | Architecture reverse-engineering (March 2026 snapshot) |
 | [Extension Point Catalog](docs/claude-code-extension-catalog.md) | Hook events, settings hierarchy, plugin capabilities reference |
-| [Competitive Analysis](docs/competitive-analysis.md) | Market positioning vs. other AI dev tools |
 
 ---
 

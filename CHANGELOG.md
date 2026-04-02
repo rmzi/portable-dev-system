@@ -2,6 +2,51 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.8.0] - 2026-04-02
+
+### Added
+- **Context protocol** — Orchestrator writes `.claude/swarm/context.md` before worker dispatch, containing plan summary, research findings, acceptance criteria, and key decisions. Workers read it on init to recover orchestrator context without fork-level inheritance. Documented in whitepaper (Known Gap + Path Forward), swarm skill (Phase 2), orchestrator agent, worker agent, and shared-rules.
+- **Dual-dispatch model** — Orchestrator chooses fork subagent (quick/invisible/context-inheriting) vs team teammate (long-running/visible/role-specialized) at runtime based on task characteristics. Documented in whitepaper Native Agent Teams section, swarm skill Phase 3, and orchestrator agent.
+- **Headless agents** — New whitepaper subsection documenting three dispatch modes (teammate, fork, headless) with use cases for background/scheduled agent execution via CronCreate, run_in_background, and SessionStart/Stop hooks. Adoption Path Phase 3 updated as partially achievable today.
+- **`/pds:dispatch` skill** — New skill for agent dispatch mode selection. Decision flowchart for teammate vs fork vs headless. Documents when to use each mode with concrete examples.
+- **Efficiency measurement** — New whitepaper section grounding waste analysis in Value Stream Mapping (Ohno 1988), XP (Beck 2004), and Lean Software Development (Poppendieck 2003). Maps TPS seven wastes to agentic SDLC equivalents. Defines efficiency ratio (n) and binary efficiency chart.
+- **`scripts/efficiency-chart.sh`** — Color-coded ASCII value stream visualization per agent. Classifies waste by TPS category (waiting=red, transport=yellow, over-processing=magenta, defects=bright-red, motion=cyan). Supports `--user` (user-level telemetry), `--session <id>`, `--repo <name>`, `--last <N>` filters.
+- **User-level telemetry persistence** — Hooks now write to both `.claude/telemetry.jsonl` (project, may be lost with worktrees) and `~/.claude/telemetry/sessions.jsonl` (user-level, survives worktree cleanup). User-level events include `repo` field for cross-project analysis. Enables retrospective session analysis.
+- **3 new whitepaper references** — Ohno (TPS) [13], Beck (XP) [14], Poppendieck (Lean Software Dev) [15] in Appendix C
+- **5 new glossary terms** — Efficiency Ratio, Headless Agent, Dual-Dispatch, Context Protocol
+
+### Changed
+- **Whitepaper Known Gap (Native Agent Teams)** — Replaced "complementary" hand-wave about fork subagents with proper Known Gap documenting three-system disconnect. Cites 5 community issues (anthropics/claude-code#24316 and 4 related). Path Forward describes dual-dispatch + context protocol.
+- **Swarm skill Phase 2** — New step 6: write context file before dispatch
+- **Swarm skill Phase 3** — Dual-dispatch guidance (when to fork vs spawn teammate)
+- **Swarm skill Phase 6** — Scout prompt includes `scripts/efficiency-chart.sh` alongside detect-patterns
+- **Swarm artifacts table** — Added `context.md` (Phase 2, orchestrator, worker init)
+- **Orchestrator agent** — Phase 2 writes context.md; Phase 3 documents dual-dispatch
+- **Worker agent** — Process step 1: read `.claude/swarm/context.md` if it exists
+- **Shared-rules** — Context file reading in Context Efficiency section; new Efficiency section with phase transition logging guidance
+- **Scout agent** — New step 7b: efficiency analysis via efficiency-chart.sh; new Efficiency section in output format
+- **Adoption Path Phase 3** — Updated from "Vision-forward" to "Partially achievable today" with headless agent primitives
+
+## [4.7.0] - 2026-04-02
+
+### Added
+- **Whitepaper v3.0** — Merged update-wp branch content: Plugin Architecture, Hook Lifecycle, LLM Independence sections, 6 Known Gap analyses with Path Forward for each phase, Appendix D (Platform Architecture), fork-subagent trade-off analysis, enterprise readiness section
+- **Source analysis deepening** — 10 new insights from `docs/claude-code-source-analysis.md` woven into whitepaper main body: streaming tool parallelism (Phase 3), tool result storage (Phase 4), tool deferral alignment (Instruction Architecture), fork-subagent vs specialized-agent trade-offs (Native Agent Teams), 5-mode compaction detail (Context Compression), hook response capabilities (Hook Lifecycle), per-agent cache economics (Cost Considerations), enterprise lockdown controls (Governance), shared-rules cache optimization (Agent Isolation), platform positioning section
+- **Platform Positioning section** — New whitepaper section documenting where PDS leads vs. where Anthropic leads, based on source analysis competitive framing
+- **Prompt Cache Economics** — New cost section documenting per-agent cache warming tax and shared-rules optimization strategy
+- **Enterprise Readiness** — New governance subsection covering `strictPluginOnlyCustomization`, `strictKnownMarketplaces`, `allowManagedHooksOnly` impact on PDS deployment
+- **5 new glossary terms** — Plugin, Hook, Settings Hierarchy, Prompt Cache, Compact (from update-wp)
+- **2 new resolved questions** — "How does PDS plug into Claude Code?" and "What does PDS own vs. Claude Code?"
+
+### Changed
+- **Defense layers: 7 → 8** — Restored Layer 3 (Permission hooks / LLM-as-judge) and added Layer 8 (Observability) from main
+- **Compact glossary** — Updated from 3 modes to 5 modes (added reactive compact, context collapse, history snip)
+- **Competitive analysis** — April 2026 date, source analysis references, unique competitive advantage section, cloud opportunity
+- **Philosophy** — Platform Understanding section, ethos reference for principles
+- **Proposal** — v2.1, achievable/vision-forward status column, prose improvements
+- **Teams** — New Concepts section (Plugin, Skill, Agent, Hook), expanded Hook Events table, Task(agent_type) docs, 4-layer settings hierarchy
+- **README** — Hook Events table, Competitive Analysis doc link, restructured docs table
+
 ## [4.6.2] - 2026-04-01
 
 ### Fixed

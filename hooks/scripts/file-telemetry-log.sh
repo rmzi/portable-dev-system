@@ -14,7 +14,14 @@ TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 AGENT=${CLAUDE_AGENT_TYPE:-unknown}
 SESSION=${CLAUDE_SESSION_ID:-unknown}
 
+# Project-level telemetry (may be lost with worktrees)
 mkdir -p .claude
 printf '{"ts":"%s","event":"file_modified","path":"%s","ext":"%s","agent":"%s","session":"%s"}\n' "$TS" "$FILE_PATH" "$EXT" "$AGENT" "$SESSION" >> .claude/telemetry.jsonl
+
+# User-level telemetry (survives worktree cleanup)
+USER_TELEM_DIR="${HOME}/.claude/telemetry"
+mkdir -p "$USER_TELEM_DIR"
+REPO=$(basename "$(git rev-parse --show-toplevel 2>/dev/null || echo unknown)")
+printf '{"ts":"%s","event":"file_modified","path":"%s","ext":"%s","agent":"%s","session":"%s","repo":"%s"}\n' "$TS" "$FILE_PATH" "$EXT" "$AGENT" "$SESSION" "$REPO" >> "$USER_TELEM_DIR/sessions.jsonl"
 
 exit 0

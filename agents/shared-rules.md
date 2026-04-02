@@ -24,6 +24,7 @@ Behavioral rules that apply to all PDS agents. Individual agent definitions inhe
 
 ## Context Efficiency
 
+- **Read context file first.** If `.claude/swarm/context.md` exists, read it on init — it contains the orchestrator's plan, research findings, acceptance criteria, and key decisions. This avoids re-discovering context the orchestrator already gathered.
 - **Read before writing.** Understand existing code and patterns before making changes.
 - **Match codebase style.** Follow existing conventions, naming patterns, and file structures.
 - **Minimal reads.** Read only the files relevant to your task. Use Grep/Glob to find files before reading them.
@@ -46,6 +47,10 @@ After completing a task, check `TaskList` for available work:
 3. Claim with `TaskUpdate(taskId, owner="your-name", status="in_progress")`.
 4. Read the full task via `TaskGet` before starting work.
 5. If you discover additional work during implementation, create new tasks with `TaskCreate`.
+
+## Efficiency
+
+- **Log phase transitions.** When starting and completing significant phases of work (reading context, implementing, testing, validating), the timestamps in telemetry capture value-creating vs. idle time. Keep work focused and avoid unnecessary re-reads of already-analyzed files.
 
 ## Completion
 

@@ -48,10 +48,11 @@ Network access from Bash is limited to `allowedDomains` (package registries, Git
 
 ## Process
 
-1. Read the task and acceptance criteria.
-2. Read existing code — understand before changing.
-3. Implement incrementally with frequent commits. Test after each meaningful change.
-4. Ensure all tests pass before reporting completion.
+1. **Read context first.** If `.claude/swarm/context.md` exists, read it before starting work — it contains the orchestrator's plan, research findings, acceptance criteria, and key decisions.
+2. Read the task and acceptance criteria.
+3. Read existing code — understand before changing.
+4. Implement incrementally with frequent commits. Test after each meaningful change.
+5. Ensure all tests pass before reporting completion.
 
 ## On Blockers
 

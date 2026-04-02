@@ -1,12 +1,12 @@
 # The Agentic SDLC: A Proposal
 
-**Version 2.0 | February 2026**
+**Version 2.1 | April 2026**
 
 ---
 
 ## The Thesis
 
-Software development is approaching an inflection point. AI agents have become capable enough to operate autonomously within well-defined boundaries—planning work, writing code, running tests, and iterating on failures. The question is no longer whether agents can contribute meaningfully, but how we structure our development process to harness this capability safely and effectively.
+Software development is approaching an inflection point. AI agents have become capable enough to operate autonomously within well-defined boundaries — planning work, writing code, running tests, and iterating on failures. The question is no longer whether agents can contribute meaningfully, but how we structure our development process to harness this capability safely and effectively.
 
 The Agentic SDLC is a model where AI agents operate as autonomous collaborators, not sophisticated autocomplete. A single engineer orchestrates multiple agents working in parallel, each in isolated environments, producing work that flows through automated validation before human review. The human remains the architect and final authority. The agents become a scalable workforce.
 
@@ -16,7 +16,7 @@ The Agentic SDLC is a model where AI agents operate as autonomous collaborators,
 
 Current development workflows, even with AI assistance, hit fundamental limits:
 
-- **Human attention is the bottleneck.** When AI generates code faster than humans can review it, cognitive bandwidth—not typing speed—becomes the constraint.
+- **Human attention is the bottleneck.** When AI generates code faster than humans can review it, cognitive bandwidth — not typing speed — becomes the constraint.
 
 - **Context switching destroys productivity.** Supervising one agent while thinking about another fragments attention. The cost compounds throughout the day.
 
@@ -28,7 +28,7 @@ Current development workflows, even with AI assistance, hit fundamental limits:
 
 ## The Model
 
-The Agentic SDLC consists of six phases. Human involvement concentrates at phase boundaries, not within them. Agents execute as native Claude Code teams—spawned via TeamCreate, coordinated through task DAGs, communicating via SendMessage, each isolated in their own git worktree.
+The Agentic SDLC consists of six phases. Human involvement concentrates at phase boundaries, not within them. Agents execute as native Claude Code teams — spawned via TeamCreate, coordinated through task DAGs, communicating via SendMessage, each isolated in their own git worktree.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -72,22 +72,24 @@ Every task contributes to a persistent knowledge base. Agents query this knowled
 
 ## The Adoption Path
 
-| Phase | Focus | Outcome |
-|-------|-------|---------|
-| **Foundation** | Terminal fluency, git worktrees, environment setup | Engineers can navigate multi-worktree workflows |
-| **Supervised Single-Agent** | One agent, active human oversight | Intuition for effective prompts and failure modes |
-| **Multi-Agent Local** | Parallel workers on local machine | Task decomposition skills, resource management |
-| **Cloud Infrastructure** | Agents run as native teams, overnight execution | Scalable autonomous development with governance |
+| Phase | Focus | Outcome | Status |
+|-------|-------|---------|--------|
+| **Foundation** | Terminal fluency, git worktrees, environment setup | Engineers can navigate multi-worktree workflows | Achievable today |
+| **Supervised Single-Agent** | One agent, active human oversight | Intuition for effective prompts and failure modes | Achievable today |
+| **Multi-Agent Local** | Parallel workers on local machine | Task decomposition skills, resource management | Achievable today |
+| **Cloud Infrastructure** | Agents run as native teams, overnight execution | Scalable autonomous development with governance | Vision-forward |
+
+Phases 0-2 are fully achievable today with Claude Code and PDS installed. Phase 3 (cloud infrastructure with persistent agent pods and overnight autonomy) requires platform capabilities that do not yet exist in the Claude Code ecosystem. The model is designed to support these phases when the platform catches up.
 
 ---
 
 ## What This Enables
 
-**Amplified capacity without proportional headcount.** One engineer orchestrating five agents produces more than one engineer alone—without the communication overhead of five humans.
+**Amplified capacity without proportional headcount.** One engineer orchestrating five agents produces more than one engineer alone — without the communication overhead of five humans.
 
 **Continuous progress.** Agents work while you sleep, while you're in meetings, while you wait for review. Idle time becomes productive time.
 
-**Higher-leverage human work.** Engineers focus on architecture, design, and review—the decisions that matter most. Agents handle the execution.
+**Higher-leverage human work.** Engineers focus on architecture, design, and review — the decisions that matter most. Agents handle the execution.
 
 ---
 
@@ -95,7 +97,7 @@ Every task contributes to a persistent knowledge base. Agents query this knowled
 
 1. **Read the whitepaper** for technical depth on isolation, tooling, and governance.
 2. **Pilot with a small team** using the phased adoption path.
-3. **Iterate on the model** based on real experience—this is a starting point, not a final answer.
+3. **Iterate on the model** based on real experience — this is a starting point, not a final answer.
 
 The infrastructure for this future exists today. The question is whether we'll build the processes and discipline to use it responsibly.
 
