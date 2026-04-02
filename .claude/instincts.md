@@ -68,3 +68,21 @@ Persistent engineering patterns observed during work. Lighter than skills — ob
 - **Pattern**: Without persistent telemetry, PDS cannot measure efficiency across sessions. Instinct system, scout reports, and efficiency charts depend on data that may not survive the session.
 - **Action**: Dual-write to project-level AND `~/.claude/telemetry/sessions.jsonl`. Implemented in v4.8.0.
 - **Status**: active
+
+### plugin.json version must stay in sync with VERSION
+- **Observed**: 2026-04-02
+- **Times seen**: 1
+- **Confidence**: low
+- **Context**: After bumping VERSION to 4.8.0, marketplace still showed 4.6.2 because plugin.json was stale
+- **Pattern**: The marketplace reads version from `.claude-plugin/plugin.json`, not from `VERSION`. Both files must be updated atomically during version bumps. `/pds:bump` and `/pds:bcp` update VERSION but not plugin.json.
+- **Action**: Fix `/pds:bump` skill to update both `VERSION` and `.claude-plugin/plugin.json` in the same step.
+- **Status**: active
+
+### Stale plugin caches and broken symlinks accumulate silently
+- **Observed**: 2026-04-02
+- **Times seen**: 1
+- **Confidence**: low
+- **Context**: Found old marketplace cache versions (4.5.0, 4.6.1), a stale temp git clone, and a broken branch-tone symlink in ~/.claude/plugins/
+- **Pattern**: Plugin installs, marketplace updates, and dev symlinks leave artifacts behind. No cleanup runs automatically. Over time, the plugin directory accumulates stale versions, temp clones, and broken symlinks.
+- **Action**: Add cleanup to `/pds:dispatch` headless use cases — periodic plugin cache pruning. Or add to preflight validation.
+- **Status**: active
