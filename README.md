@@ -102,12 +102,30 @@ portable-dev-system/
 │   ├── swarm/SKILL.md
 │   ├── team/SKILL.md
 │   └── ...
-├── hooks/hooks.json               # SessionStart, Stop, TaskCompleted, TeammateIdle, WorktreeCreate, InstructionsLoaded hooks + PermissionRequest routing
+├── hooks/hooks.json               # Hook event handlers (see below)
 ├── .claude/settings.json          # Security settings (installed separately)
 ├── install.sh                     # Plugin installer
 ├── VERSION
 └── CHANGELOG.md
 ```
+
+### Hook Events
+
+PDS registers handlers for the following Claude Code hook events:
+
+| Event | Handler | Purpose |
+|-------|---------|---------|
+| `SessionStart` | `session-start.sh` | Inject PDS version, key skills, worktree context |
+| `Stop` | Prompt evaluator | Verify completion for implementation sessions |
+| `TaskCompleted` | `task-completed-gate.sh` | Run tests on completed tasks |
+| `TeammateIdle` | `teammate-idle-gate.sh` | Detect uncommitted changes |
+| `WorktreeCreate` | `worktree-create-log.sh` | Audit log worktree provisioning |
+| `InstructionsLoaded` | `instructions-loaded-log.sh` | Audit log rule file loading |
+| `PermissionRequest` | LLM-as-judge | Route subagent permission requests |
+
+The orchestrator agent additionally uses `PreToolUse` hooks for SDLC phase gates.
+
+See `/pds:sandbox` for full permission and hook configuration.
 
 ---
 
@@ -143,6 +161,8 @@ Most projects need **zero local PDS files**. The plugin provides everything. Add
 | [Migration Guide](docs/migration-v4.md) | Upgrading from v3.x |
 | [Philosophy](docs/philosophy.md) | Principles and motivation |
 | [Team Setup](docs/teams.md) | Agent roster, permissions, team onboarding |
+| [Skills Catalog](docs/skills.md) | All 18 skills with descriptions |
+| [Competitive Analysis](docs/competitive-analysis.md) | Landscape scan and PDS positioning |
 | [Whitepaper](docs/whitepaper.md) | Full technical depth — phases, isolation, governance |
 
 ---

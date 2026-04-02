@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [5.0.0] - 2026-04-01
+
+### Changed
+- **Whitepaper v3.0** — Complete rewrite grounded in Claude Code source analysis (2026-03-31). New sections: LLM Independence (coupling analysis + portability strategy), Plugin Architecture (distribution mechanism), Hook Lifecycle (28 events, categories, PDS usage). New Appendix D: Platform Architecture (system prompt pipeline, settings hierarchy, hook events, plugin loading, feature flags, cost model). Updated: 6-phase model with honest gap acknowledgment and vision-forward path for each phase, cost model with real per-model pricing ($0.80-$150/Mtok), adoption path grounding Phases 0-2 in current reality and marking Phases 3-4 as vision-forward, glossary with 5 new terms (Plugin, Hook, Settings Hierarchy, Prompt Cache, Compact), 2 new resolved questions from source analysis. All 12 existing references preserved.
+- **competitive-analysis.md** — Updated to April 2026. Added v4.5+ differentiators (swarm tiers, statistical skill evals with Wilson score CIs). Added unique competitive advantage section: Claude Code source analysis informs defense-in-depth model, hook-based phase gates, and cost optimization.
+- **philosophy.md** — Added Platform Understanding section connecting source analysis to "understand before you act" principle. Added `/pds:ethos` reference.
+- **proposal.md** — Adoption path table now includes Status column (achievable today vs vision-forward). Phase 3-4 language consistent with whitepaper v3.0.
+- **teams.md** — New Concepts section explaining Plugin → Skill → Agent → Hook hierarchy for new users. Expanded Hook Events table listing all PDS-subscribed events. Added `Task(agent_type)` typed spawning documentation. Added HTTP hooks note (Claude Code 2.1.63). Settings merge section updated with 4-layer hierarchy.
+- **README.md** — Hook Events section replaced with explicit table mapping events to handlers and purposes. Documentation table expanded with Skills Catalog and Competitive Analysis links.
+- **skills.md** — Verified all 18 skill descriptions current (no changes needed)
+
+### Added
+- **8 GitHub issues for 6-phase model gaps** — Systematic tracking of known SDLC limitations identified during source analysis: Phase 1 grill/research conflation, Phase 2 unenforced conventions, Phase 3 backpressure, Phase 4 boundary clarity, Phase 5 sequential bottleneck, Phase 6 post-mortem limitation, and two cross-cutting issues (unutilized primitives, orchestrator failure recovery)
+
+
 ## [4.5.1] - 2026-03-23
 
 ### Fixed

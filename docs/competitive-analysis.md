@@ -1,6 +1,6 @@
-# Competitive Analysis — February 2026
+# Competitive Analysis — April 2026
 
-Landscape scan of opinionated Claude Code SDLC approaches, multi-agent orchestration, and memory management as of February 2026.
+Landscape scan of opinionated Claude Code SDLC approaches, multi-agent orchestration, and memory management as of April 2026. Updated with insights from Claude Code source analysis (March 2026).
 
 ---
 
@@ -18,7 +18,7 @@ Battle-tested configs from an Anthropic hackathon winner. 12 agents, 24 commands
 - "Instinct-based learning" — commands for viewing, importing, exporting instincts that evolve into skills
 - Python/Django and Java Spring Boot skill packs (domain-specific)
 
-**PDS advantages:** Whitepaper-backed SDLC methodology, worktree isolation architecture, zero-duplication install modes, context compression methodology with documented fidelity cliff.
+**PDS advantages:** Whitepaper-backed SDLC methodology (v3.0), worktree isolation architecture, source-analysis-informed defense-in-depth model (7 enforcement layers, 28 hook events leveraged), swarm tiers (lite/med/heavy) with model-cost optimization, statistical skill evaluation with Wilson score confidence intervals, zero-duplication install modes, context compression methodology with documented fidelity cliff.
 
 ### claude-flow (ruvnet)
 
@@ -32,7 +32,7 @@ Large-scale agent orchestration platform. 60+ agents, 170+ MCP tools, SONA self-
 - Built-in vector DB (RuVector) for knowledge retrieval
 - Docker container isolation per agent
 
-**PDS advantages:** Zero external dependencies (pure Claude Code config), lighter weight, git worktree isolation (no containers), opinionated SDLC phases with human gates. Claude-flow is infrastructure; PDS is methodology.
+**PDS advantages:** Zero external dependencies (pure Claude Code config), lighter weight, git worktree isolation (no containers), opinionated SDLC phases with human gates, source-analysis-grounded understanding of the Claude Code runtime. Claude-flow is infrastructure; PDS is methodology.
 
 ### Claude Code Agentrooms
 
@@ -78,7 +78,7 @@ Discussion of Vercel eval implications for personal AI infrastructure. Debating 
 
 ## Thought Leadership
 
-### Martin Fowler / Birgitta Böckeler — "Context Engineering for Coding Agents"
+### Martin Fowler / Birgitta Boeckeler — "Context Engineering for Coding Agents"
 
 **Post:** [martinfowler.com/articles/exploring-gen-ai/context-engineering-coding-agents.html](https://martinfowler.com/articles/exploring-gen-ai/context-engineering-coding-agents.html)
 
@@ -135,15 +135,18 @@ PDS occupies a unique niche: **opinionated methodology as configuration**.
 
 The closest analogy: claude-flow is Kubernetes, everything-claude-code is a dotfiles repo, PDS is the Twelve-Factor App manifesto — but shipping as config you can install.
 
+**Unique competitive advantage (v4.5+):** PDS is informed by deep source analysis of Claude Code's internals. Understanding the system prompt assembly pipeline, 4-layer settings hierarchy, 28 hook lifecycle events, and plugin loading mechanism allows PDS to make optimal use of the platform rather than guessing at behavior. This is reflected in the defense-in-depth model (7 enforcement layers mapping to actual runtime mechanisms), swarm tier cost optimization (using real per-model pricing data), and hook-based phase gates (using actual hook event semantics, not assumed behavior).
+
 ---
 
 ## Opportunities
 
-1. **Security scanning** — everything-claude-code's A-F grading tool for settings.json is clever. PDS could add a `/audit-config` skill.
-2. **Instinct → skill evolution** — everything-claude-code's instinct system (auto-learning from patterns) is worth watching. PDS's scout agent partially fills this role.
+1. **Security scanning** — everything-claude-code's A-F grading tool for settings.json is clever. PDS has addressed this with `/audit-config` skill.
+2. **Instinct → skill evolution** — everything-claude-code's instinct system (auto-learning from patterns) is worth watching. PDS's scout agent fills this role with a structured lifecycle (capture → validate → promote → retire).
 3. **Cross-session context** — OneContext's approach to syncing context across devices/sessions addresses a real gap. PDS's user-level install partially solves this for a single machine.
 4. **Domain skill packs** — everything-claude-code ships Python/Django and Java skill packs. PDS doesn't have domain-specific packs yet.
+5. **Cloud agent deployment** — As Claude Code's deployment model evolves beyond local execution, PDS's phase gates and governance model are positioned to scale.
 
 ---
 
-*Last updated: 2026-02-13*
+*Last updated: 2026-04-01*

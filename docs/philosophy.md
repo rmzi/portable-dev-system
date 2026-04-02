@@ -10,6 +10,8 @@
 6. **Fail fast, recover gracefully** — Validate at boundaries
 7. **Automation as documentation** — Scripts > READMEs
 
+These principles are encoded in `/pds:ethos` and grounded across all PDS skills. They are stable — tools and techniques evolve, but principles endure.
+
 ---
 
 ## Why Skills?
@@ -42,6 +44,14 @@ PDS implements the six-phase agentic development model:
 The human remains architect and final authority. Agents become a scalable workforce.
 
 See [Proposal](proposal.md) for the shareable overview and [Whitepaper](whitepaper.md) for full technical depth.
+
+---
+
+## Platform Understanding
+
+PDS benefits from deep understanding of the platform it extends. A source analysis of Claude Code's internals (March 2026) revealed the system prompt assembly pipeline, 4-layer settings hierarchy, 28 hook lifecycle events, and plugin loading mechanism. This knowledge directly improved PDS: defense-in-depth layers map to actual runtime mechanisms, hook-based phase gates use real event semantics, and cost optimization uses real per-model pricing.
+
+Understanding the platform deeply — not just its public API — is consistent with the first principle: understand before you act.
 
 ---
 
