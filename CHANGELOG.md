@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.10.0] - 2026-04-02
+
+### Added
+- **Secret scrubbing (scrub-don't-block)** — PreToolUse hook rewrites Bash commands to pipe output through sed scrubber, redacting 12 secret patterns (sk-*, ghp_*, AKIA*, xoxb-*, JWT, .env KEY=value, etc.) before output enters AI context. PostToolUse hook scrubs MCP tool responses via `updatedMCPToolOutput`. Secrets never reach Claude's context window (#113)
+- **Encrypted scrub telemetry** — Scrub events logged with `age` encryption (full command detail) to `~/.config/pds/scrub-telemetry.age`. Metadata-only fallback when age unavailable
+- **gitleaks integration** — `install.sh` auto-installs gitleaks (brew/go) and age. Ships `.gitleaks.toml` with PDS-specific patterns and allowlists for docs/hooks directories
+- **Static deny rules** — `/proc/*/environ` and `/proc/self/environ` blocked (no legitimate PDS use case)
+
 ## [4.9.0] - 2026-04-02
 
 ### Added
