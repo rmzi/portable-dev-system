@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.11.1] - 2026-04-02
+
+### Fixed
+- **Marketplace version drift** — `marketplace.json` was stuck at `4.1.0` while project was at `4.11.0`. Synced all co-located version files.
+
 ## [4.11.0] - 2026-04-03
 
 ### Added
