@@ -8,6 +8,7 @@ Quick finalization workflow. Ships work with a version bump in one command.
 ## Invocation
 
 ```
+/bcp                                # Auto-detect bump type + commit + push
 /bcp patch                          # Bump patch + commit + push
 /bcp minor                          # Bump minor + commit + push
 /bcp major                          # Bump major + commit + push
@@ -24,9 +25,29 @@ If uncommitted changes exist (staged or unstaged):
 - Commit with provided message, or derive from branch name and changes
 - Use conventional commit format: `<type>(<scope>): <subject>`
 
-If working tree is clean, skip to step 2.
+If working tree is clean, skip to step 3.
 
-### 2. Bump Version
+### 2. Detect Bump Type (if not specified)
+
+If no bump type was passed, scan git log since the last version tag:
+
+```bash
+git log $(git describe --tags --abbrev=0 2>/dev/null)..HEAD --oneline 2>/dev/null || git log --oneline
+```
+
+Apply the highest-precedence rule found:
+
+| Commit prefix | Bump type |
+|---------------|-----------|
+| `BREAKING CHANGE` in body, or `!` after type (e.g. `feat!:`) | major |
+| `feat:` | minor |
+| `fix:`, `perf:`, `refactor:`, etc. | patch |
+
+- If multiple rules match, use the highest precedence (major > minor > patch).
+- If no conventional commits are found, default to **patch** (most conservative).
+- Only ask the user for clarification if the log contains a mix that makes intent genuinely ambiguous (e.g., multiple `feat:` commits alongside a potential breaking change that is hard to classify automatically).
+
+### 3. Bump Version
 
 Follow `/pds:bump` protocol:
 
@@ -35,13 +56,13 @@ Follow `/pds:bump` protocol:
 3. Update version file(s) + CHANGELOG.md
 4. Commit: `chore: bump version to X.Y.Z`
 
-### 3. Push
+### 4. Push
 
 ```bash
 git push origin HEAD
 ```
 
-### 4. PR
+### 5. PR
 
 Create or update a PR targeting main:
 
@@ -52,7 +73,7 @@ gh pr view             # Show existing PR
 
 ## Rules
 
-1. **Bump type is required** — no default. Forces intentional versioning.
+1. **Bump type is optional** — omit to auto-detect from conventional commits; patch is the conservative default.
 2. **Work commit is separate from bump commit** — clean git history.
 3. **No `git add -A`** — stage files deliberately to avoid committing secrets or artifacts.
 4. **Push includes both commits** — work + version bump ship together.
@@ -66,8 +87,13 @@ gh pr view             # Show existing PR
 | Version bump only (no push) | `/bump` |
 | Verify before shipping | `/verify` then `/bcp` |
 
+## After bcp
+
+After shipping, consider running `/pds:pause` — shipping is a natural break point. It saves session state so you can resume cleanly in the next session.
+
 ## See Also
 
 - `/pds:bump` — version bump details
 - `/pds:finish` — formal branch completion protocol
 - `/pds:verify` — completion self-check
+- `/pds:pause` — save session state before stepping away

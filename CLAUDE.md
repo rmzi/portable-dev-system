@@ -18,7 +18,7 @@ PDS is a Claude Code plugin. Skills and agents are distributed via the plugin sy
 
 **Before performing ANY action, check if a skill exists for it. If a relevant skill exists, read it FIRST.**
 
-### Available Skills (23)
+### Available Skills (24)
 
 | Skill | When to Use |
 |-------|-------------|
@@ -45,6 +45,7 @@ PDS is a Claude Code plugin. Skills and agents are distributed via the plugin sy
 | `/pds:rebase` | Focused rebase against target branch |
 | `/pds:pr-review` | Address PR review comments systematically |
 | `/pds:preflight` | Preflight environment validation |
+| `/pds:pause` | Save session state, WIP commit, resume later |
 
 See `/pds:team` for the 8-agent roster (orchestrator, researcher, worker, validator, reviewer, documenter, scout, auditor).
 
