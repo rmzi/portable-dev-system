@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.11.0] - 2026-04-03
+
+### Added
+- **Session health monitoring** — `hooks/scripts/health-check.sh` UserPromptSubmit hook tracks session duration and injects break reminders at configurable thresholds (30m gentle, 60m firm, 120m urgent). Opt-out via `PDS_HEALTH_REMINDERS=0` (#114)
+- **Health-aware spinner tips** — Replaced PDS usage tips with health-focused messages: hydration checks, stretch reminders, break encouragement (#115)
+- **`/pds:pause` skill** — Structured session pausing: auto-commits WIP, saves state to `.claude/swarm/pause.json` (phase, tier, branch, note), suggests agent shutdown (#116)
+- **`/pds:bcp` auto-bump** — Bump type now optional. Auto-detects from conventional commits since last tag (fix→patch, feat→minor, BREAKING→major). Defaults to patch. Post-ship /pds:pause nudge (#118)
+- **`/pds:allow` skill** — Sandbox write allowlist management. Expands paths, warns on sensitive directories (~/.ssh, ~/.aws), wraps `claude config set` (#121)
+- **Research: bash mode** — Analysis of Claude Code bash mode vs separate terminal. Recommendation: unified for most work, terminal for TUIs/watchers/auth (#119)
+- **Research: secret scanners** — Evaluation of sentinel-ai and detect-secrets. Recommendation: sentinel-ai for PostToolUse hooks, detect-secrets for CI (#120)
+
+### Fixed
+- **Git push deny rules** — Confirmed duplication between project/user settings is benign (Claude Code deduplicates). Won't-fix (#123)
+
 ## [4.10.1] - 2026-04-02
 
 ### Added
