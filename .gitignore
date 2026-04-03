@@ -4,3 +4,4 @@
 .agent/
 stream-c-staging/
 stream-c-test.txt
+.DS_Store
