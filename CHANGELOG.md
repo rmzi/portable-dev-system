@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.12.0] - 2026-04-03
+
+### Added
+- **`/pds:triage` skill** — Reads Claude Code `/insights` output (report.html + facets + session-meta), analyzes each section systematically, and creates GitHub issues across repos with interactive confirmation. Six phases: Load, Parse, Analyze, Walk-Through, Create, Persist. Saves snapshots to `~/.config/pds/insights/` with fingerprint-based deduplication across runs. Includes EVAL.md with 6 test scenarios.
+- **Skill table sync** — CLAUDE.md, README.md, and docs/skills.md now list all 28 skills (added missing: pause, allow, export, dispatch)
+
 ## [4.11.1] - 2026-04-02
 
 ### Fixed
