@@ -2,7 +2,7 @@
 
 Skills encode team knowledge and workflows. Claude reads and follows them automatically. PDS skills are namespaced with `pds:` prefix.
 
-## Plugin Skills (23)
+## Plugin Skills (28)
 
 | Skill | Purpose | When to Use |
 |-------|---------|-------------|
@@ -29,6 +29,11 @@ Skills encode team knowledge and workflows. Claude reads and follows them automa
 | `/pds:rebase` | Focused branch rebase | Updating feature branch with upstream changes |
 | `/pds:pr-review` | Address PR review comments | PR has review feedback to resolve |
 | `/pds:preflight` | Environment validation | Session start, before tests, after branch switch |
+| `/pds:pause` | Save session state, WIP commit, resume later | Stopping work mid-session, context preservation |
+| `/pds:allow` | Sandbox write allowlist management | Adding paths to sandbox allowlist |
+| `/pds:export` | Export session to human-readable markdown | Saving, reviewing, or sharing conversation transcripts |
+| `/pds:dispatch` | Agent dispatch mode selection | Choosing between team teammate, fork subagent, or headless |
+| `/pds:triage` | Triage insights into GitHub issues across repos | After running /insights, converting analysis into tracked work |
 
 ---
 

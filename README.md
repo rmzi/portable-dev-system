@@ -56,7 +56,7 @@ make install    # symlinks this checkout as the plugin
 
 ---
 
-## Skills (23)
+## Skills (28)
 
 | Skill | Purpose |
 |-------|---------|
@@ -83,6 +83,11 @@ make install    # symlinks this checkout as the plugin
 | `/pds:rebase` | Focused branch rebase |
 | `/pds:pr-review` | Address PR review comments |
 | `/pds:preflight` | Environment validation |
+| `/pds:pause` | Save session state, WIP commit, resume later |
+| `/pds:allow` | Add a path to the sandbox write allowlist |
+| `/pds:export` | Export session to human-readable markdown |
+| `/pds:dispatch` | Agent dispatch mode selection |
+| `/pds:triage` | Triage insights into GitHub issues across repos |
 
 ---
 
