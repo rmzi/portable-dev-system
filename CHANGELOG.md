@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.10.1] - 2026-04-02
+
+### Added
+- **Hook unit test framework** — `scripts/test-hooks.sh` with 12 test cases for secret-scrub and mcp-secret-scrub hooks. `make test-hooks` target (#122)
+- **Secret scrub EVAL.md** — 3 agent-level eval scenarios for secret scrubbing hooks (#122)
+- **Whitepaper: Testing and Resilience** — New section documenting three testing layers (unit, eval, integration), hook testing rationale, and the proven improvement cycle (#122)
+
 ## [4.10.0] - 2026-04-02
 
 ### Added
