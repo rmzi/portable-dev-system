@@ -35,6 +35,11 @@ if [ -n "$CLAUDE_ENV_FILE" ]; then
   fi
 fi
 
+# --- Sync worktree permissions (symlink settings.local.json from repo root) ---
+if [ -n "$CLAUDE_PLUGIN_ROOT" ] && [ -f "$CLAUDE_PLUGIN_ROOT/hooks/scripts/sync-worktree-permissions.sh" ]; then
+  "$CLAUDE_PLUGIN_ROOT/hooks/scripts/sync-worktree-permissions.sh" 2>/dev/null || true
+fi
+
 # --- Output additionalContext ---
 CONTEXT="PDS v${PDS_VERSION} active. Key skills: /pds:swarm (parallel work), /pds:grill (requirements), /pds:verify (completion check), /pds:bugfix (test-first fixes), /pds:bcp (ship work), /pds:finish (formal branch completion).${WORKTREE_INFO}"
 

@@ -62,7 +62,19 @@ npm test    # or equivalent
 
 Rebasing can introduce subtle breakage — verify.
 
-### 5. Ship
+### 5. Permission Audit
+
+Review `.claude/settings.local.json` for permission patterns that should be promoted to `.claude/settings.json`:
+
+1. Read both files
+2. Identify glob-style allow patterns in local (e.g., `Bash(git *:*)`, `Bash(gh *:*)`, tool names) that aren't already in project settings
+3. Exclude one-off entries (specific file paths, session-specific `rm` commands, temp artifacts)
+4. If promotable patterns exist, add them to `.claude/settings.json` `permissions.allow` and remove from `settings.local.json`
+5. If no promotable patterns exist, skip — do not modify either file
+
+This ensures permission improvements ship with the code rather than accumulating silently in local settings.
+
+### 6. Ship
 Run `/pds:bcp` with the bump type to finalize. Forward the exact bump type from the `/finish` invocation — do not choose a different one:
 
 ```
@@ -91,6 +103,6 @@ After the branch is merged:
 
 ## See Also
 
-- `/pds:bcp` — bump, commit, push (step 5)
+- `/pds:bcp` — bump, commit, push (step 6)
 - `/pds:verify` — completion self-check (step 1)
 - `/pds:merge` — merging subtask worktrees to coordinator
