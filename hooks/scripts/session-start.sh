@@ -27,6 +27,17 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   fi
 fi
 
+# --- Detect stale v3.x install artifacts ---
+STALE_WARNING=""
+if [ -f ".claude/.pds-version" ]; then
+  STALE_WARNING=" STALE v3 ARTIFACTS: .pds-version found. PDS is a plugin now — run: bash <(curl -sL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh) --cleanup"
+elif [ -f "CLAUDE.md" ] && grep -q '<!-- PDS:START -->' "CLAUDE.md" 2>/dev/null; then
+  if grep -q 'Skills in \.claude/skills/' "CLAUDE.md" 2>/dev/null || \
+     grep -q '\.pds-version' "CLAUDE.md" 2>/dev/null; then
+    STALE_WARNING=" STALE v3 ARTIFACTS: old PDS instructions in CLAUDE.md. Run: bash <(curl -sL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh) --cleanup"
+  fi
+fi
+
 # --- Write persistent env vars ---
 if [ -n "$CLAUDE_ENV_FILE" ]; then
   echo "export PDS_VERSION=\"$PDS_VERSION\"" >> "$CLAUDE_ENV_FILE"
@@ -41,7 +52,7 @@ if [ -n "$CLAUDE_PLUGIN_ROOT" ] && [ -f "$CLAUDE_PLUGIN_ROOT/hooks/scripts/sync-
 fi
 
 # --- Output additionalContext ---
-CONTEXT="PDS v${PDS_VERSION} active. Key skills: /pds:swarm (parallel work), /pds:grill (requirements), /pds:verify (completion check), /pds:bugfix (test-first fixes), /pds:bcp (ship work), /pds:finish (formal branch completion).${WORKTREE_INFO}"
+CONTEXT="PDS v${PDS_VERSION} active. Key skills: /pds:swarm (parallel work), /pds:grill (requirements), /pds:verify (completion check), /pds:bugfix (test-first fixes), /pds:bcp (ship work), /pds:finish (formal branch completion).${WORKTREE_INFO}${STALE_WARNING}"
 
 # Use python3 for safe JSON encoding
 python3 -c "

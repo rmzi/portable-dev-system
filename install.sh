@@ -525,9 +525,32 @@ cleanup_project() {
 
   # Remove v3.x project directories
   if [ -d ".claude/skills" ]; then
-    rm -rf ".claude/skills"
-    ok "Removed .claude/skills/ (now in plugin)"
-    removed=$((removed + 1))
+    _plugin_skills_dir="${HOME}/.claude/plugins/pds/skills"
+    if [ -d "$_plugin_skills_dir" ]; then
+      _skills_removed=0
+      _skills_kept=0
+      for f in .claude/skills/*.md; do
+        [ -f "$f" ] || continue
+        _name=$(basename "$f" .md)
+        if [ -d "$_plugin_skills_dir/$_name" ]; then
+          rm "$f"
+          _skills_removed=$((_skills_removed + 1))
+        else
+          info "Kept project-specific skill: $(basename "$f")"
+          _skills_kept=$((_skills_kept + 1))
+        fi
+      done
+      if [ "$_skills_removed" -gt 0 ]; then
+        ok "Removed $_skills_removed PDS skill files from .claude/skills/ (now in plugin)"
+        removed=$((removed + 1))
+      fi
+      if [ "$_skills_kept" -eq 0 ]; then
+        rmdir .claude/skills 2>/dev/null || true
+      fi
+    else
+      warn "PDS plugin not installed — cannot determine which skills are project-specific"
+      warn "Skipping .claude/skills/ cleanup. Install the plugin first, then re-run --cleanup"
+    fi
   fi
 
   if [ -d ".claude/agents" ]; then
