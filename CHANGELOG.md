@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.13.0] - 2026-04-07
+
+### Added
+- **Worktree permission sync** — New `sync-worktree-permissions.sh` hook symlinks `settings.local.json` from repo root into worktrees on SessionStart and WorktreeCreate, so runtime permission approvals propagate across all worktrees (#125)
+- **Pre-approved git/gh patterns** — 16 common `Bash(git *:*)` and `Bash(gh *:*)` patterns added to project-level `settings.json` allow list, eliminating per-session re-approval
+- **Permission audit in `/finish`** — New step 5 reviews `settings.local.json` for glob-style patterns that should be promoted to project settings before shipping
+- **Permission audit in Phase 6 Knowledge** — Scout now reads both settings files and reports promotion candidates in `### Permission Promotions` section of scout report
+
 ## [4.12.0] - 2026-04-03
 
 ### Added
