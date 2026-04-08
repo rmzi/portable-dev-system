@@ -173,6 +173,37 @@ assert_blocked "curl with Bearer token → blocked" "$SECRET_GUARD" \
 echo ""
 
 # ─────────────────────────────────────────────────────────────
+# session-start.sh — stale artifact detection
+# ─────────────────────────────────────────────────────────────
+printf "${BOLD}session-start.sh (stale detection)${RESET}\n"
+
+SESSION_START="$HOOK_DIR/session-start.sh"
+
+# Test: .pds-version present → warning in output
+TMPD=$(mktemp -d "${TMPDIR:-/tmp}/pds-test.XXXXXX")
+mkdir -p "$TMPD/.claude"
+echo "2.7.1" > "$TMPD/.claude/.pds-version"
+OUT=$(cd "$TMPD" && CLAUDE_PLUGIN_ROOT="" CLAUDE_ENV_FILE="" bash "$SESSION_START" 2>/dev/null || true)
+if echo "$OUT" | grep -q "STALE"; then
+  pass ".pds-version present → stale warning"
+else
+  fail ".pds-version present → expected STALE in output, got: $OUT"
+fi
+rm -rf "$TMPD"
+
+# Test: clean directory → no warning
+TMPD=$(mktemp -d "${TMPDIR:-/tmp}/pds-test.XXXXXX")
+OUT=$(cd "$TMPD" && CLAUDE_PLUGIN_ROOT="" CLAUDE_ENV_FILE="" bash "$SESSION_START" 2>/dev/null || true)
+if echo "$OUT" | grep -q "STALE"; then
+  fail "clean dir → unexpected STALE warning in: $OUT"
+else
+  pass "clean dir → no stale warning"
+fi
+rm -rf "$TMPD"
+
+echo ""
+
+# ─────────────────────────────────────────────────────────────
 # Summary
 # ─────────────────────────────────────────────────────────────
 TOTAL=$((PASS + FAIL))

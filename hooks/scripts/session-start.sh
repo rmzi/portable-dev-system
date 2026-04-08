@@ -30,12 +30,7 @@ fi
 # --- Detect stale v3.x install artifacts ---
 STALE_WARNING=""
 if [ -f ".claude/.pds-version" ]; then
-  STALE_WARNING=" STALE v3 ARTIFACTS: .pds-version found. PDS is a plugin now — run: bash <(curl -sL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh) --cleanup"
-elif [ -f "CLAUDE.md" ] && grep -q '<!-- PDS:START -->' "CLAUDE.md" 2>/dev/null; then
-  if grep -q 'Skills in \.claude/skills/' "CLAUDE.md" 2>/dev/null || \
-     grep -q '\.pds-version' "CLAUDE.md" 2>/dev/null; then
-    STALE_WARNING=" STALE v3 ARTIFACTS: old PDS instructions in CLAUDE.md. Run: bash <(curl -sL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh) --cleanup"
-  fi
+  STALE_WARNING=" STALE v3 ARTIFACTS: .pds-version found. PDS is a plugin now. Run install.sh --cleanup in this repo to remove old artifacts."
 fi
 
 # --- Write persistent env vars ---
