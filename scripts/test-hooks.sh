@@ -204,6 +204,37 @@ rm -rf "$TMPD"
 echo ""
 
 # ─────────────────────────────────────────────────────────────
+# session-start.sh — stale worktree detection
+# ─────────────────────────────────────────────────────────────
+printf "${BOLD}session-start.sh (worktree detection)${RESET}\n"
+
+# Test: no .worktrees/ dir → no warning
+TMPD=$(mktemp -d "${TMPDIR:-/tmp}/pds-test.XXXXXX")
+git -C "$TMPD" init -q 2>/dev/null
+OUT=$(cd "$TMPD" && CLAUDE_PLUGIN_ROOT="" CLAUDE_ENV_FILE="" bash "$SESSION_START" 2>/dev/null || true)
+if echo "$OUT" | grep -q "STALE WORKTREES"; then
+  fail "no .worktrees/ → unexpected worktree warning"
+else
+  pass "no .worktrees/ → no worktree warning"
+fi
+rm -rf "$TMPD"
+
+# Test: orphan dir in .worktrees/ → warning
+TMPD=$(mktemp -d "${TMPDIR:-/tmp}/pds-test.XXXXXX")
+git -C "$TMPD" init -q 2>/dev/null
+git -C "$TMPD" commit --allow-empty -m "init" -q 2>/dev/null
+mkdir -p "$TMPD/.worktrees/orphan-test"
+OUT=$(cd "$TMPD" && CLAUDE_PLUGIN_ROOT="" CLAUDE_ENV_FILE="" bash "$SESSION_START" 2>/dev/null || true)
+if echo "$OUT" | grep -q "STALE WORKTREES"; then
+  pass "orphan .worktrees/ dir → stale worktree warning"
+else
+  fail "orphan .worktrees/ dir → expected STALE WORKTREES warning, got: $OUT"
+fi
+rm -rf "$TMPD"
+
+echo ""
+
+# ─────────────────────────────────────────────────────────────
 # Summary
 # ─────────────────────────────────────────────────────────────
 TOTAL=$((PASS + FAIL))

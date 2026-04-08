@@ -113,13 +113,67 @@ git worktree add "$REPO_ROOT/.worktrees/task-2-api" -b task-2/api
 # Use TaskCreate/Task tool for agent dispatch (see /pds:swarm)
 ```
 
-## Cleanup
+## Garbage Collection
+
+Invoke as `/pds:worktree gc` to detect and remove stale worktrees.
+
+### What Counts as Stale
+
+| Type | Detection | Removal |
+|------|-----------|---------|
+| **Orphan** | Directory in `.worktrees/` not in `git worktree list` (broken git metadata) | `rm -rf <path>` (git doesn't know about it) |
+| **Merged branch** | Worktree whose branch is already merged to main | `git worktree remove <path>` + `git branch -d <branch>` |
+
+### GC Protocol
+
+1. Resolve repo root:
+   ```bash
+   REPO_ROOT="$(git rev-parse --path-format=absolute --git-common-dir | sed 's|/.git$||')"
+   ```
+
+2. Find orphans — dirs in `.worktrees/` not registered with git:
+   ```bash
+   # Get git-registered worktree paths
+   git worktree list --porcelain | grep '^worktree ' | sed 's|^worktree ||'
+   # Compare against .worktrees/*/ on disk
+   ```
+
+3. Find merged-branch worktrees:
+   ```bash
+   # Determine main branch
+   git symbolic-ref refs/remotes/origin/HEAD | sed 's|refs/remotes/origin/||'
+   # List merged branches
+   git branch --merged main
+   # Cross-reference with git worktree list
+   ```
+
+4. For each stale worktree, report:
+   - Path
+   - Why it's stale (orphan or merged branch)
+   - Whether it has uncommitted changes (git-registered only; skip for orphans)
+
+5. **Ask user for confirmation before removing.** List all candidates and wait for approval.
+
+6. Remove confirmed worktrees:
+   - Git-registered: `git worktree remove "$REPO_ROOT/.worktrees/<name>"` then `git branch -d <branch>`
+   - Orphans: `rm -rf "$REPO_ROOT/.worktrees/<name>"`
+   - Skip any with uncommitted changes (warn, don't remove)
+
+7. Clean up: `git worktree prune` to clear stale git references.
+
+8. Report summary: N removed, N skipped (dirty).
+
+### SessionStart Detection
+
+PDS detects stale worktrees at session start and warns in context:
+```
+STALE WORKTREES: 3 stale worktree(s) in .worktrees/. Run /pds:worktree gc to clean up.
+```
+
+## Manual Cleanup
 
 ```bash
 REPO_ROOT="$(git rev-parse --path-format=absolute --git-common-dir | sed 's|/.git$||')"
-
-# Identify stale worktrees
-git worktree list
 
 # Remove a specific worktree and its branch
 git worktree remove "$REPO_ROOT/.worktrees/done-feature"
