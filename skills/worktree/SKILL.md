@@ -152,16 +152,27 @@ Invoke as `/pds:worktree gc` to detect and remove stale worktrees.
    - Why it's stale (orphan or merged branch)
    - Whether it has uncommitted changes (git-registered only; skip for orphans)
 
-5. **Ask user for confirmation before removing.** List all candidates and wait for approval.
+5. **Triage before removal.** Classify each stale worktree and handle accordingly:
 
-6. Remove confirmed worktrees:
+   | State | Detection | Action |
+   |-------|-----------|--------|
+   | **Dirty** (uncommitted changes) | `git -C <path> status --porcelain` is non-empty | Offer `/pds:finish` before removal — code may be unsaved |
+   | **Has artifacts** (`.claude/swarm/` exists) | `test -d <path>/.claude/swarm` | Offer extraction: archive `*.md` to `docs/swarm-reports/` and distill 1-2 auto-memory entries |
+   | **Clean stale** (no changes, no artifacts) | Neither of the above | Remove directly |
+
+   For dirty worktrees: warn the user and offer to run `/pds:finish` in that worktree first. Do not remove until the user confirms.
+
+   For worktrees with artifacts: run the extraction step from `/pds:finish` Step 0 (archive swarm reports + distill to auto-memory), then proceed with removal.
+
+6. **Ask user for confirmation before removing.** List all candidates with their triage classification and wait for approval.
+
+7. Remove confirmed worktrees:
    - Git-registered: `git worktree remove "$REPO_ROOT/.worktrees/<name>"` then `git branch -d <branch>`
    - Orphans: `rm -rf "$REPO_ROOT/.worktrees/<name>"`
-   - Skip any with uncommitted changes (warn, don't remove)
 
-7. Clean up: `git worktree prune` to clear stale git references.
+8. Clean up: `git worktree prune` to clear stale git references.
 
-8. Report summary: N removed, N skipped (dirty).
+9. Report summary: N removed, N extracted-then-removed, N skipped (dirty, user declined finish).
 
 ### SessionStart Detection
 
