@@ -93,6 +93,7 @@ Events fire in this order during a session:
 | Event | Matcher | Script | Behavior | Blocks? |
 |-------|---------|--------|----------|---------|
 | `PreToolUse` | `Bash` | `secret-scrub.sh` | Rewrite commands that may leak secrets through sed pipeline | No (rewrites) |
+| `PreToolUse` | `Bash` | `secret-guard.sh` | Block env dumps, secret echoes, /proc reads, curl with inline secrets | Yes |
 | `PostToolUse` | _(all)_ | `mcp-secret-scrub.sh` | Scrub secret patterns from MCP tool output | No (scrubs) |
 | `PostToolUse` | `Write\|Edit` | `file-telemetry-log.sh` | Log file modifications to telemetry | No |
 | `PostToolUse` | `Skill\|Agent` | `telemetry-log.sh` | Log skill/agent invocations to telemetry | No |
