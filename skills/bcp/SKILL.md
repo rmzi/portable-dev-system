@@ -58,6 +58,12 @@ Follow `/pds:bump` protocol:
 
 ### 4. Push
 
+**Protected branch check.** Before pushing, check if the target branch is protected:
+
+1. Read CLAUDE.md for a `Protected Branches` section listing branch patterns (e.g., `main`, `release/*`)
+2. If the current branch or push target matches a protected pattern, **prompt the user** for confirmation before pushing. Do not silently block — explain which branch is protected and ask to proceed.
+3. If no `Protected Branches` section exists in CLAUDE.md, no branches are protected — push freely.
+
 ```bash
 git push origin HEAD
 ```
