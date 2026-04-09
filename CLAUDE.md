@@ -94,6 +94,18 @@ Use `git worktree add` for branch isolation — never `git clone` (clones discon
 **Read `/pds:contribute` before modifying PDS.** Skills, agents, SDLC phases, or coordination patterns require the whitepaper-alignment checklist.
 
 **Create or update a PR after pushing.** Don't wait to be asked.
+
+### Protected Branches
+
+No branches are protected by default. To protect branches, add patterns below. `/pds:bcp` and `/pds:finish` will prompt for confirmation before pushing to a matching branch. GitHub branch protection rules are the server-side enforcement — this is the client-side "are you sure?" prompt.
+
+To configure, ask PDS to set up protected branches — it will prompt for each one individually.
+
+<!-- Uncomment and add patterns:
+- main
+- master
+- release/*
+-->
 <!-- PDS:END -->
 
 ---

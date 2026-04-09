@@ -27,6 +27,42 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   fi
 fi
 
+# --- Detect stale v3.x install artifacts ---
+STALE_WARNING=""
+if [ -f ".claude/.pds-version" ]; then
+  STALE_WARNING=" STALE v3 ARTIFACTS: .pds-version found. PDS is a plugin now. Run install.sh --cleanup in this repo to remove old artifacts."
+fi
+
+# --- Detect stale worktrees ---
+WORKTREE_WARNING=""
+if [ -d ".worktrees" ] && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  _stale_count=0
+
+  # Orphans: dirs in .worktrees/ not in git worktree list
+  _git_worktrees=$(git worktree list --porcelain 2>/dev/null | grep '^worktree ' | sed 's|^worktree ||')
+  for _d in .worktrees/*/; do
+    [ -d "$_d" ] || continue
+    _abs=$(cd "$_d" && pwd 2>/dev/null) || { _stale_count=$((_stale_count + 1)); continue; }
+    echo "$_git_worktrees" | grep -qF "$_abs" || _stale_count=$((_stale_count + 1))
+  done
+
+  # Merged-branch worktrees: branch already merged to main/master
+  _main=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||')
+  [ -z "$_main" ] && _main="main"
+  _merged=$(git branch --merged "$_main" 2>/dev/null | sed 's/^[* ]*//')
+  while IFS= read -r _line; do
+    case "$_line" in worktree\ *)
+      _wt="${_line#worktree }"
+      case "$_wt" in */.worktrees/*)
+        _branch=$(git -C "$_wt" rev-parse --abbrev-ref HEAD 2>/dev/null)
+        [ -n "$_branch" ] && echo "$_merged" | grep -qxF "$_branch" && _stale_count=$((_stale_count + 1))
+      ;; esac
+    ;; esac
+  done < <(git worktree list --porcelain 2>/dev/null)
+
+  [ "$_stale_count" -gt 0 ] && WORKTREE_WARNING=" STALE WORKTREES: $_stale_count stale worktree(s) in .worktrees/. Run /pds:worktree gc to clean up."
+fi
+
 # --- Write persistent env vars ---
 if [ -n "$CLAUDE_ENV_FILE" ]; then
   echo "export PDS_VERSION=\"$PDS_VERSION\"" >> "$CLAUDE_ENV_FILE"
@@ -41,7 +77,7 @@ if [ -n "$CLAUDE_PLUGIN_ROOT" ] && [ -f "$CLAUDE_PLUGIN_ROOT/hooks/scripts/sync-
 fi
 
 # --- Output additionalContext ---
-CONTEXT="PDS v${PDS_VERSION} active. Key skills: /pds:swarm (parallel work), /pds:grill (requirements), /pds:verify (completion check), /pds:bugfix (test-first fixes), /pds:bcp (ship work), /pds:finish (formal branch completion).${WORKTREE_INFO}"
+CONTEXT="PDS v${PDS_VERSION} active. Key skills: /pds:swarm (parallel work), /pds:grill (requirements), /pds:verify (completion check), /pds:bugfix (test-first fixes), /pds:bcp (ship work), /pds:finish (formal branch completion).${WORKTREE_INFO}${STALE_WARNING}${WORKTREE_WARNING}"
 
 # Use python3 for safe JSON encoding
 python3 -c "

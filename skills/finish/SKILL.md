@@ -17,6 +17,24 @@ Default target: main.
 
 ## Protocol
 
+### 0. Extract Knowledge
+If `.claude/swarm/` exists in the current worktree, preserve ephemeral state before it's lost:
+
+1. **Archive artifacts to git.** Copy all `*.md` files from `.claude/swarm/` to `docs/swarm-reports/<YYYY-MM-DD-HHmm>/`:
+   ```bash
+   REPORT_DIR="docs/swarm-reports/$(date +%Y-%m-%d-%H%M)"
+   mkdir -p "$REPORT_DIR"
+   cp .claude/swarm/*.md "$REPORT_DIR/"
+   git add "$REPORT_DIR"
+   ```
+2. **Distill to auto-memory.** Review the archived artifacts and write **1-2** auto-memory entries (project or feedback type) capturing:
+   - WHY key decisions were made and what alternatives were rejected
+   - Surprising findings or constraints discovered during the swarm
+   - Skip anything derivable from code, git history, or existing docs
+3. The archived reports are included in the finish commit automatically (already staged via `git add`).
+
+If `.claude/swarm/` does not exist, skip to Step 1.
+
 ### 1. Verify Completeness
 Run `/pds:verify` first. Do not proceed until it passes.
 
