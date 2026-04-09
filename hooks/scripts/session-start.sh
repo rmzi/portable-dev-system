@@ -16,6 +16,14 @@ if [ -n "$CLAUDE_PLUGIN_ROOT" ] && [ -f "$CLAUDE_PLUGIN_ROOT/.claude-plugin/plug
   PDS_VERSION=$(python3 -c "import json; print(json.load(open('$CLAUDE_PLUGIN_ROOT/.claude-plugin/plugin.json')).get('version', 'unknown'))" 2>/dev/null || echo "unknown")
 fi
 
+# --- Require ledger daemon ---
+LEDGER_SOCK="$HOME/.ledger/ledger.sock"
+if [ ! -S "$LEDGER_SOCK" ]; then
+  echo "Ledger daemon not running. Install: ~/dev/ledger/install/install.sh" >&2
+  exit 2
+fi
+LEDGER_STATUS=" Ledger: running."
+
 # --- Detect worktree ---
 WORKTREE_INFO=""
 if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
@@ -77,7 +85,7 @@ if [ -n "$CLAUDE_PLUGIN_ROOT" ] && [ -f "$CLAUDE_PLUGIN_ROOT/hooks/scripts/sync-
 fi
 
 # --- Output additionalContext ---
-CONTEXT="PDS v${PDS_VERSION} active. Key skills: /pds:swarm (parallel work), /pds:grill (requirements), /pds:verify (completion check), /pds:bugfix (test-first fixes), /pds:bcp (ship work), /pds:finish (formal branch completion).${WORKTREE_INFO}${STALE_WARNING}${WORKTREE_WARNING}"
+CONTEXT="PDS v${PDS_VERSION} active. Key skills: /pds:swarm (parallel work), /pds:grill (requirements), /pds:verify (completion check), /pds:bugfix (test-first fixes), /pds:bcp (ship work), /pds:finish (formal branch completion).${WORKTREE_INFO}${STALE_WARNING}${WORKTREE_WARNING}${LEDGER_STATUS}"
 
 # Use python3 for safe JSON encoding
 python3 -c "

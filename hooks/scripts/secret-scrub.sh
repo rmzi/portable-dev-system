@@ -54,41 +54,8 @@ SED_ARGS="$SED_ARGS -e 's/^([A-Z_]*(SECRET|TOKEN|KEY|PASSWORD|CREDENTIAL)[A-Z_]*
 # and multi-line commands. 2>&1 ensures stderr (e.g. auth error messages) is also scrubbed.
 REWRITTEN="( ${COMMAND} 2>&1 ) | sed ${SED_ARGS}"
 
-# Telemetry — encrypted if age is available, metadata-only otherwise
-log_scrub() {
-  local cmd="$1"
-  local ts cmd_name
-  ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-  cmd_name=$(echo "$cmd" | awk '{print $1}')
-  local pds_dir="$HOME/.config/pds"
-  mkdir -p "$pds_dir" 2>/dev/null || true
-  [ -d "$pds_dir" ] || return 0
-
-  if command -v age >/dev/null 2>&1; then
-    local key_file="$pds_dir/scrub.key"
-    if [ ! -f "$key_file" ]; then
-      age-keygen -o "$key_file" 2>/dev/null || true
-    fi
-    if [ -f "$key_file" ]; then
-      local pub
-      pub=$(grep '^# public key:' "$key_file" | awk '{print $NF}' 2>/dev/null || true)
-      if [ -n "$pub" ]; then
-        printf '{"ts":"%s","command":%s,"session":"%s"}\n' \
-          "$ts" \
-          "$(printf '%s' "$cmd" | jq -Rs '.')" \
-          "${CLAUDE_SESSION_ID:-unknown}" \
-          | age -r "$pub" -a >> "$pds_dir/scrub-telemetry.age" 2>/dev/null || true
-      fi
-    fi
-  fi
-
-  # Always log metadata (no secrets — command name only)
-  printf '{"ts":"%s","cmd":"%s","session":"%s"}\n' \
-    "$ts" "$cmd_name" "${CLAUDE_SESSION_ID:-unknown}" \
-    >> "$pds_dir/scrub-telemetry.jsonl"
-}
-
-log_scrub "$COMMAND"
+# Log scrub event via ledger
+echo "$INPUT" | ~/.ledger/bin/ledger hook scrub 2>/dev/null || true
 
 # Return rewritten command — Claude Code will execute this instead of the original
 jq -n --arg cmd "$REWRITTEN" \

@@ -43,15 +43,8 @@ SCRUBBED=$(scrub "$TOOL_OUTPUT")
 # Parse back as JSON; fall back to string if the scrubbing broke JSON structure
 SCRUBBED_JSON=$(echo "$SCRUBBED" | jq '.' 2>/dev/null || echo "$SCRUBBED" | jq -Rs '.')
 
-# Telemetry — metadata only (no secrets)
-TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-PDS_DIR="$HOME/.config/pds"
-mkdir -p "$PDS_DIR" 2>/dev/null || true
-if [ -d "$PDS_DIR" ]; then
-  printf '{"ts":"%s","tool":"%s","session":"%s"}\n' \
-    "$TS" "$TOOL_NAME" "${CLAUDE_SESSION_ID:-unknown}" \
-    >> "$PDS_DIR/scrub-telemetry.jsonl"
-fi
+# Log scrub event via ledger
+echo "$INPUT" | ~/.ledger/bin/ledger hook scrub 2>/dev/null || true
 
 jq -n --argjson output "$SCRUBBED_JSON" \
   '{"hookSpecificOutput":{"hookEventName":"PostToolUse","updatedMCPToolOutput":$output}}'

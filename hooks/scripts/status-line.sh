@@ -18,9 +18,9 @@ if [ -f ".claude/swarm/phase" ]; then
   STATUS="${STATUS} | ${PHASE} | ${TIER}"
 fi
 
-# Telemetry indicator
-if [ "${PDS_TELEMETRY:-0}" = "1" ]; then
-  STATUS="${STATUS} | telem"
+# Ledger indicator
+if [ -S "${HOME}/.ledger/ledger.sock" ]; then
+  STATUS="${STATUS} | ledger"
 fi
 
 echo "$STATUS"
