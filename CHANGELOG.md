@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.13.1] - 2026-04-10T03:28:52-04:00
+
+### Changed
+- Rewrite telemetry hooks to use ledger daemon — replace JSONL file writes with `ledger hook` one-liners, remove ~140 lines of shell telemetry logic
+- Sync marketplace.json version with project version
+
 ## [4.13.0] - 2026-04-07
 
 ### Added
