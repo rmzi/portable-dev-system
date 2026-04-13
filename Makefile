@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help install test test-hooks eval telemetry
+.PHONY: help install test test-hooks eval telemetry build-cg
 
 help:
 	@echo 'Available targets:'
@@ -9,6 +9,7 @@ help:
 	@echo '  test-hooks  Run hook unit tests (secret-scrub, mcp-secret-scrub)'
 	@echo '  eval        Run skill evals (make eval SKILL=grill [RUNS=5] [MODEL=haiku])'
 	@echo '  telemetry   Show PDS usage telemetry report'
+	@echo '  build-cg    Build and install cg (Code Graph Browser TUI)'
 
 # Link current checkout as the PDS plugin (dev mode)
 # Symlinks this directory to ~/.claude/plugins/pds/
@@ -30,3 +31,9 @@ eval:
 
 telemetry:
 	@./scripts/telemetry-summary.sh
+
+# Build and install cg (Code Graph Browser TUI)
+build-cg:
+	@cd crates/cg && cargo build --release
+	@cp crates/cg/target/release/cg ~/.cargo/bin/cg
+	@echo 'Installed cg to ~/.cargo/bin/cg'

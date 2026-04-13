@@ -84,8 +84,16 @@ if [ -n "$CLAUDE_PLUGIN_ROOT" ] && [ -f "$CLAUDE_PLUGIN_ROOT/hooks/scripts/sync-
   "$CLAUDE_PLUGIN_ROOT/hooks/scripts/sync-worktree-permissions.sh" 2>/dev/null || true
 fi
 
+# --- Codebase intelligence (optional, graceful degradation) ---
+CODEBASE_CONTEXT=""
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [ -f "$SCRIPT_DIR/codebase-context.sh" ]; then
+  CODEBASE_CONTEXT=$("$SCRIPT_DIR/codebase-context.sh" 2>/dev/null || true)
+  [ -n "$CODEBASE_CONTEXT" ] && CODEBASE_CONTEXT=" $CODEBASE_CONTEXT"
+fi
+
 # --- Output additionalContext ---
-CONTEXT="PDS v${PDS_VERSION} active. Key skills: /pds:swarm (parallel work), /pds:grill (requirements), /pds:verify (completion check), /pds:bugfix (test-first fixes), /pds:bcp (ship work), /pds:finish (formal branch completion).${WORKTREE_INFO}${STALE_WARNING}${WORKTREE_WARNING}${LEDGER_STATUS}"
+CONTEXT="PDS v${PDS_VERSION} active. Key skills: /pds:swarm (parallel work), /pds:grill (requirements), /pds:verify (completion check), /pds:bugfix (test-first fixes), /pds:bcp (ship work), /pds:finish (formal branch completion).${WORKTREE_INFO}${STALE_WARNING}${WORKTREE_WARNING}${LEDGER_STATUS}${CODEBASE_CONTEXT}"
 
 # Use python3 for safe JSON encoding
 python3 -c "

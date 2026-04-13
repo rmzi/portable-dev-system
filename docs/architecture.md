@@ -28,6 +28,8 @@ pds/
 ├── skills/
 │   └── <name>/SKILL.md          # 28 skills, each a /pds:<name> command
 ├── scripts/                     # Utility scripts (eval, telemetry, export)
+├── crates/
+│   └── cg/                      # Code Graph Browser TUI (ratatui + rusqlite)
 ├── docs/                        # This file and others
 └── install.sh                   # Plugin + project installer
 ```

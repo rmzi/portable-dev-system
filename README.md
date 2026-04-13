@@ -114,7 +114,7 @@ make install    # symlinks this checkout as the plugin
 portable-dev-system/
 ├── .claude-plugin/plugin.json     # Plugin manifest
 ├── agents/                        # 8 agent definitions + shared-rules.md
-├── skills/                        # 23 skills (dir/SKILL.md format)
+├── skills/                        # 28 skills (dir/SKILL.md format)
 │   ├── swarm/SKILL.md
 │   ├── telemetry/SKILL.md         # Usage telemetry management
 │   ├── inspect/SKILL.md           # Real-time PDS state viewer
@@ -122,6 +122,7 @@ portable-dev-system/
 ├── hooks/hooks.json               # Hook event handlers (see below)
 ├── hooks/scripts/                 # Hook implementation scripts
 ├── scripts/                       # Utility scripts (telemetry-summary, detect-patterns)
+├── crates/cg/                     # Code Graph Browser TUI (Rust, ratatui)
 ├── docs/                          # Philosophy, whitepaper, team setup, source analysis
 ├── .claude/settings.json          # Security settings (installed separately)
 ├── install.sh                     # Plugin installer
