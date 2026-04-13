@@ -449,9 +449,10 @@ If multiple projects exist, show a project selector on launch. If launched from 
 ## Build and Distribution
 
 ```bash
+cd crates/cg
 cargo build --release
-# Output: target/release/cbm-tui (single binary, ~5MB)
-# Install alongside codebase-memory-mcp in ~/.local/bin/
+# Output: target/release/cg (single binary, ~3.4MB)
+cp target/release/cg ~/.cargo/bin/
 ```
 
 No runtime dependencies. Ships as a companion binary to codebase-memory-mcp.
