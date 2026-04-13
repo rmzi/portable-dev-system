@@ -39,7 +39,7 @@ Per-agent differentiation relies on layers 2-6. The sandbox (layer 1) is a share
     "enabled": true,
     "autoAllowBashIfSandboxed": true,
     "excludedCommands": ["docker", "git"],
-    "allowUnsandboxedCommands": true,
+    "allowUnsandboxedCommands": false,
     "enableWeakerNestedSandbox": false,
     "network": {
       "allowedDomains": [
@@ -49,7 +49,10 @@ Per-agent differentiation relies on layers 2-6. The sandbox (layer 1) is a share
         "*.npmjs.org",
         "registry.npmjs.org",
         "pypi.org",
-        "files.pythonhosted.org"
+        "files.pythonhosted.org",
+        "crates.io",
+        "index.crates.io",
+        "static.crates.io"
       ],
       "allowAllUnixSockets": false,
       "allowLocalBinding": false
@@ -64,7 +67,7 @@ Per-agent differentiation relies on layers 2-6. The sandbox (layer 1) is a share
 |---------|-------|-----|
 | `autoAllowBashIfSandboxed` | `true` | Sandboxed Bash runs without permission prompts — velocity |
 | `excludedCommands` | `["docker", "git"]` | Git needs network for push/pull; docker needs host filesystem. Both guarded by deny rules. |
-| `allowUnsandboxedCommands` | `true` | Allows `dangerouslyDisableSandbox` when sandbox blocks a legitimate command |
+| `allowUnsandboxedCommands` | `false` | Blocks sandbox bypass entirely. On block, expand config or send command to terminal pane. |
 | `allowAllUnixSockets` | `false` | Blocks Docker socket and other local services by default |
 | `allowLocalBinding` | `false` | Prevents Bash from binding to local ports |
 
@@ -109,6 +112,36 @@ For teams that want tighter control, replace the `mcp__*` wildcard in permission
 
 The default `mcp__*` permission auto-approves all MCP tools. This is convenient but means any MCP server added to the project gets full tool access. For security-sensitive environments, replace with explicit allowlists per MCP server.
 
+### Sandbox as E2E Environment
+
+The sandbox is the validated environment where builds, tests, and tools run end-to-end. If a command fails in the sandbox, expand the sandbox — don't bypass it.
+
+**Rust monorepo example:**
+
+Network (in `sandbox.network.allowedDomains`):
+```json
+"crates.io", "index.crates.io", "static.crates.io",
+"github.com", "api.github.com",
+"*.npmjs.org", "registry.npmjs.org"
+```
+
+Filesystem (in `sandbox.filesystem.allowWrite`):
+```json
+"/Users/you/.cargo/bin",
+"/Users/you/.cargo/registry",
+"/Users/you/.cargo/git"
+```
+
+With these in place, `cargo build`, `cargo test`, `cargo install`, `cargo clippy`, and `npm install` all run in-sandbox. The repo root is already in the write allowlist (CWD and `additionalDirectories`), covering `target/`, `node_modules/`, and `.worktrees/`.
+
+**When the sandbox blocks a command:**
+
+1. Is it a network issue? → Add the domain to `sandbox.network.allowedDomains`
+2. Is it a filesystem write issue? → Add the path via `/pds:allow <path>` (checks for credential paths before allowing)
+3. Can't be fixed by config? → Report the block to the pilot and send the command to the terminal pane for manual execution
+
+`dangerouslyDisableSandbox` is never used. `allowUnsandboxedCommands` is `false`.
+
 ## Platform Support
 
 | Platform | Mechanism | Dependencies |
@@ -125,7 +158,7 @@ The SessionStart hook and `install.sh` both check for Linux dependencies and war
 If a legitimate command fails with "Operation not permitted" or similar:
 1. Check if the command needs network access — add the domain to `allowedDomains`
 2. Check if the command needs to write outside CWD — consider if this is really necessary
-3. As a last resort, the command can use `dangerouslyDisableSandbox: true` (requires `allowUnsandboxedCommands: true`)
+3. If the command cannot be accommodated by expanding the sandbox config, report it to the pilot and send it to the terminal pane for manual execution. Never use `dangerouslyDisableSandbox`.
 
 ### Excluded commands
 
@@ -147,6 +180,7 @@ Bash command arrives
   → Matches a deny rule? → BLOCKED (credential paths, protected branches, etc.)
   → Excluded from sandbox (git, docker)? → Permission mode evaluates
   → Sandboxed + autoAllowBashIfSandboxed? → AUTO-APPROVE (OS-confined)
+    → Sandbox blocks the command? → Report to pilot, send to terminal pane
   → None of the above → Permission mode evaluates
 ```
 

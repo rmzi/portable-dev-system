@@ -7,7 +7,7 @@
     "enabled": true,
     "autoAllowBashIfSandboxed": true,
     "excludedCommands": ["docker", "git"],
-    "allowUnsandboxedCommands": true,
+    "allowUnsandboxedCommands": false,
     "enableWeakerNestedSandbox": false,
     "network": {
       "allowedDomains": [

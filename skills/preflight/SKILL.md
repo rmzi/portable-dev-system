@@ -12,6 +12,7 @@ Quick validation that the development environment is ready for work. Each check 
 - After switching branches or worktrees
 - When builds or tests fail with environment-related errors
 - Before starting a swarm (catches env issues before they block workers)
+- Before deploying sandbox config changes (verify E2E capability)
 
 ## Checks
 
@@ -85,6 +86,30 @@ git --version
 
 Report: tool name, version, required vs actual.
 
+### 7. Sandbox Health
+```bash
+# Check sandbox enabled
+claude config get sandbox.enabled 2>/dev/null
+# Check no escape hatch
+claude config get sandbox.allowUnsandboxedCommands 2>/dev/null
+# Check write paths
+touch "$TMPDIR/sandbox-test-$$" && rm -f "$TMPDIR/sandbox-test-$$"
+```
+- **Pass:** Sandbox enabled, `allowUnsandboxedCommands` is `false`, write paths cover project needs, network covers package registries
+- **Fail:** Sandbox disabled, escape hatch enabled, critical paths not writable, or registries missing from network allowlist
+
+Sub-checks:
+- **7a. Enabled**: `sandbox.enabled` is `true`
+- **7b. No escape hatch**: `allowUnsandboxedCommands` is `false`
+- **7c. Write coverage**: CWD writable, build output directory writable (`target/` for Rust, `dist/` or `build/` for Node)
+- **7d. Network coverage**: Package registries for detected language in `sandbox.network.allowedDomains`:
+  - Rust: `crates.io`, `index.crates.io`, `static.crates.io`
+  - Node: `*.npmjs.org`, `registry.npmjs.org`
+  - Python: `pypi.org`, `files.pythonhosted.org`
+- **7e. Tool install paths** (language-specific): `~/.cargo/bin/` writable for Rust, `~/.local/bin/` for Python
+
+Report: sandbox status, escape hatch status, write path coverage, network coverage, tool paths.
+
 ## Output Format
 
 ```
@@ -98,6 +123,7 @@ Report: tool name, version, required vs actual.
 | Test collection | pass/fail | [runner, test count] |
 | Environment | pass/fail | [env files, missing vars] |
 | Tool versions | pass/fail | [tools and versions] |
+| Sandbox health | pass/fail | [enabled, no escape, write paths, network] |
 
 **Result:** Ready / [N issues to resolve]
 ```

@@ -210,7 +210,7 @@ Agents must operate within well-defined boundaries. Unrestricted access to produ
 
 PDS layers eight enforcement mechanisms, from OS-level sandboxing to human review:
 
-1. **OS-level sandbox** — Claude Code's native sandbox (Seatbelt on macOS, bubblewrap on Linux) confines Bash commands: filesystem writes are restricted to the working directory, network access is limited to an allowlist of domains. This is the hard floor — no prompt injection or agent confusion can bypass OS-level enforcement.
+1. **OS-level sandbox** — Claude Code's native sandbox (Seatbelt on macOS, bubblewrap on Linux) is configured as the validated E2E runtime environment. The write allowlist covers the full repo tree (including build artifacts in `target/`, dependencies in `node_modules/`, and parallel work in `.worktrees/`), cargo home directories (`~/.cargo/bin/`, `~/.cargo/registry/`, `~/.cargo/git/`), and temp dirs. Network access is restricted to an allowlist of package registries and source control hosts. `allowUnsandboxedCommands` defaults to `false` — there is no escape hatch. This is the hard floor — no prompt injection or agent confusion can bypass OS-level enforcement.
 2. **Static deny rules** — Pattern-matched rules in `settings.json` block credential paths, protected branches, sensitive files, and production patterns across all tools. Deny rules are evaluated before any permission mode logic and cannot be overridden.
 3. **Permission hooks** — PreToolUse phase gates enforce SDLC transitions mechanically. SubagentStart hooks enforce the agent roster. The `PermissionRequest` LLM-as-judge hook was removed in v4.6.0 — static deny rules plus the OS sandbox cover the same threat surface without the LLM overhead. Hooks receive `agent_id` and `agent_type` in all hook events (Claude Code 2.1.69), enabling agent-aware decisions. HTTP hooks (Claude Code 2.1.63) allow quality gates to call external services for policy enforcement.
 4. **PreToolUse phase gates** — Agent-level hooks that enforce SDLC phase transitions mechanically. A forward-only phase state machine (`.claude/swarm/phase`) tracks the current phase; gates validate both phase state and required artifacts. The orchestrator's PR gate blocks `gh pr create` unless phase >= `consolidate` and validation + review reports exist; its teardown gate blocks `TeamDelete` unless phase = `knowledge` and all three phase artifacts exist. Phase checks are defense-in-depth — if the phase file is absent, gates fall through to artifact-only checks. The validator's Stop hook uses an LLM evaluator to verify report completeness. `WorktreeCreate`/`WorktreeRemove` hook events provide lifecycle gates for worktree operations — creation and cleanup can be audited or blocked. `InstructionsLoaded` events let hooks audit which rule files are active at session start.
@@ -528,15 +528,25 @@ Agents write code, run tests, create PRs. They cannot merge, deploy, or affect u
 
 ### Isolation Boundaries
 
-**Sandbox**: All Bash commands run inside an OS-level sandbox (Seatbelt on macOS, bubblewrap on Linux). Writes are confined to the working directory. Network access is restricted to `allowedDomains`. Commands that need broader access (`git`, `docker`) are excluded from the sandbox and go through the normal permission flow.
+**Sandbox**: All Bash commands run inside an OS-level sandbox (Seatbelt on macOS, bubblewrap on Linux). The write allowlist covers the full repo tree (including build artifacts in `target/`, dependencies in `node_modules/`, and parallel work in `.worktrees/`), cargo home directories for tool installation, and temp dirs. Network access is restricted to package registries and source control. `allowUnsandboxedCommands` is `false` — agents never bypass the sandbox. On block, agents report the blocked command to the pilot and send it to the terminal pane for manual execution.
 
 **Network**: Workers access only package registries via the sandbox allowlist. Validators may need test database endpoints (added to allowlist per project). Orchestrators access external APIs. All network restrictions are OS-enforced for Bash commands.
 
-**Filesystem**: Agents access only their designated worktree for writes (OS-enforced via sandbox). Reads are broadly allowed across the repository for cross-worktree monitoring.
+**Filesystem**: Agents access their full repo tree for writes (OS-enforced via sandbox write allowlist). The sandbox covers all subdirectories of the repo root, meaning builds, tests, and tool installations run fully E2E within the sandbox. Cross-worktree reads are allowed for monitoring.
 
 **Credentials**: Scoped to role. No agent receives production credentials. Credential paths are blocked by both deny rules and sandbox filesystem restrictions.
 
 **Resources**: CPU/memory limits prevent runaway processes. Token budgets prevent unbounded costs.
+
+### Sandbox as E2E Environment
+
+The sandbox is not just a safety net — it is the validated runtime environment where the application builds, tests, and runs end-to-end. If a legitimate development command (`cargo build`, `cargo test`, `npm install`) cannot execute within the sandbox, that is a configuration gap to fix, not a reason to bypass the sandbox.
+
+This philosophy inverts the traditional relationship with containment. Instead of asking "what should the sandbox restrict?" the question becomes "what does the sandbox need to support?" The write allowlist is expanded to cover the full development lifecycle: repo tree (source, build artifacts, worktrees), package manager caches (`~/.cargo/registry/`, `~/.cargo/git/`), installed tool binaries (`~/.cargo/bin/`), and temp directories. The network allowlist covers all package registries the project depends on.
+
+`allowUnsandboxedCommands` defaults to `false`. The `dangerouslyDisableSandbox` escape hatch is never used. When the sandbox blocks a command, agents follow the terminal-pane escalation protocol: explain what was blocked, send the command to the pilot's terminal pane (without pressing Enter), and wait for the pilot to review and execute. This maintains the human gate while keeping OS-level enforcement intact.
+
+The `/pds:preflight` skill includes a sandbox health check that validates the sandbox is configured for E2E development: sandbox enabled, no escape hatch, write paths cover project needs, network covers package registries. This check runs at session start and before swarms, catching configuration gaps before they block workers.
 
 ### Enterprise Readiness
 
