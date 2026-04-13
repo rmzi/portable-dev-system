@@ -4,6 +4,7 @@ mod tui;
 use anyhow::{bail, Context, Result};
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
+use std::process::Command as ProcessCommand;
 
 use db::{discover_databases, Db, Project};
 
@@ -26,6 +27,11 @@ struct Cli {
 enum Command {
     /// List all indexed projects with stats
     List,
+    /// Index a repository (runs codebase-memory-mcp cli index_repository)
+    Index {
+        /// Path to the repository to index (defaults to cwd)
+        path: Option<PathBuf>,
+    },
 }
 
 fn main() -> Result<()> {
@@ -33,6 +39,7 @@ fn main() -> Result<()> {
 
     match cli.command {
         Some(Command::List) => cmd_list(&cli),
+        Some(Command::Index { path }) => cmd_index(path),
         None => cmd_browse(&cli),
     }
 }
@@ -100,6 +107,120 @@ fn list_single_db(db_path: &PathBuf) -> Result<()> {
         println!();
     }
     Ok(())
+}
+
+/// `cg index [path]` — index a repository via codebase-memory-mcp
+fn cmd_index(path: Option<PathBuf>) -> Result<()> {
+    let repo_path = match path {
+        Some(p) => std::fs::canonicalize(&p)
+            .with_context(|| format!("Path not found: {}", p.display()))?,
+        None => std::env::current_dir().context("Failed to get current directory")?,
+    };
+
+    // Verify it's a git repo
+    if !repo_path.join(".git").exists() {
+        bail!(
+            "{} is not a git repository (no .git directory)",
+            repo_path.display()
+        );
+    }
+
+    // Find codebase-memory-mcp binary
+    let mcp_bin = which_mcp().context(
+        "codebase-memory-mcp not found.\n\
+         Install it: https://github.com/anthropics/codebase-memory-mcp",
+    )?;
+
+    eprintln!("Indexing {}...", repo_path.display());
+
+    let json_arg = format!(r#"{{"repo_path":"{}"}}"#, repo_path.display());
+    let output = ProcessCommand::new(&mcp_bin)
+        .args(["cli", "index_repository", &json_arg])
+        .output()
+        .with_context(|| format!("Failed to run {}", mcp_bin.display()))?;
+
+    // Print stderr (progress logs)
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    for line in stderr.lines() {
+        if line.contains("pipeline.done") || line.contains("pipeline.err") {
+            eprintln!("{line}");
+        }
+    }
+
+    // Parse stdout for result — MCP wraps the response in double-encoded JSON
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    if stdout.contains("indexed") {
+        // Extract node/edge counts (works with both escaped and unescaped JSON)
+        if let Some(nodes) = extract_json_field(&stdout, "nodes") {
+            if let Some(edges) = extract_json_field(&stdout, "edges") {
+                eprintln!("Done: {nodes} nodes, {edges} edges");
+            }
+        }
+        eprintln!("Run `cg` to browse, or `cg list` to see all projects.");
+        Ok(())
+    } else if stdout.contains("error") {
+        bail!("Indexing failed. Check if another process has the database locked.\n{stdout}");
+    } else {
+        if !stdout.is_empty() {
+            eprintln!("{stdout}");
+        }
+        if !output.status.success() {
+            bail!("codebase-memory-mcp exited with {}", output.status);
+        }
+        Ok(())
+    }
+}
+
+/// Extract a numeric field from a JSON-in-JSON MCP response.
+/// Handles both `"nodes":310` and `\"nodes\":310` (double-encoded).
+fn extract_json_field(text: &str, field: &str) -> Option<String> {
+    // Try escaped version first (MCP wraps text in JSON)
+    let escaped_pattern = format!("\\\"{}\\\":", field);
+    let plain_pattern = format!("\"{}\":", field);
+
+    let start = if let Some(idx) = text.find(&escaped_pattern) {
+        idx + escaped_pattern.len()
+    } else {
+        let idx = text.find(&plain_pattern)?;
+        idx + plain_pattern.len()
+    };
+
+    let rest = &text[start..];
+    let end = rest.find(|c: char| !c.is_ascii_digit()).unwrap_or(rest.len());
+    if end == 0 {
+        return None;
+    }
+    Some(rest[..end].to_string())
+}
+
+/// Find codebase-memory-mcp on PATH or in common locations.
+fn which_mcp() -> Option<PathBuf> {
+    // Check PATH
+    if let Ok(output) = ProcessCommand::new("which")
+        .arg("codebase-memory-mcp")
+        .output()
+    {
+        if output.status.success() {
+            let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            if !path.is_empty() {
+                return Some(PathBuf::from(path));
+            }
+        }
+    }
+
+    // Check common locations
+    let home = std::env::var("HOME").ok()?;
+    let candidates = [
+        format!("{home}/.local/bin/codebase-memory-mcp"),
+        format!("{home}/.cargo/bin/codebase-memory-mcp"),
+    ];
+    for c in &candidates {
+        let p = PathBuf::from(c);
+        if p.exists() {
+            return Some(p);
+        }
+    }
+    None
 }
 
 /// Default: launch TUI browser
