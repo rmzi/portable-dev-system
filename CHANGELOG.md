@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.14.0] - 2026-04-13
+
+### Added
+- **`cg` — Code Graph Browser TUI** — Ratatui-based terminal UI for browsing codebase-memory-mcp SQLite indexes. Three views: Module Tree (folder/file hierarchy with symbol detail), Function List (sortable table with caller/callee counts), Search (FTS5 fuzzy search with BM25 ranking). Auto-detects project from cwd. `cg list` shows all indexed projects with stats. Binary at `crates/cg/`, installable via `make build-cg`.
+
 ## [4.13.1] - 2026-04-10T03:28:52-04:00
 
 ### Changed
