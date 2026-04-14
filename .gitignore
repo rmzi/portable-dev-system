@@ -1,8 +1,10 @@
 .worktrees/
 .claude/swarm/
+.claude/plans/
+.claude/agent-memory/
+.claude/settings.local.json
 .claude/telemetry.jsonl
 .agent/
 stream-c-staging/
 stream-c-test.txt
 .DS_Store
-target/

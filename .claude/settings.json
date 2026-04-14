@@ -6,8 +6,8 @@
   "sandbox": {
     "enabled": true,
     "autoAllowBashIfSandboxed": true,
-    "excludedCommands": ["docker", "git"],
-    "allowUnsandboxedCommands": false,
+    "excludedCommands": ["docker", "git", "gh"],
+    "allowUnsandboxedCommands": true,
     "enableWeakerNestedSandbox": false,
     "network": {
       "allowedDomains": [
@@ -39,11 +39,14 @@
       "Bash(git checkout:*)",
       "Bash(git clean:*)",
       "Bash(git commit:*)",
+      "Bash(git fetch:*)",
+      "Bash(git log:*)",
       "Bash(git pull:*)",
       "Bash(git push:*)",
       "Bash(git rebase:*)",
       "Bash(git remote:*)",
       "Bash(git reset:*)",
+      "Bash(git rev-parse:*)",
       "Bash(git stash:*)",
       "Bash(git worktree:*)",
       "Bash(gh issue:*)",

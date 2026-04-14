@@ -18,7 +18,7 @@ Battle-tested configs from an Anthropic hackathon winner. 12 agents, 24 commands
 - "Instinct-based learning" — commands for viewing, importing, exporting instincts that evolve into skills
 - Python/Django and Java Spring Boot skill packs (domain-specific)
 
-**PDS advantages:** Whitepaper-backed SDLC methodology (v3.0), worktree isolation architecture, source-analysis-informed defense-in-depth model (8 enforcement layers, 28 hook events leveraged), swarm tiers (lite/med/heavy) with model-cost optimization, statistical skill evaluation with Wilson score confidence intervals, zero-duplication install modes, context compression methodology with documented fidelity cliff.
+**PDS advantages:** Whitepaper-backed SDLC methodology (v3.0), worktree isolation architecture, source-analysis-informed defense-in-depth model (6 enforcement layers, 28 hook events leveraged), swarm tiers (lite/med/heavy) with model-cost optimization, statistical skill evaluation with Wilson score confidence intervals, zero-duplication install modes, context compression methodology with documented fidelity cliff.
 
 ### claude-flow (ruvnet)
 
@@ -135,7 +135,7 @@ PDS occupies a unique niche: **opinionated methodology as configuration**.
 
 The closest analogy: claude-flow is Kubernetes, everything-claude-code is a dotfiles repo, PDS is the Twelve-Factor App manifesto — but shipping as config you can install.
 
-**Unique competitive advantage (v4.5+):** PDS is informed by deep source analysis of Claude Code's internals. Understanding the system prompt assembly pipeline, 4-layer settings hierarchy, 28 hook lifecycle events, and plugin loading mechanism allows PDS to make optimal use of the platform rather than guessing at behavior. This is reflected in the defense-in-depth model (8 enforcement layers mapping to actual runtime mechanisms), swarm tier cost optimization (using real per-model pricing data), and hook-based phase gates (using actual hook event semantics, not assumed behavior).
+**Unique competitive advantage (v4.5+):** PDS is informed by deep source analysis of Claude Code's internals. Understanding the system prompt assembly pipeline, 4-layer settings hierarchy, 28 hook lifecycle events, and plugin loading mechanism allows PDS to make optimal use of the platform rather than guessing at behavior. This is reflected in the defense-in-depth model (6 enforcement layers mapping to actual runtime mechanisms), swarm tier cost optimization (using real per-model pricing data), and hook-based phase gates (using actual hook event semantics, not assumed behavior).
 
 ---
 
