@@ -318,7 +318,7 @@ PDS enables Claude Code's native OS-level sandbox for all Bash commands. The san
 
 **`mcp__*` wildcard risk:** The default `mcp__*` permission auto-approves all MCP tools from any configured server. For security-sensitive environments, replace with explicit allowlists per MCP server (e.g., `mcp__github__create_pull_request`).
 
-See `/pds:sandbox` skill for full configuration reference and customization guide.
+Claude Code's native sandbox handles OS-level confinement automatically — no additional skill is required.
 
 ---
 

@@ -46,7 +46,7 @@ Run on your local machine via the Desktop app's Schedule page.
 
 ### 3. `/loop` (Session-Scoped)
 
-In-session scheduling via the `/loop` command. Described in the PDS dispatch skill under `CronCreate`.
+In-session scheduling via the `/loop` command. Described in the Dispatch Modes section of `/pds:team` under `CronCreate`.
 
 - Runs on a recurring interval within a session
 - Dies when the session ends
@@ -67,7 +67,7 @@ These flags suggest Anthropic is actively investing in autonomous background exe
 
 ## Relationship to PDS Headless Dispatch
 
-PDS's `/pds:dispatch` skill already defines a **headless mode** with three mechanisms:
+PDS's `/pds:team` skill (Dispatch Modes section) already defines a **headless mode** with three mechanisms:
 
 | PDS Headless Mechanism | Cloud Equivalent | Overlap? |
 |------------------------|-----------------|----------|
@@ -112,14 +112,14 @@ PDS swarms depend on:
 
 Cloud tasks start from a **fresh git clone** of the default branch. There is no local state, no worktree setup, no `.claude/swarm/` directory, no MCP local servers.
 
-**A cloud task could trigger a simple single-agent PDS skill** (e.g., `preflight`, `audit-config`, `telemetry`) that doesn't require worktrees or inter-agent coordination. Full 6-phase swarms are not viable in the cloud task environment today.
+**A cloud task could trigger a simple single-agent PDS skill** (e.g., `/pds:triage`, `/pds:verify`) that doesn't require worktrees or inter-agent coordination. Full 6-phase swarms are not viable in the cloud task environment today.
 
 ### Desktop Tasks — Viable with Caveats
 
 Desktop scheduled tasks run on your machine with local file access. A desktop task could:
 1. Trigger `claude --print "/pds:swarm [task description]"` headlessly
-2. Run `preflight` and report results
-3. Trigger a targeted audit or telemetry analysis
+2. Run `/pds:verify` and report results
+3. Trigger a targeted audit
 
 The main limitation: desktop tasks require the machine to be awake. For scheduled nightly audits where the machine is on, this works.
 
@@ -128,15 +128,15 @@ The main limitation: desktop tasks require the machine to be awake. For schedule
 ```bash
 # Desktop scheduled task (nightly, machine-local)
 # Task prompt:
-# "Run /pds:preflight and report results. If preflight passes, 
-#  run /pds:telemetry to analyze usage patterns from today."
+# "Run /pds:verify. If verification passes, 
+#  run /pds:triage to analyze findings from today."
 ```
 
 ---
 
 ## Analysis Summary
 
-| Capability | Cloud Tasks | Desktop Tasks | PDS `/dispatch` |
+| Capability | Cloud Tasks | Desktop Tasks | PDS `/team` (Dispatch Modes) |
 |------------|-------------|---------------|-----------------|
 | No machine required | ✅ | ❌ | ❌ |
 | Local file access | ❌ | ✅ | ✅ |
@@ -151,11 +151,11 @@ The main limitation: desktop tasks require the machine to be awake. For schedule
 
 ## Recommendations
 
-1. **No new PDS primitives needed.** Cloud scheduled tasks are the platform-native version of PDS's `CronCreate`. `/pds:dispatch` already documents this. Update the skill to reference the `/schedule` CLI command explicitly.
+1. **No new PDS primitives needed.** Cloud scheduled tasks are the platform-native version of PDS's `CronCreate`. The Dispatch Modes section of `/pds:team` already documents this. Update the section to reference the `/schedule` CLI command explicitly.
 
 2. **Document cloud tasks as the recommended path for ralph-loop patterns.** Any recurring single-prompt automation should use cloud scheduled tasks rather than a plugin.
 
-3. **Add a desktop-task recipe for nightly PDS maintenance.** Document a standard desktop scheduled task for running preflight + telemetry. This gives PDS users an "autonomous health check" without requiring a full swarm.
+3. **Add a desktop-task recipe for nightly PDS maintenance.** Document a standard desktop scheduled task for running `/pds:verify` and ledger health checks. This gives PDS users an "autonomous health check" without requiring a full swarm.
 
 4. **Do not attempt full swarm execution in cloud tasks.** Fresh clone environment is incompatible with PDS's multi-worktree, multi-agent coordination model. Revisit if Anthropic adds persistent storage to cloud task environments.
 
@@ -165,11 +165,11 @@ The main limitation: desktop tasks require the machine to be awake. For schedule
 
 ## Next Steps
 
-- [ ] Update `/pds:dispatch` skill to explicitly reference `/schedule` CLI command and cloud task option
-- [ ] Add a "desktop task recipe" for nightly PDS maintenance to `docs/` or the dispatch skill
+- [ ] Update `/pds:team` Dispatch Modes section to explicitly reference `/schedule` CLI command and cloud task option
+- [ ] Add a "desktop task recipe" for nightly PDS maintenance to `docs/` or the `/pds:team` skill
 - [ ] Watch Anthropic releases for KAIROS / persistent cloud session state
-- [ ] Issue #80 can be closed once dispatch skill is updated
+- [ ] Issue #80 can be closed once `/pds:team` is updated
 
 ---
 
-*Sources: [Claude Code web scheduled tasks docs](https://code.claude.com/docs/en/web-scheduled-tasks) · [Claude Code source analysis](./claude-code-source-analysis.md) · [PDS dispatch skill](../skills/dispatch/SKILL.md)*
+*Sources: [Claude Code web scheduled tasks docs](https://code.claude.com/docs/en/web-scheduled-tasks) · [Claude Code source analysis](./claude-code-source-analysis.md) · [PDS team skill](../skills/team/SKILL.md)*
