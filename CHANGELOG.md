@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.15.0] - 2026-04-13
+
+### Changed
+- **Skill consolidation: 28 → 14** — Pruned 11 skills (permission-router, telemetry, inspect, instinct, trim, export, allow, sandbox, audit-config, preflight) and consolidated 3 (merge→swarm, dispatch→team, bcp→finish). Ethos moved to `docs/ethos.md`. Net reduction: -1,940 lines.
+- **Agent definitions updated** — Removed references to pruned skills from auditor, scout, and validator agent definitions. Validator now references `pds:swarm` for merge coordination.
+- **Doc references updated** — Whitepaper, teams.md, migration-v4.md, auto-claude-research.md updated to point to consolidated skill locations.
+
+### Added
+- **`docs/human-factors.md`** — Draft whitepaper section on AI psychosis, reinforcement loops, healthy human-in-the-loop practices, and PDS's role as guardrail. Includes author integration placeholders. (Closes #117)
+- **`/pds:swarm` Branch Merging section** — Absorbed `/merge` protocol: single branch, N-branch ordered merge, conflict ownership, command reference.
+- **`/pds:team` Dispatch Modes section** — Absorbed `/dispatch` protocol: teammate vs fork subagent vs headless, decision flowchart.
+- **`/pds:finish` Quick Ship mode** — Absorbed `/bcp` protocol: bump, commit, push, protected branch check, PR creation.
+- **tmux socket in sandbox allowlist** — Added `/private/tmp/tmux-*` to `additionalWritePaths` to fix tmux-dependent shell aliases. (Closes #132)
+
+### Fixed
+- **Session timer accumulation** — `session-start.sh` now resets `$TMPDIR/pds-session-start` on SessionStart, preventing health-check.sh from reporting inflated hours across sessions. (Closes #128)
+
 ## [4.14.0] - 2026-04-13
 
 ### Added
