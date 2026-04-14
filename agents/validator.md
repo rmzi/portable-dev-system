@@ -17,7 +17,7 @@ tools:
 permissionMode: acceptEdits
 skills:
   - pds:verify
-  - pds:merge
+  - pds:swarm
 color: yellow
 maxTurns: 40
 hooks:

@@ -414,7 +414,7 @@ install_plugin() {
   ok "PDS v5 plugin installed!"
   echo "    Plugin: ~/.claude/plugins/pds/"
   echo "    Settings: ~/.claude/settings.json"
-  echo "    Skills: /pds:swarm, /pds:grill, /pds:verify, /pds:telemetry, etc."
+  echo "    Skills: /pds:swarm, /pds:grill, /pds:verify, /pds:finish, etc."
   echo "    Agents: orchestrator, worker, validator, scout, etc."
 
   # Telemetry opt-in
@@ -445,7 +445,7 @@ with open(path, 'w') as f:
       fi
       ;;
     *)
-      info "Telemetry disabled (default). Enable later with /pds:telemetry on"
+      info "Telemetry disabled (default). Enable later by setting PDS_TELEMETRY=1"
       ;;
   esac
 

@@ -12,43 +12,29 @@ PDS is a Claude Code plugin. Skills and agents are distributed via the plugin sy
 1. **At session start**: PDS plugin loads automatically (skills, agents, hooks)
 2. **Before any task**: Check if a PDS skill exists for it — if so, read it first
 3. **During work**: Follow skill documentation before performing actions
-4. **When stuck**: Read `/pds:ethos` for principles, `/pds:grill` for structured thinking
+4. **When stuck**: Read `docs/ethos.md` for principles, `/pds:grill` for structured thinking
 
 ### Rule
 
 **Before performing ANY action, check if a skill exists for it. If a relevant skill exists, read it FIRST.**
 
-### Available Skills (28)
+### Available Skills (14)
 
 | Skill | When to Use |
 |-------|-------------|
-| `/pds:ethos` | Starting work, when stuck, need principles |
-| `/pds:swarm` | Launch agent team for parallel work |
-| `/pds:team` | Agent roster, roles, capabilities |
+| `/pds:swarm` | Launch agent team for parallel work (includes branch merging) |
+| `/pds:team` | Agent roster, roles, capabilities, dispatch modes |
 | `/pds:grill` | Requirement interrogation before implementation |
 | `/pds:verify` | Completion self-check before declaring done |
-| `/pds:finish` | Branch completion protocol for merge readiness |
-| `/pds:merge` | Merging subtask worktrees back to coordinator |
+| `/pds:finish` | Branch completion protocol for merge readiness (includes quick ship) |
 | `/pds:worktree` | Branch isolation, parallel work |
-| `/pds:instinct` | Record, review, and promote engineering patterns |
-| `/pds:sandbox` | OS-level sandbox config, network allowlist |
-| `/pds:permission-router` | **Deprecated** — see /pds:sandbox |
-| `/pds:audit-config` | Verify PDS setup is correct and secure |
-| `/pds:trim` | Context efficiency maintenance |
 | `/pds:contribute` | Contributing to PDS itself — whitepaper alignment |
 | `/pds:bugfix` | Test-first bug fix loop |
 | `/pds:bump` | Version bump and changelog update |
 | `/pds:eval` | Test whether skills produce correct agent behavior |
-| `/pds:telemetry` | Manage usage telemetry — enable, disable, view reports |
-| `/pds:inspect` | Check current PDS state — swarm, telemetry, agents |
-| `/pds:bcp` | Finalize work — bump, commit, push |
 | `/pds:rebase` | Focused rebase against target branch |
 | `/pds:pr-review` | Address PR review comments systematically |
-| `/pds:preflight` | Preflight environment validation |
 | `/pds:pause` | Save session state, WIP commit, resume later |
-| `/pds:allow` | Add a path to the sandbox write allowlist |
-| `/pds:export` | Export session to human-readable markdown |
-| `/pds:dispatch` | Agent dispatch mode selection |
 | `/pds:triage` | Triage insights into GitHub issues across repos |
 
 See `/pds:team` for the 8-agent roster (orchestrator, researcher, worker, validator, reviewer, documenter, scout, auditor).
@@ -60,7 +46,7 @@ See `/pds:team` for the 8-agent roster (orchestrator, researcher, worker, valida
 ```
 .claude-plugin/    — Plugin manifest (plugin.json)
 agents/            — 8 agent definitions + shared-rules.md
-skills/            — 28 workflow skills (dir/SKILL.md format)
+skills/            — 14 workflow skills (dir/SKILL.md format)
 hooks/             — Quality gates (SessionStart, Stop, TaskCompleted, TeammateIdle, SubagentStart, PreCompact, PostCompact, UserPromptSubmit, PostToolUse, WorktreeCreate, InstructionsLoaded)
 scripts/           — Utility scripts (telemetry-summary, detect-patterns)
 crates/            — Rust binaries (cg — code graph TUI browser)
@@ -98,7 +84,7 @@ Use `git worktree add` for branch isolation — never `git clone` (clones discon
 
 ### Protected Branches
 
-No branches are protected by default. To protect branches, add patterns below. `/pds:bcp` and `/pds:finish` will prompt for confirmation before pushing to a matching branch. GitHub branch protection rules are the server-side enforcement — this is the client-side "are you sure?" prompt.
+No branches are protected by default. To protect branches, add patterns below. `/pds:finish` will prompt for confirmation before pushing to a matching branch. GitHub branch protection rules are the server-side enforcement — this is the client-side "are you sure?" prompt.
 
 To configure, ask PDS to set up protected branches — it will prompt for each one individually.
 

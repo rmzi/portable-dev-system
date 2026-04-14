@@ -9,6 +9,7 @@
     "excludedCommands": ["docker", "git", "gh"],
     "allowUnsandboxedCommands": true,
     "enableWeakerNestedSandbox": false,
+    "additionalWritePaths": ["/private/tmp/tmux-*"],
     "network": {
       "allowedDomains": [
         "github.com",

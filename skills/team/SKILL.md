@@ -1,5 +1,5 @@
 ---
-description: Referencing the agent roster, roles, and coordination model. Use when spawning agents or checking permissions.
+description: Referencing the agent roster, roles, coordination model, and dispatch modes. Use when spawning agents or checking permissions.
 ---
 # /team — Agent Team Reference
 
@@ -27,7 +27,7 @@ These map directly to the whitepaper's Agentic SDLC: orchestrator coordinates, w
 | **reviewer** | Code review — quality, security | sonnet | plan | 25 | project | PRs, pre-human review |
 | **documenter** | Documentation updates | sonnet | acceptEdits | 30 | — | User-facing docs changed |
 | **scout** | PDS meta-improvements | haiku | acceptEdits | 15 | project | Post-swarm knowledge capture |
-| **auditor** | Codebase analysis → GitHub issues | sonnet | plan | 30 | project | Periodic tech debt scans |
+| **auditor** | Codebase analysis -> GitHub issues | sonnet | plan | 30 | project | Periodic tech debt scans |
 
 Specialists add value in specific situations but aren't needed every swarm. The orchestrator decides based on task requirements.
 
@@ -64,14 +64,71 @@ User override: `/pds:swarm lite|med|heavy`. Without argument, auto-selected via 
 
 **Note**: In auto mode, agent-declared `permissionMode` values (`plan`, `acceptEdits`, `default`) are overridden by the classifier. Behavioral constraints in agent `.md` files and the classifier's context awareness provide enforcement. Static deny rules and the sandbox are unaffected.
 
+## Dispatch Modes
+
+Three dispatch modes for spawning agents. Choose based on task characteristics.
+
+### Mode Selection
+
+| Question | Team Teammate | Fork Subagent | Headless |
+|----------|--------------|---------------|----------|
+| Needs its own worktree? | Yes | No | No |
+| Needs task tracking? | Yes | No | No |
+| Needs role specialization? | Yes | No | Optional |
+| Needs parent's full context? | No (reads context.md) | Yes | No |
+| Long-running (>3 turns)? | Yes | No | Varies |
+| Interactive session required? | Yes | Yes | No |
+| Visible in team? | Yes | No | No |
+
+### Team Teammate
+
+Default for all swarm work units. Long-running, tracked, role-specialized.
+
+```
+Task(worker, team_name="project", name="worker-auth",
+     prompt="Implement auth module per task description.")
+```
+
+**When to use:** Implementation tasks, validation, review, documentation — anything that produces artifacts, needs a worktree, or should appear in TaskList.
+
+**Context bridging:** Workers start fresh. Write `.claude/swarm/context.md` before dispatch so workers can read the orchestrator's plan, research, and decisions on init.
+
+### Fork Subagent
+
+Quick, invisible, context-inheriting. The child gets the parent's full conversation history.
+
+**When to use:** Inline research ("does this function exist?"), quick analysis ("summarize this file"), one-off queries that need the parent's accumulated context. Under 2-3 turns. No worktree needed. No task tracking needed.
+
+**Limitation:** No role specialization. The fork inherits the parent's system prompt, not a specialized agent definition. Cannot be combined with `Task(agent_type)`.
+
+### Headless
+
+Background or scheduled execution without an interactive session.
+
+- **CronCreate** — Schedule recurring agent execution (weekly audits, daily checks)
+- **run_in_background** — Launch long-running commands that continue after the parent returns
+- **SessionStart/Stop Hooks** — Automatic execution at session boundaries
+
+### Decision Flowchart
+
+```
+Is the task >3 turns with artifact output?
+  YES -> Team teammate (Task(worker))
+  NO -> Does the task need the parent's full context?
+    YES -> Fork subagent
+    NO -> Does the task need an interactive session?
+      YES -> Fork subagent (lightweight) or teammate (tracked)
+      NO -> Headless (CronCreate, run_in_background, or hook)
+```
+
 ## Coordination Model
 
 ```
-                    ┌─────────────┐
-                    │ orchestrator │  (your Claude session)
-                    └──────┬──────┘
-           ┌───────┬───────┼───────┬───────┬───────┐
-           │       │       │       │       │       │
+                    +---------------+
+                    | orchestrator  |  (your Claude session)
+                    +-------+-------+
+           +-------+-------+-------+-------+-------+
+           |       |       |       |       |       |
       researcher worker validator reviewer documenter scout/auditor
       (each spawned via Task tool with worktree isolation)
 ```
@@ -91,7 +148,7 @@ These patterns are PDS-specific — they layer on top of native Claude Code team
 
 These are Claude Code native behaviors, but agents that haven't seen them before will get stuck:
 
-- **Shutdown before TeamDelete**: `SendMessage(type="shutdown_request")` to each active agent → wait for `shutdown_response` → then `TeamDelete`. TeamDelete **fails if agents are still active**.
+- **Shutdown before TeamDelete**: `SendMessage(type="shutdown_request")` to each active agent -> wait for `shutdown_response` -> then `TeamDelete`. TeamDelete **fails if agents are still active**.
 - **Plan approval**: Agents in `plan` mode send `plan_approval_request` when they call `ExitPlanMode`. Orchestrator must respond with `SendMessage(type="plan_approval_response", approve=true)` — or `approve=false` with feedback. Without this response, the agent hangs.
 - **Plain text is invisible to teammates** — always use `SendMessage`. DM (`type="message"`) for targeted communication; broadcast (`type="broadcast"`) only for critical team-wide issues.
 

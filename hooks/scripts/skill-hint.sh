@@ -19,7 +19,7 @@ esac
 
 case "$LOWER" in
   *ship*|*deploy*|*push*|*release*|*publish*)
-    [ -n "$HINTS" ] && HINTS="$HINTS, /pds:bcp" || HINTS="/pds:bcp"
+    [ -n "$HINTS" ] && HINTS="$HINTS, /pds:finish" || HINTS="/pds:finish"
     ;;
 esac
 
@@ -43,7 +43,7 @@ esac
 
 case "$LOWER" in
   *rebase*|*merge*|*conflict*)
-    [ -n "$HINTS" ] && HINTS="$HINTS, /pds:merge" || HINTS="/pds:merge"
+    [ -n "$HINTS" ] && HINTS="$HINTS, /pds:swarm" || HINTS="/pds:swarm"
     ;;
 esac
 

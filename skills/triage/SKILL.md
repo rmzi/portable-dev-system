@@ -281,6 +281,4 @@ Create all? (yes / review each / skip)
 ## See Also
 
 - `/pds:grill` — The interrogation pattern this skill adapts
-- `/pds:inspect` — State-gathering procedural pattern
-- `/pds:instinct` — Pattern capture (triage may surface instinct candidates)
 - `/pds:bugfix` — For friction items that are actual bugs

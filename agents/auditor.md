@@ -11,8 +11,7 @@ tools:
   - TaskGet
   - SendMessage
 permissionMode: plan
-skills:
-  - pds:audit-config
+skills: []
 color: orange
 maxTurns: 30
 memory: project

@@ -10,7 +10,7 @@
 6. **Fail fast, recover gracefully** — Validate at boundaries
 7. **Automation as documentation** — Scripts > READMEs
 
-These principles are encoded in `/pds:ethos` and grounded across all PDS skills. They are stable — tools and techniques evolve, but principles endure.
+These principles are documented in [docs/ethos.md](ethos.md) and grounded across all PDS skills. They are stable — tools and techniques evolve, but principles endure.
 
 ---
 

@@ -118,7 +118,7 @@ Non-deterministic systems need repetition. A single pass/fail tells you nothing 
 
 ### Cost
 
-Haiku execution + sonnet grading ≈ $0.10/run. Sonnet execution + sonnet grading ≈ $0.25/run. 20 runs at sonnet ≈ $5.00. Use sonnet grading by default — haiku grading produces false positives and false negatives on complex output.
+Haiku execution + sonnet grading ~ $0.10/run. Sonnet execution + sonnet grading ~ $0.25/run. 20 runs at sonnet ~ $5.00. Use sonnet grading by default — haiku grading produces false positives and false negatives on complex output.
 
 ## A/B Comparison
 
@@ -147,6 +147,5 @@ The grading model affects results. Haiku is cheap but may under-credit rich outp
 
 ## See Also
 
-- `/pds:instinct` — pattern lifecycle (evals complement instinct validation)
 - `/pds:verify` — work output verification (eval checks skill adherence)
 - Scout agent — runs evals during Phase 6

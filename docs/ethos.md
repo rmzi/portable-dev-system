@@ -1,9 +1,6 @@
----
-description: Grounding in core development principles. Use when starting significant work, feeling stuck, or needing to reset decision-making clarity.
----
-# /ethos — Core Development Principles
+# Core Development Principles
 
-> Understand · Build · Validate
+> Understand . Build . Validate
 
 When invoked, remind of these principles. Use as grounding before significant work.
 

@@ -17,11 +17,7 @@ tools:
   - mcp__plugin_claude-mem_mcp-search__smart_search
 permissionMode: acceptEdits
 skills:
-  - pds:ethos
-  - pds:instinct
-  - pds:trim
   - pds:eval
-  - pds:telemetry
 color: red
 maxTurns: 15
 memory: project
@@ -59,13 +55,13 @@ If claude-mem tools are unavailable, proceed without them — all other analysis
 
 1. Read `.claude/instincts.md`. Note active instincts and their confidence levels.
 2. Scan artifacts. Read `skills/`, `agents/`, `CLAUDE.md`.
-3. Check alignment with `/pds:ethos` principles.
+3. Check alignment with `docs/ethos.md` principles.
 4. Identify gaps and redundancy. Missing skills, overlapping roles, inconsistencies.
 5. Assess: MECE compliance, role clarity, convention consistency, completeness.
-6. Check context footprint. Flag growth beyond baseline. Recommend `/pds:trim` if bloated.
+6. Check context footprint. Flag growth beyond baseline.
 7. Analyze telemetry. If `.claude/telemetry.jsonl` exists, run `scripts/detect-patterns.sh` (or `$CLAUDE_PLUGIN_ROOT/scripts/detect-patterns.sh`) and incorporate detected patterns into instinct evaluation. If telemetry file is absent, skip this step.
 7a. Include detect-patterns.sh output in the report under `### Telemetry-Detected Patterns` and summarize usage stats under `### Usage`.
-7b. **Efficiency analysis.** If `.claude/telemetry.jsonl` exists, run `scripts/efficiency-chart.sh` (or `$CLAUDE_PLUGIN_ROOT/scripts/efficiency-chart.sh`). Include the efficiency ratio (η), per-agent chart, and top waste points in the report under `### Efficiency`. If η < 0.5, flag the top waste category for investigation.
+7b. **Efficiency analysis.** If `.claude/telemetry.jsonl` exists, run `scripts/efficiency-chart.sh` (or `$CLAUDE_PLUGIN_ROOT/scripts/efficiency-chart.sh`). Include the efficiency ratio, per-agent chart, and top waste points in the report under `### Efficiency`. If ratio < 0.5, flag the top waste category for investigation.
 8. Update instincts. For patterns re-observed: bump `Times seen`, adjust `Confidence`. For new patterns: propose new instinct entries.
 9. Flag promotions. If any instinct reaches `high` confidence (3+ validations), draft a skill file for human review.
 10. Run evals. For skills exercised in this swarm, read their `EVAL.md` and grade observed agent behavior against the rubric. Record results in `.claude/eval-results.md`.
@@ -96,8 +92,8 @@ If claude-mem tools are unavailable, proceed without them — all other analysis
 - **Top agents**: [type]: N spawns, ...
 - **File hotspots**: [ext]: N edits, ...
 ### Efficiency
-- **Overall η**: [ratio] ([percentage]%)
-- **Per-agent**: [agent]: η=[ratio], [agent]: η=[ratio], ...
+- **Overall ratio**: [ratio] ([percentage]%)
+- **Per-agent**: [agent]: [ratio], [agent]: [ratio], ...
 - **Top waste**: [waste category] — [duration] ([description])
 - **Recommendation**: [action to reduce top waste]
 ### Telemetry-Detected Patterns
