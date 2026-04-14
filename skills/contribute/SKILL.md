@@ -48,12 +48,12 @@ When adding a skill or agent, update all reference points:
 For significant design decisions, store ADRs in `docs/adr/`. Filename: `NNNN-brief-description.md`. Format: Context, Decision, Consequences. Write when choosing between multiple valid approaches or making hard-to-reverse decisions.
 
 ### 6. Ship it
-Run `/pds:bcp` to finalize — bumps version, commits, and pushes:
+Run `/pds:finish` to finalize — verifies, bumps version, commits, and pushes:
 - **patch** — bug fixes, minor doc updates
 - **minor** — new skills, agent changes, whitepaper updates
 - **major** — breaking changes to skill interfaces or agent contracts
 
 ## See Also
 
-- `/pds:bcp` — Bump, commit, push (finalization)
+- `/pds:finish` — Branch completion and shipping
 - `/pds:bump` — Version bump and changelog (no push)

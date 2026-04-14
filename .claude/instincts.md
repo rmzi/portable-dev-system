@@ -17,7 +17,7 @@ Persistent engineering patterns observed during work. Lighter than skills — ob
 
 ## Lifecycle
 
-1. **Capture**: Any agent or human records a pattern here via `/instinct`
+1. **Capture**: Any agent or human records a pattern here
 2. **Validate**: Scout reviews post-swarm, bumps count, adjusts confidence
 3. **Promote**: At `high` confidence (3+ validations), scout proposes a new skill draft. Human approves.
 4. **Retire**: If proven wrong or irrelevant, scout marks `retired`
@@ -39,7 +39,7 @@ Persistent engineering patterns observed during work. Lighter than skills — ob
 - **Confidence**: low
 - **Context**: Heavy swarm — orchestrator idle ~15 minutes while workers executed
 - **Pattern**: Orchestrator creates plan, dispatches workers, then waits until validation. TPS "waiting waste" — a capable agent (opus) creating no value during the longest phase.
-- **Action**: Use idle time for monitoring, pre-writing review criteria, preparing consolidation, or headless background tasks via `/pds:dispatch`.
+- **Action**: Use idle time for monitoring, pre-writing review criteria, preparing consolidation, or running headless background tasks.
 - **Status**: active
 
 ### Squash before push to avoid force-push complications
@@ -56,7 +56,7 @@ Persistent engineering patterns observed during work. Lighter than skills — ob
 - **Times seen**: 1
 - **Confidence**: low
 - **Context**: Claude Code source analysis (692 lines) informed whitepaper v3.0, identified three-system disconnect, revealed 5 compaction modes, grounded efficiency measurement
-- **Pattern**: Deep platform understanding enables architecture decisions based on actual behavior, not documented API surface. Findings compound — fork-subagent analysis → dual-dispatch → context protocol → efficiency framework.
+- **Pattern**: Deep platform understanding enables architecture decisions based on actual behavior, not documented API surface. Findings compound — fork-subagent analysis, dual-dispatch, context protocol, efficiency framework.
 - **Action**: Maintain `docs/claude-code-source-analysis.md` as a strategic asset. Update as Claude Code evolves.
 - **Status**: active
 
@@ -74,7 +74,7 @@ Persistent engineering patterns observed during work. Lighter than skills — ob
 - **Times seen**: 1
 - **Confidence**: low
 - **Context**: After bumping VERSION to 4.8.0, marketplace still showed 4.6.2 because plugin.json was stale
-- **Pattern**: The marketplace reads version from `.claude-plugin/plugin.json`, not from `VERSION`. Both files must be updated atomically during version bumps. `/pds:bump` and `/pds:bcp` update VERSION but not plugin.json.
+- **Pattern**: The marketplace reads version from `.claude-plugin/plugin.json`, not from `VERSION`. Both files must be updated atomically during version bumps. `/pds:bump` updates VERSION but not plugin.json.
 - **Action**: Fix `/pds:bump` skill to update both `VERSION` and `.claude-plugin/plugin.json` in the same step.
 - **Status**: active
 
@@ -84,5 +84,5 @@ Persistent engineering patterns observed during work. Lighter than skills — ob
 - **Confidence**: low
 - **Context**: Found old marketplace cache versions (4.5.0, 4.6.1), a stale temp git clone, and a broken branch-tone symlink in ~/.claude/plugins/
 - **Pattern**: Plugin installs, marketplace updates, and dev symlinks leave artifacts behind. No cleanup runs automatically. Over time, the plugin directory accumulates stale versions, temp clones, and broken symlinks.
-- **Action**: Add cleanup to `/pds:dispatch` headless use cases — periodic plugin cache pruning. Or add to preflight validation.
+- **Action**: Add periodic plugin cache pruning to session start or a scheduled task.
 - **Status**: active

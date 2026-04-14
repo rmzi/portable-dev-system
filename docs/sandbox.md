@@ -1,7 +1,4 @@
----
-description: OS-level sandbox configuration — filesystem confinement, network restrictions, platform support
----
-# /sandbox — Native Sandboxing
+# Native Sandboxing
 
 OS-level enforcement for Bash commands via Claude Code's native sandbox (Seatbelt on macOS, bubblewrap on Linux). Confines filesystem writes to the working directory and restricts network access to an allowlist.
 
@@ -24,7 +21,7 @@ OS-level enforcement for Bash commands via Claude Code's native sandbox (Seatbel
 |-------|-----------|-------|
 | **1. Sandbox** | OS-level (Seatbelt/bubblewrap) | Bash commands: filesystem writes, network |
 | **2. Deny rules** | Static pattern matching in `settings.json` | All tools: credential paths, protected branches, sensitive files |
-| **3. Hook gates** | PreToolUse + SubagentStart + HTTP hooks | Phase enforcement, roster checks, external policy |
+| **3. Phase gates** | PreToolUse hooks on orchestrator | SDLC phase enforcement, artifact checks |
 | **4. Agent prompts** | Constraints in `agents/*.md` (plugin) | Role-specific behavior (read-only, stay in worktree) |
 | **5. Permission modes** | `plan`, `acceptEdits`, `default`, `auto` | Tool access per agent type (auto mode: classifier decides) |
 | **6. Human gate** | PR review before merge | All changes before production |
@@ -38,8 +35,8 @@ Per-agent differentiation relies on layers 2-6. The sandbox (layer 1) is a share
   "sandbox": {
     "enabled": true,
     "autoAllowBashIfSandboxed": true,
-    "excludedCommands": ["docker", "git", "gh"],
-    "allowUnsandboxedCommands": true,
+    "excludedCommands": ["docker", "git"],
+    "allowUnsandboxedCommands": false,
     "enableWeakerNestedSandbox": false,
     "network": {
       "allowedDomains": [
@@ -49,7 +46,10 @@ Per-agent differentiation relies on layers 2-6. The sandbox (layer 1) is a share
         "*.npmjs.org",
         "registry.npmjs.org",
         "pypi.org",
-        "files.pythonhosted.org"
+        "files.pythonhosted.org",
+        "crates.io",
+        "index.crates.io",
+        "static.crates.io"
       ],
       "allowAllUnixSockets": false,
       "allowLocalBinding": false
@@ -58,18 +58,13 @@ Per-agent differentiation relies on layers 2-6. The sandbox (layer 1) is a share
 }
 ```
 
-**`excludedCommands`** — Commands that bypass the OS-level sandbox entirely. They still go through deny rules and the active permission mode.
-- `gh` — Go binary that uses Security.framework for TLS (`com.apple.trustd`) and Keychain (`com.apple.securityd`). Seatbelt blocks both Mach lookups.
-- `git` — Needs SSH agent socket (dynamic launchd path) for push/pull over SSH.
-- `docker` — Needs host filesystem access for bind mounts + Docker socket.
-
 ### Key settings
 
 | Setting | Value | Why |
 |---------|-------|-----|
 | `autoAllowBashIfSandboxed` | `true` | Sandboxed Bash runs without permission prompts — velocity |
-| `excludedCommands` | `["docker", "git", "gh"]` | gh needs Mach services (TLS/Keychain); git needs SSH socket; docker needs host filesystem. All still guarded by deny rules + permission mode. |
-| `allowUnsandboxedCommands` | `true` | Enables the Tier 1 escalation path (`dangerouslyDisableSandbox`). User-level config can override to `false` for stricter control — in that case, Tier 2 (`!` prefix) becomes the primary escape hatch. |
+| `excludedCommands` | `["docker", "git"]` | Git needs network for push/pull; docker needs host filesystem. Both guarded by deny rules. |
+| `allowUnsandboxedCommands` | `false` | Blocks sandbox bypass entirely. On block, expand config or send command to terminal pane. |
 | `allowAllUnixSockets` | `false` | Blocks Docker socket and other local services by default |
 | `allowLocalBinding` | `false` | Prevents Bash from binding to local ports |
 
@@ -77,14 +72,24 @@ Per-agent differentiation relies on layers 2-6. The sandbox (layer 1) is a share
 
 ### Adding domains
 
-Add project-specific domains to `sandbox.network.allowedDomains`:
+For projects that need additional network access (e.g., private registries, APIs):
 
 ```json
-"allowedDomains": [
-  ...existing defaults...,
-  "your-private-registry.example.com",
-  "api.your-service.com"
-]
+"sandbox": {
+  "network": {
+    "allowedDomains": [
+      "github.com",
+      "api.github.com",
+      "raw.githubusercontent.com",
+      "*.npmjs.org",
+      "registry.npmjs.org",
+      "pypi.org",
+      "files.pythonhosted.org",
+      "your-private-registry.example.com",
+      "api.your-service.com"
+    ]
+  }
+}
 ```
 
 ### Maximum lockdown
@@ -104,6 +109,36 @@ For teams that want tighter control, replace the `mcp__*` wildcard in permission
 
 The default `mcp__*` permission auto-approves all MCP tools. This is convenient but means any MCP server added to the project gets full tool access. For security-sensitive environments, replace with explicit allowlists per MCP server.
 
+### Sandbox as E2E Environment
+
+The sandbox is the validated environment where builds, tests, and tools run end-to-end. If a command fails in the sandbox, expand the sandbox — don't bypass it.
+
+**Rust monorepo example:**
+
+Network (in `sandbox.network.allowedDomains`):
+```json
+"crates.io", "index.crates.io", "static.crates.io",
+"github.com", "api.github.com",
+"*.npmjs.org", "registry.npmjs.org"
+```
+
+Filesystem (in `sandbox.filesystem.allowWrite`):
+```json
+"/Users/you/.cargo/bin",
+"/Users/you/.cargo/registry",
+"/Users/you/.cargo/git"
+```
+
+With these in place, `cargo build`, `cargo test`, `cargo install`, `cargo clippy`, and `npm install` all run in-sandbox. The repo root is already in the write allowlist (CWD and `additionalDirectories`), covering `target/`, `node_modules/`, and `.worktrees/`.
+
+**When the sandbox blocks a command:**
+
+1. Is it a network issue? → Add the domain to `sandbox.network.allowedDomains`
+2. Is it a filesystem write issue? → Add the path via `/pds:allow <path>` (checks for credential paths before allowing)
+3. Can't be fixed by config? → Report the block to the pilot and send the command to the terminal pane for manual execution
+
+`dangerouslyDisableSandbox` is never used. `allowUnsandboxedCommands` is `false`.
+
 ## Platform Support
 
 | Platform | Mechanism | Dependencies |
@@ -113,51 +148,6 @@ The default `mcp__*` permission auto-approves all MCP tools. This is convenient 
 
 The SessionStart hook and `install.sh` both check for Linux dependencies and warn if missing.
 
-## Escalation Model
-
-The sandbox is deliberately restrictive — most commands run confined. When a legitimate command hits a sandbox wall, there are three escalation tiers:
-
-### Tier 1 — `dangerouslyDisableSandbox` (agent-side, per-command)
-
-When a Bash tool call fails due to sandbox restrictions (filesystem write denied, network blocked), retry with `dangerouslyDisableSandbox: true` on the Bash tool. This bypasses the OS-level sandbox for that single command. The user is prompted to approve.
-
-**When to use:** The command needs to write outside CWD or access a blocked network host, and this is a one-off need (not recurring).
-
-**Limitation:** The `denyWithinAllow` list still blocks writes to `~/.claude/settings.json`, `~/.claude/settings.local.json`, `.claude/skills/`, and `hooks/`. These paths are protected even with `dangerouslyDisableSandbox` in some configurations.
-
-### Tier 2 — `!` prefix terminal bypass (user-side, per-command)
-
-When `dangerouslyDisableSandbox` is denied or insufficient, instruct the user to run the command via the `!` prefix in Claude Code's input. The `!` prefix sends the command directly to the user's shell, bypassing the LLM and the OS sandbox entirely.
-
-```
-! <command>
-```
-
-Output from `!` commands feeds back into Claude's context, so Claude can reason about the results.
-
-**When to use:** Config changes that write to `~/.claude/settings.json` (e.g., `claude config set`), interactive auth flows (`gcloud auth login`), or any command the user wants to run with full shell privileges.
-
-**Key property:** This is the natural escalation for sandbox Catch-22s — when the tool that widens the sandbox is itself sandboxed out.
-
-### Tier 3 — `/pds:allow` (persistent allowlisting)
-
-For paths that need recurring write access (e.g., `~/.cargo`, a project directory outside CWD), use `/pds:allow <path>` to permanently add the path to `sandbox.filesystem.allowWrite`. This persists across sessions.
-
-**When to use:** The same path is needed repeatedly. One-off writes should use Tier 1 or Tier 2 instead.
-
-### Escalation flow
-
-```
-Command blocked by sandbox
-  → Tier 1: Retry with dangerouslyDisableSandbox: true
-    → User approves? → Done
-    → User denies? → Tier 2
-  → Tier 2: Output exact command for user to run with ! prefix
-    → One-off need? → Done
-    → Recurring need? → Tier 3
-  → Tier 3: /pds:allow <path> for persistent allowlisting
-```
-
 ## Troubleshooting
 
 ### Command blocked by sandbox
@@ -165,21 +155,11 @@ Command blocked by sandbox
 If a legitimate command fails with "Operation not permitted" or similar:
 1. Check if the command needs network access — add the domain to `allowedDomains`
 2. Check if the command needs to write outside CWD — consider if this is really necessary
-3. Follow the escalation model above: `dangerouslyDisableSandbox` → `!` prefix → `/pds:allow`
+3. If the command cannot be accommodated by expanding the sandbox config, report it to the pilot and send it to the terminal pane for manual execution. Never use `dangerouslyDisableSandbox`.
 
 ### Excluded commands
 
-`git`, `gh`, and `docker` bypass the sandbox entirely. They go through the normal permission flow (deny rules + active permission mode). This is by design:
-
-- **gh** — Go binary that uses Security.framework for TLS (`com.apple.trustd`) and Keychain (`com.apple.securityd`). Seatbelt blocks the Mach lookups these services require.
-- **git** — Needs SSH agent socket (dynamic launchd path) for push/pull over SSH.
-- **docker** — Needs host filesystem access for bind mounts + Docker socket.
-
-### Go-based CLIs and TLS
-
-Go binaries use `Security.framework` (`SecTrustEvaluateWithError`) for TLS certificate verification on macOS. Without Mach access to `com.apple.trustd`, Go-based CLIs fail with misleading errors like `x509: OSStatus -26276` or "invalid token" (when Keychain access is also blocked via `com.apple.securityd`).
-
-Tools using OpenSSL, LibreSSL, or SecureTransport (curl, cargo, npm) are unaffected — they use different TLS implementations that work inside the sandbox.
+`git` and `docker` bypass the sandbox entirely. They go through the normal permission flow (deny rules + active permission mode). This is by design — git needs arbitrary network access for remotes, and docker needs host filesystem access.
 
 ### Missing Linux dependencies
 
@@ -195,8 +175,9 @@ How a Bash command flows through the full permission stack:
 ```
 Bash command arrives
   → Matches a deny rule? → BLOCKED (credential paths, protected branches, etc.)
-  → Excluded from sandbox (git, gh, docker)? → Permission mode evaluates
+  → Excluded from sandbox (git, docker)? → Permission mode evaluates
   → Sandboxed + autoAllowBashIfSandboxed? → AUTO-APPROVE (OS-confined)
+    → Sandbox blocks the command? → Report to pilot, send to terminal pane
   → None of the above → Permission mode evaluates
 ```
 
@@ -248,12 +229,12 @@ Auto mode replaces user permission prompts with a Sonnet classifier that evaluat
 |-------|--------------------|
 | Sandbox | Unchanged — OS-level enforcement is independent of permission mode |
 | Deny rules | Unchanged — static deny fires before the classifier |
-| Hook gates | Unchanged — PreToolUse hooks run before the classifier |
+| Phase gates | Unchanged — PreToolUse hooks run before the classifier |
 | Agent prompts | Behavioral enforcement still active; classifier uses conversation context |
 | Permission modes | Auto mode overrides agent-declared `plan`/`acceptEdits`/`default` — the classifier decides |
 | Human gate | Unchanged — PR review remains the final gate |
 
-**Key point**: Static deny rules and the sandbox provide the hard security floor. Auto mode replaces only the *interactive permission prompts* — it does not bypass deny rules, sandbox restrictions, or hook gates.
+**Key point**: Static deny rules and the sandbox provide the hard security floor. Auto mode replaces only the *interactive permission prompts* — it does not bypass deny rules, sandbox restrictions, or phase gates.
 
 ### autoMode Config
 
@@ -304,5 +285,5 @@ claude -p "your task" \
 
 ## See Also
 
-- `/pds:audit-config` — Verify sandbox and autoMode are properly configured
+- `docs/ethos.md` — core development principles
 - `/pds:team` — Agent roles and permission modes

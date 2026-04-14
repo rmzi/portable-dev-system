@@ -1,18 +1,18 @@
 ---
-description: Finalize work — bump version, commit, push. Use when work is complete and ready to ship.
+description: Save a checkpoint — bump version, commit, push. Use when work is complete and ready to ship without the full finish protocol.
 ---
-# /bcp — Bump, Commit, Push
+# /checkpoint — Save Point
 
-Quick finalization workflow. Ships work with a version bump in one command.
+Quick finalization workflow. Ships work with a version bump in one command. Use when the full `/finish` protocol (rebase, squash, verify) isn't needed — the work is already clean and tested.
 
 ## Invocation
 
 ```
-/bcp                                # Auto-detect bump type + commit + push
-/bcp patch                          # Bump patch + commit + push
-/bcp minor                          # Bump minor + commit + push
-/bcp major                          # Bump major + commit + push
-/bcp patch "feat: add scoring"      # Explicit commit message for work changes
+/checkpoint                          # Auto-detect bump type + commit + push
+/checkpoint patch                    # Bump patch + commit + push
+/checkpoint minor                    # Bump minor + commit + push
+/checkpoint major                    # Bump major + commit + push
+/checkpoint patch "feat: add scoring"  # Explicit commit message for work changes
 ```
 
 ## Workflow
@@ -45,7 +45,7 @@ Apply the highest-precedence rule found:
 
 - If multiple rules match, use the highest precedence (major > minor > patch).
 - If no conventional commits are found, default to **patch** (most conservative).
-- Only ask the user for clarification if the log contains a mix that makes intent genuinely ambiguous (e.g., multiple `feat:` commits alongside a potential breaking change that is hard to classify automatically).
+- Only ask the user for clarification if the log contains a mix that makes intent genuinely ambiguous.
 
 ### 3. Bump Version
 
@@ -88,12 +88,12 @@ gh pr view             # Show existing PR
 
 | Situation | Skill |
 |-----------|-------|
-| Quick ship: work done, bump and push | `/bcp` |
+| Quick ship: work done, bump and push | `/checkpoint` |
 | Formal ship: rebase, squash, verify, PR | `/finish` |
 | Version bump only (no push) | `/bump` |
-| Verify before shipping | `/verify` then `/bcp` |
+| Verify before shipping | `/verify` then `/checkpoint` |
 
-## After bcp
+## After Checkpoint
 
 After shipping, consider running `/pds:pause` — shipping is a natural break point. It saves session state so you can resume cleanly in the next session.
 

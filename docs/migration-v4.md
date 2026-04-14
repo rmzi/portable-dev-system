@@ -52,7 +52,7 @@ Find-and-replace skill invocations:
 | `/grill` | `/pds:grill` |
 | `/verify` | `/pds:verify` |
 | `/finish` | `/pds:finish` |
-| `/merge` | `/pds:merge` |
+| `/merge` | `/pds:swarm` |
 | `/worktree` | `/pds:worktree` |
 | `/team` | `/pds:team` |
 | ... | `/pds:...` |
@@ -64,11 +64,11 @@ Find-and-replace skill invocations:
 | `/commit` | Use `/pds:finish` (includes commit format) |
 | `/debug` | Use `/pds:grill` (includes hypothesis-first) |
 | `/design` | Use `/pds:contribute` (includes ADR convention) |
-| `/ethos` | Still available as `/pds:ethos` |
+| `/ethos` | Moved to `docs/ethos.md` (no longer a skill) |
 | `/quickref` | Use `/pds:team` (agent roster) + CLAUDE.md (skill table) |
 | `/review` | Review integrity is in `/pds:finish` and reviewer agent |
 | `/test` | Standard testing knowledge — Claude knows this natively |
-| `/merge-main` | Use `/pds:merge` ("Merge to Main" section) |
+| `/merge-main` | Use `/pds:swarm` (Phase 5 merge coordination) |
 
 ## Dev Workflow
 

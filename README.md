@@ -43,7 +43,7 @@ See [Migration Guide](docs/migration-v4.md) for details.
 ### Requirements
 
 - **Claude Code** (CLI, desktop, or IDE extension)
-- **jq** — used by telemetry hooks and pattern detection (`brew install jq` / `apt install jq`)
+- **jq** — used by hooks and pattern detection (`brew install jq` / `apt install jq`)
 - **python3** — used by install script and hook scripts for JSON processing (`brew install python3` / `apt install python3`)
 
 ### Dev mode
@@ -56,37 +56,23 @@ make install    # symlinks this checkout as the plugin
 
 ---
 
-## Skills (28)
+## Skills (14)
 
 | Skill | Purpose |
 |-------|---------|
-| `/pds:ethos` | Development principles, MECE |
-| `/pds:swarm` | Multi-agent team workflow (6-phase SDLC, lite/med/heavy tiers) |
-| `/pds:team` | Agent roster and coordination |
+| `/pds:swarm` | Multi-agent team workflow (6-phase SDLC, lite/med/heavy tiers, branch merging) |
+| `/pds:team` | Agent roster, coordination, and dispatch modes |
 | `/pds:grill` | Requirement interrogation |
 | `/pds:verify` | Completion self-check |
-| `/pds:finish` | Branch completion protocol |
-| `/pds:merge` | Merging subtask worktrees back |
+| `/pds:finish` | Branch completion protocol (includes quick ship) |
 | `/pds:worktree` | Git worktree workflow |
-| `/pds:instinct` | Pattern capture and lifecycle |
-| `/pds:telemetry` | Usage telemetry — enable, disable, view reports, rotate |
-| `/pds:inspect` | Real-time PDS state — swarm phase, tier, agents, telemetry |
-| `/pds:sandbox` | OS-level sandbox configuration |
-| `/pds:permission-router` | **Deprecated** — see /pds:sandbox |
-| `/pds:audit-config` | Verify PDS config security |
-| `/pds:trim` | Context efficiency maintenance |
 | `/pds:contribute` | Contributing to PDS itself |
 | `/pds:bugfix` | Test-first bug fix loop |
 | `/pds:bump` | Version and changelog |
 | `/pds:eval` | Skill evaluation and testing |
-| `/pds:bcp` | Finalize work — bump, commit, push |
 | `/pds:rebase` | Focused branch rebase |
 | `/pds:pr-review` | Address PR review comments |
-| `/pds:preflight` | Environment validation |
 | `/pds:pause` | Save session state, WIP commit, resume later |
-| `/pds:allow` | Add a path to the sandbox write allowlist |
-| `/pds:export` | Export session to human-readable markdown |
-| `/pds:dispatch` | Agent dispatch mode selection |
 | `/pds:triage` | Triage insights into GitHub issues across repos |
 
 ---
@@ -102,9 +88,9 @@ make install    # symlinks this checkout as the plugin
 | reviewer | Code review — quality, security | sonnet | plan |
 | documenter | Documentation updates | sonnet | acceptEdits |
 | scout | PDS meta-improvements | haiku | acceptEdits |
-| auditor | Codebase quality → GitHub issues | sonnet | plan |
+| auditor | Codebase quality -> GitHub issues | sonnet | plan |
 
-[Full agent docs →](docs/teams.md)
+[Full agent docs ->](docs/teams.md)
 
 ---
 
@@ -114,19 +100,18 @@ make install    # symlinks this checkout as the plugin
 portable-dev-system/
 ├── .claude-plugin/plugin.json     # Plugin manifest
 ├── agents/                        # 8 agent definitions + shared-rules.md
-├── skills/                        # 28 skills (dir/SKILL.md format)
+├── skills/                        # 14 skills (dir/SKILL.md format)
 │   ├── swarm/SKILL.md
-│   ├── telemetry/SKILL.md         # Usage telemetry management
-│   ├── inspect/SKILL.md           # Real-time PDS state viewer
+│   ├── team/SKILL.md
 │   └── ...
 ├── hooks/hooks.json               # Hook event handlers (see below)
 ├── hooks/scripts/                 # Hook implementation scripts
-├── scripts/                       # Utility scripts (telemetry-summary, detect-patterns)
+├── scripts/                       # Utility scripts (detect-patterns, efficiency-chart)
 ├── crates/cg/                     # Code Graph Browser TUI (Rust, ratatui)
 ├── docs/                          # Philosophy, whitepaper, team setup, source analysis
 ├── .claude/settings.json          # Security settings (installed separately)
 ├── install.sh                     # Plugin installer
-├── Makefile                       # make telemetry, make install
+├── Makefile                       # make install
 ├── VERSION
 └── CHANGELOG.md
 ```
@@ -141,17 +126,16 @@ PDS registers handlers for the following Claude Code hook events:
 | `Stop` | Prompt evaluator | Verify completion for implementation sessions |
 | `TaskCompleted` | `task-completed-gate.sh` | Run tests on completed tasks |
 | `TeammateIdle` | `teammate-idle-gate.sh` | Backpressure — detect idle workers, trigger remediation |
-| `PostToolUse` | `telemetry-log.sh`, `file-telemetry-log.sh` | Track skill invocations and file modifications |
+| `PreToolUse` | `secret-scrub.sh`, `secret-guard.sh` | Scrub secrets from command output, block credential leaks |
+| `PostToolUse` | `mcp-secret-scrub.sh`, `telemetry-log.sh`, `file-telemetry-log.sh` | MCP output scrubbing, skill/file telemetry |
 | `SubagentStart` | `roster-check.sh` | Enforce agent roster — warn on unknown agent types |
 | `PreCompact` | `pre-compact-snapshot.sh` | Snapshot context before compaction |
 | `PostCompact` | `post-compact-inject.sh` | Re-inject critical context after compaction |
-| `UserPromptSubmit` | `skill-hint.sh` | Suggest relevant PDS skills based on prompt |
-| `WorktreeCreate` | `worktree-telemetry.sh` | Telemetry for worktree provisioning |
+| `UserPromptSubmit` | `skill-hint.sh`, `health-check.sh` | Suggest relevant skills, session health monitoring |
+| `WorktreeCreate` | `worktree-telemetry.sh`, `sync-worktree-permissions.sh` | Telemetry, permission sync |
 | `InstructionsLoaded` | `instructions-telemetry.sh` | Telemetry for rule file loading |
 
 The orchestrator agent additionally uses `PreToolUse` hooks for SDLC phase gates.
-
-See `/pds:sandbox` for full permission and hook configuration.
 
 ---
 
@@ -161,7 +145,6 @@ Auto-allowed: all tools, bash (sandboxed — writes confined to CWD, network res
 
 Blocked:
 - Credential paths (`~/.aws`, `~/.ssh`, `~/.gnupg`, `~/.kube`, `~/.azure`, `~/.config/gh`, `~/.npmrc`, and more)
-- Git push to `main`/`master`/`dev`/`develop`
 - Force push, `ssh`, `scp`
 - Prod patterns (`PROD`, `prod.`, `--profile prod`)
 - Sensitive files (`.env`, `*.pem`, `*credential*`, `id_rsa*`, `*secret*key*`)
@@ -186,6 +169,7 @@ Most projects need **zero local PDS files**. The plugin provides everything. Add
 |-----|---------|
 | [Migration Guide](docs/migration-v4.md) | Upgrading from v3.x |
 | [Philosophy](docs/philosophy.md) | Principles and motivation |
+| [Core Principles](docs/ethos.md) | The seven development principles |
 | [Team Setup](docs/teams.md) | Agent roster, permissions, team onboarding |
 | [Whitepaper](docs/whitepaper.md) | Full technical depth — phases, isolation, governance |
 | [Competitive Analysis](docs/competitive-analysis.md) | Landscape scan and PDS positioning |

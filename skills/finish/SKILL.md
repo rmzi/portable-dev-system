@@ -3,7 +3,7 @@ description: Completing a development branch for merge readiness. Use when imple
 ---
 # /finish — Branch Completion Protocol
 
-The gap between "code works" and "branch is ready" is where quality lives. This protocol ensures branches are clean, tested, and reviewable — then ships via `/bcp`.
+The gap between "code works" and "branch is ready" is where quality lives. This protocol ensures branches are clean, tested, and reviewable.
 
 ## Invocation
 
@@ -93,15 +93,59 @@ Review `.claude/settings.local.json` for permission patterns that should be prom
 This ensures permission improvements ship with the code rather than accumulating silently in local settings.
 
 ### 6. Ship
-Run `/pds:bcp` with the bump type to finalize. Forward the exact bump type from the `/finish` invocation — do not choose a different one:
 
+Bump, commit, push, and create/update PR.
+
+**Protected branch check.** Before pushing, check if the target branch is protected:
+
+1. Read CLAUDE.md for a `Protected Branches` section listing branch patterns (e.g., `main`, `release/*`)
+2. If the current branch or push target matches a protected pattern, **prompt the user** for confirmation before pushing
+3. If no `Protected Branches` section exists in CLAUDE.md, no branches are protected — push freely
+
+#### 6a. Commit Work
+
+If uncommitted changes exist (staged or unstaged):
+- Stage changes: `git add` relevant files (not `-A` — be deliberate)
+- Commit with provided message, or derive from branch name and changes
+- Use conventional commit format: `<type>(<scope>): <subject>`
+
+If working tree is clean, skip to 6b.
+
+#### 6b. Detect Bump Type (if not specified)
+
+If no bump type was passed, scan git log since the last version tag:
+
+```bash
+git log $(git describe --tags --abbrev=0 2>/dev/null)..HEAD --oneline 2>/dev/null || git log --oneline
 ```
-/bcp <bump-type>    # Forward the same bump type from /finish invocation
+
+Apply the highest-precedence rule found:
+
+| Commit prefix | Bump type |
+|---------------|-----------|
+| `BREAKING CHANGE` in body, or `!` after type (e.g. `feat!:`) | major |
+| `feat:` | minor |
+| `fix:`, `perf:`, `refactor:`, etc. | patch |
+
+Default to **patch** if no conventional commits found.
+
+#### 6c. Bump Version
+
+Follow `/pds:bump` protocol:
+1. Detect version file (VERSION, package.json, etc.)
+2. Calculate new version based on bump type
+3. Update version file(s) + CHANGELOG.md
+4. Commit: `chore: bump version to X.Y.Z`
+
+#### 6d. Push and PR
+
+```bash
+git push origin HEAD
+gh pr create --fill    # Create if none exists
+gh pr view             # Show existing PR
 ```
 
-Example: `/finish minor` → `/bcp minor`.
-
-This commits any remaining changes, bumps the version, pushes, and creates/updates the PR.
+Work commit is separate from bump commit — clean git history.
 
 ## Cleanup
 
@@ -117,10 +161,16 @@ After the branch is merged:
 | Situation | Skill |
 |-----------|-------|
 | Formal ship: verify, rebase, clean, bump, push | `/finish` |
-| Quick ship: bump, commit, push | `/bcp` |
+| Quick ship: bump, commit, push | `/pds:checkpoint` |
+| Version bump only (no push) | `/pds:bump` |
+| Verify before shipping | `/pds:verify` then `/finish` |
+
+## After Shipping
+
+After shipping, consider running `/pds:pause` — shipping is a natural break point. It saves session state so you can resume cleanly in the next session.
 
 ## See Also
 
-- `/pds:bcp` — bump, commit, push (step 6)
+- `/pds:bump` — version bump details
 - `/pds:verify` — completion self-check (step 1)
-- `/pds:merge` — merging subtask worktrees to coordinator
+- `/pds:pause` — save session state before stepping away

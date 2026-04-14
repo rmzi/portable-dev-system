@@ -250,7 +250,7 @@ Agents execute as native Claude Code teams — no containers, no file synchroniz
 
 **Platform gap: Three-system disconnect.** Claude Code provides three agent spawning systems — specialized team agents (`Task(worker)`), fork subagents (`FORK_SUBAGENT`), and coordinator mode (`COORDINATOR_MODE`) — but they address different problems and cannot be composed. Specialized agents get role constraints but lose the orchestrator's accumulated context. Fork subagents inherit full context but have no role specialization. Coordinator mode enables collaboration but does not differentiate agents by capability. Community evidence confirms this is a pain point: anthropics/claude-code#24316 (27 upvotes, requesting fork + specialization), #16153 (context inheritance for spawned agents), #4908 (subagent memory sharing), #6825 (agent context bootstrapping), #17283 (passing conversation context to subagents). No hidden combination exists in the codebase — `fork` and `agent_type` are separate code paths.
 
-**PDS bridge (implemented):** A **dual-dispatch model** (documented in `/pds:dispatch`) where the orchestrator chooses at runtime: team teammate (`Task(worker)`) for long-running, visible, role-specialized work; fork subagent for quick inline subtasks that need the orchestrator's full context (under 2-3 turns). For context loss on teammate spawn, PDS uses a structured context protocol: the orchestrator writes `.claude/swarm/context.md` before dispatching workers — containing the plan, research findings, acceptance criteria, and key decisions. Workers read this file on initialization, recovering the orchestrator's reasoning without requiring fork-level context inheritance. The platform gap (cannot compose fork + team agents) remains a Claude Code limitation; PDS bridges it pragmatically.
+**PDS bridge (implemented):** A **dual-dispatch model** (documented in the Dispatch Modes section of `/pds:team`) where the orchestrator chooses at runtime: team teammate (`Task(worker)`) for long-running, visible, role-specialized work; fork subagent for quick inline subtasks that need the orchestrator's full context (under 2-3 turns). For context loss on teammate spawn, PDS uses a structured context protocol: the orchestrator writes `.claude/swarm/context.md` before dispatching workers — containing the plan, research findings, acceptance criteria, and key decisions. Workers read this file on initialization, recovering the orchestrator's reasoning without requiring fork-level context inheritance. The platform gap (cannot compose fork + team agents) remains a Claude Code limitation; PDS bridges it pragmatically.
 
 This approach eliminates Docker/container overhead while maintaining isolation through git worktrees and Claude Code's permission system. Agents run natively with full access to local tools (language servers, build tools, formatters) without the complexity of mounting volumes or synchronizing files.
 
@@ -315,13 +315,13 @@ Not all agent work requires an interactive session. Some tasks — preflight val
 - **Stop hooks** — Execute verification or cleanup when a session ends.
 
 **Use cases:**
-- **Preflight validation** — Run `/pds:preflight` via SessionStart hook before any work begins.
+- **Preflight validation** — Run environment validation via the SessionStart hook before any work begins.
 - **Instinct capture** — After a swarm completes, a headless agent analyzes the session for patterns worth recording as instincts.
 - **Telemetry analysis** — Scheduled analysis of `.claude/telemetry.jsonl` to detect efficiency trends and waste patterns.
 - **Cleanup** — Post-swarm worktree removal, stale branch pruning, artifact archival.
 - **Scheduled audits** — Periodic codebase scanning for tech debt, dependency updates, or configuration drift.
 
-Headless agents are the least mature dispatch mode — `CronCreate` and background execution exist in the platform but PDS does not yet wrap them in workflow-aware skills. The `/pds:dispatch` skill documents when to use each mode and provides the dispatch protocol.
+Headless agents are the least mature dispatch mode — `CronCreate` and background execution exist in the platform but PDS does not yet wrap them in workflow-aware skills. The Dispatch Modes section of `/pds:team` documents when to use each mode and provides the dispatch protocol.
 
 ### The Lexicon
 
@@ -663,7 +663,7 @@ Two questions, in order:
 
 PDS encodes two complementary layers of engineering guidance, designed to be MECE (mutually exclusive, collectively exhaustive):
 
-**Principles** (`/pds:ethos`) define *why* — the philosophy that grounds decisions. Understand before acting. Small reversible steps. Tests as specification. Explicit over implicit. Optimize for change. Fail fast. Automation as documentation.
+**Principles** (`docs/ethos.md`) define *why* — the philosophy that grounds decisions. Understand before acting. Small reversible steps. Tests as specification. Explicit over implicit. Optimize for change. Fail fast. Automation as documentation.
 
 **Techniques** (encoded across skills) define *how* — the concrete methods that implement principles:
 
@@ -676,11 +676,11 @@ PDS encodes two complementary layers of engineering guidance, designed to be MEC
 | Behavior-based test naming | native (Claude) | Explicit over implicit |
 | Atomic commits | `/pds:finish` | Small, reversible steps |
 | Severity-categorized review | reviewer agent | Fail fast, recover gracefully |
-| Rebasing-first merge coordination | `/pds:merge` | Optimize for change |
+| Rebasing-first merge coordination | `/pds:swarm` | Optimize for change |
 | Requirement interrogation | `/pds:grill` | Understand before you act |
 | Completion verification | `/pds:verify` | Explicit over implicit |
 | Branch preparation for merge | `/pds:finish` | Small, reversible steps |
-| Version bump and ship | `/pds:bcp` | Explicit over implicit |
+| Version bump and ship | `/pds:finish` | Explicit over implicit |
 | Statistical skill evaluation | `/pds:eval` | Tests as specification |
 
 This separation matters: principles are stable across projects and technologies, while techniques evolve with tooling and practice. An agent grounded in principles makes better judgment calls when no specific technique applies.
@@ -719,7 +719,7 @@ Testing closes the loop between observation and improvement:
 
 1. **Telemetry** surfaces usage patterns and anomalies (`scripts/detect-patterns.sh`)
 2. **Scout (Phase 6)** analyzes the swarm: evals skills exercised, updates instinct confidence, flags regressions
-3. **Instincts** accumulate evidence — observations gain confidence across swarms (low → medium → high at 3+ validations), then promote to skills via `/pds:instinct`
+3. **Instincts** accumulate evidence — observations gain confidence across swarms (low → medium → high at 3+ validations), then promote to skills via the scout agent
 4. **Evals narrow confidence intervals** each cycle — N=5 gives a wide CI; N=20 gives an actionable one
 5. **Skills and hooks improve** based on evidence, not intuition
 

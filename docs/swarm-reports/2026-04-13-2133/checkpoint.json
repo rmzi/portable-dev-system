@@ -1,0 +1,7 @@
+{
+  "phase": "dispatch",
+  "tier": "heavy",
+  "tasks": ["task-health", "task-sandbox", "task-prune", "task-consolidate", "task-hooks", "task-agents", "task-documenter"],
+  "assignments": {},
+  "timestamp": "2026-04-13T17:00:00Z"
+}

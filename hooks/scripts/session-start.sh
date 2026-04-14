@@ -3,6 +3,9 @@
 # Outputs JSON with additionalContext for Claude's context window.
 # Writes PDS_VERSION and PDS_PLUGIN_ROOT to CLAUDE_ENV_FILE.
 
+# --- Reset session health timer (prevents accumulation across sessions) ---
+rm -f "${TMPDIR:-/tmp}/pds-session-start"
+
 # --- Linux sandbox dependency check (preserved from inline hook) ---
 if [ "$(uname)" = "Linux" ]; then
   for dep in bwrap socat; do
@@ -93,7 +96,7 @@ if [ -f "$SCRIPT_DIR/codebase-context.sh" ]; then
 fi
 
 # --- Output additionalContext ---
-CONTEXT="PDS v${PDS_VERSION} active. Key skills: /pds:swarm (parallel work), /pds:grill (requirements), /pds:verify (completion check), /pds:bugfix (test-first fixes), /pds:bcp (ship work), /pds:finish (formal branch completion).${WORKTREE_INFO}${STALE_WARNING}${WORKTREE_WARNING}${LEDGER_STATUS}${CODEBASE_CONTEXT}"
+CONTEXT="PDS v${PDS_VERSION} active. Key skills: /pds:swarm (parallel work), /pds:grill (requirements), /pds:verify (completion check), /pds:bugfix (test-first fixes), /pds:checkpoint (ship work), /pds:finish (formal branch completion).${WORKTREE_INFO}${STALE_WARNING}${WORKTREE_WARNING}${LEDGER_STATUS}${CODEBASE_CONTEXT}"
 
 # Use python3 for safe JSON encoding
 python3 -c "

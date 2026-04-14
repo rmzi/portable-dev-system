@@ -138,10 +138,6 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
    ```
    Use `Task(validator)` for validation tasks, `Task(researcher)` for research, etc. The typed syntax restricts which agent definitions can fulfill the spawn. Always pass the tier-appropriate `model` override — see the Swarm Tiers table above.
 
-   **Dual-dispatch guidance:** Choose the dispatch mode based on task characteristics:
-   - **Team teammate** (`Task(worker)`) — Long-running implementation, needs its own worktree and task tracking. Default for all swarm work units.
-   - **Fork subagent** — Quick, invisible subtasks that benefit from the orchestrator's full context (e.g., "check if this function exists", "summarize this file"). No task tracking, no team visibility. Use when the answer is needed inline and the work is under 2-3 turns.
-
    **Worktree isolation:** If workers will edit overlapping files, spawn them with `isolation: "worktree"` so each gets an isolated copy of the repo. If workers touch non-overlapping files (different modules/skills), they can share the current worktree — but document the boundary in each worker's prompt to prevent collisions.
 3. Assign initial tasks to workers:
    ```
@@ -158,7 +154,7 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
 5. **Monitor and backpressure.** Check progress via `TaskList`. On `TeammateIdle` events:
    - Check `TaskGet` first — if the agent awaits a blocked dependency, no action needed
    - If the agent has an unblocked task and is idle, send a `SendMessage` to re-activate
-   - **Health timeout**: default is 2× the task's estimated turns. On first timeout, send a warning via `SendMessage`. On second timeout, use `TaskStop` and reassign the task
+   - **Health timeout**: default is 2x the task's estimated turns. On first timeout, send a warning via `SendMessage`. On second timeout, use `TaskStop` and reassign the task
    - If 3+ workers are idle simultaneously with blocked tasks, the bottleneck task may need decomposition or priority escalation
 
 **Hook note:** PDS hooks log `WorktreeCreate` and `WorktreeRemove` events as workers start and finish. These appear in the audit log for lifecycle traceability.
@@ -216,6 +212,68 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
    **Note:** The PR gate blocks `gh pr create` unless phase is `consolidate`+ AND both `validation-report.md` and `review-report.md` exist.
 7. **Do not merge.** The PR is the human gate. The orchestrator creates the PR and reports it — the human merges after review.
 
+### Branch Merging
+
+When merging worker branches back into the coordinator, use a rebase-then-fast-forward approach to keep history clean.
+
+#### Single Branch Merge
+
+1. Worker rebases onto coordinator: `git rebase coordinator-branch`
+2. Run tests to verify nothing broke during rebase
+3. Fast-forward merge: `git merge --ff-only worker-branch` (from coordinator worktree)
+4. Clean up: `git branch -d worker-branch`
+
+#### N-Branch Merge (Ordered)
+
+When multiple workers complete in parallel, establish a merge order (foundation-first, smaller changes first) and merge sequentially:
+
+```
+Merge order: [W1, W2, W3, ... WN]
+
+Round 1: W1 rebases onto coordinator (conflict-free), merges
+         W2..WN rebase onto updated coordinator
+Round 2: W2 rebases onto coordinator, merges
+         W3..WN rebase onto updated coordinator
+...
+Round N: WN rebases onto coordinator, merges
+         Done.
+```
+
+**The worker that is merging owns their conflicts.** They understand their changes best and resolve during rebase. Never force through a conflict resolution without testing.
+
+#### Merge Commands Reference
+
+```bash
+# Rebase worker onto coordinator
+git rebase coordinator-branch
+
+# Squash fixup commits before merging (non-interactive)
+git rebase --autosquash coordinator-branch
+
+# Fast-forward merge (coordinator worktree)
+git merge --ff-only worker-branch
+
+# Abort a rebase if things go wrong
+git rebase --abort
+
+# Continue rebase after resolving conflicts
+git add <resolved-files>
+git rebase --continue
+
+# Clean up after merge
+git branch -d worker-branch
+```
+
+#### Merge to Main
+
+Landing approved PRs on the main branch:
+
+1. Confirm context — verify you're on `main` and in the correct worktree
+2. List open PRs — `gh pr list`
+3. For each approved PR: check `gh pr checks <number>`, then `gh pr merge <number> --merge`
+4. Push main — `git push origin main`
+5. Never force-push main. Never merge PRs that haven't passed CI.
+
 ## Phase 6: Knowledge
 
 1. **Scout spawns before agent shutdown** — workers are still active so scout can query them for clarification:
@@ -260,7 +318,7 @@ Mechanical enforcement of phase transitions via PreToolUse hooks on the orchestr
 
 | Gate | Hook Script | Trigger | Blocks Unless |
 |------|-------------|---------|---------------|
-| PR gate | `orchestrator-pr-gate.sh` | `gh pr create` in Bash | Phase ≥ `consolidate` + `validation-report.md` + `review-report.md` exist |
+| PR gate | `orchestrator-pr-gate.sh` | `gh pr create` in Bash | Phase >= `consolidate` + `validation-report.md` + `review-report.md` exist |
 | Teardown gate | `orchestrator-teardown-gate.sh` | `TeamDelete` | Phase = `knowledge` + all 3 reports exist |
 | Validator stop | Prompt hook in validator.md | Validator Stop | Structured report written to `.claude/swarm/validation-report.md` |
 
@@ -287,6 +345,4 @@ All phase artifacts are written to `.claude/swarm/`:
 - `/pds:grill` — Requirement interrogation (Phase 1)
 - `/pds:verify` — Completion self-check (Phase 4 worker exit)
 - `/pds:finish` — Branch completion protocol (Phase 5)
-- `/pds:merge` — Merging subtask worktrees
 - `/pds:team` — Agent roster, coordination tools, and protocols
-- `/pds:instinct` — Pattern capture and lifecycle (Phase 6)
