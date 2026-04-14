@@ -18,6 +18,8 @@ tools:
 permissionMode: acceptEdits
 skills:
   - pds:eval
+  - pds:ethos
+  - pds:instinct
 color: red
 maxTurns: 15
 memory: project

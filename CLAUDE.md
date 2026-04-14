@@ -12,13 +12,13 @@ PDS is a Claude Code plugin. Skills and agents are distributed via the plugin sy
 1. **At session start**: PDS plugin loads automatically (skills, agents, hooks)
 2. **Before any task**: Check if a PDS skill exists for it — if so, read it first
 3. **During work**: Follow skill documentation before performing actions
-4. **When stuck**: Read `docs/ethos.md` for principles, `/pds:grill` for structured thinking
+4. **When stuck**: Run `/pds:ethos` for principles, `/pds:grill` for structured thinking
 
 ### Rule
 
 **Before performing ANY action, check if a skill exists for it. If a relevant skill exists, read it FIRST.**
 
-### Available Skills (14)
+### Available Skills (18)
 
 | Skill | When to Use |
 |-------|-------------|
@@ -26,7 +26,8 @@ PDS is a Claude Code plugin. Skills and agents are distributed via the plugin sy
 | `/pds:team` | Agent roster, roles, capabilities, dispatch modes |
 | `/pds:grill` | Requirement interrogation before implementation |
 | `/pds:verify` | Completion self-check before declaring done |
-| `/pds:finish` | Branch completion protocol for merge readiness (includes quick ship) |
+| `/pds:finish` | Branch completion protocol for merge readiness |
+| `/pds:checkpoint` | Quick ship: bump, commit, push (when finish protocol isn't needed) |
 | `/pds:worktree` | Branch isolation, parallel work |
 | `/pds:contribute` | Contributing to PDS itself — whitepaper alignment |
 | `/pds:bugfix` | Test-first bug fix loop |
@@ -36,6 +37,9 @@ PDS is a Claude Code plugin. Skills and agents are distributed via the plugin sy
 | `/pds:pr-review` | Address PR review comments systematically |
 | `/pds:pause` | Save session state, WIP commit, resume later |
 | `/pds:triage` | Triage insights into GitHub issues across repos |
+| `/pds:ethos` | Core development principles — grounding ritual |
+| `/pds:instinct` | Pattern lifecycle — record, validate, promote recurring patterns |
+| `/pds:export` | Export session to human-readable markdown |
 
 See `/pds:team` for the 8-agent roster (orchestrator, researcher, worker, validator, reviewer, documenter, scout, auditor).
 
@@ -46,7 +50,7 @@ See `/pds:team` for the 8-agent roster (orchestrator, researcher, worker, valida
 ```
 .claude-plugin/    — Plugin manifest (plugin.json)
 agents/            — 8 agent definitions + shared-rules.md
-skills/            — 14 workflow skills (dir/SKILL.md format)
+skills/            — 18 workflow skills (dir/SKILL.md format)
 hooks/             — Quality gates (SessionStart, Stop, TaskCompleted, TeammateIdle, SubagentStart, PreCompact, PostCompact, UserPromptSubmit, PostToolUse, WorktreeCreate, InstructionsLoaded)
 scripts/           — Utility scripts (telemetry-summary, detect-patterns)
 crates/            — Rust binaries (cg — code graph TUI browser)

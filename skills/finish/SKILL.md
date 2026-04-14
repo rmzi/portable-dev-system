@@ -1,5 +1,5 @@
 ---
-description: Completing a development branch for merge readiness. Use when implementation and tests pass and the branch needs formal preparation for review and merge. Includes quick ship mode.
+description: Completing a development branch for merge readiness. Use when implementation and tests pass and the branch needs formal preparation for review and merge.
 ---
 # /finish — Branch Completion Protocol
 
@@ -147,21 +147,6 @@ gh pr view             # Show existing PR
 
 Work commit is separate from bump commit — clean git history.
 
-## Quick Ship
-
-For rapid finalization when verification and rebasing aren't needed:
-
-```
-/finish quick                          # Auto-detect bump + commit + push
-/finish quick patch                    # Bump patch + commit + push
-/finish quick patch "feat: scoring"    # Explicit commit message
-```
-
-Quick ship skips steps 0-5 and goes directly to step 6 (Ship). Use when:
-- Work is already verified and tested
-- Branch is already up to date with target
-- You want to ship fast without the full protocol
-
 ## Cleanup
 
 After the branch is merged:
@@ -176,7 +161,7 @@ After the branch is merged:
 | Situation | Skill |
 |-----------|-------|
 | Formal ship: verify, rebase, clean, bump, push | `/finish` |
-| Quick ship: bump, commit, push | `/finish quick` |
+| Quick ship: bump, commit, push | `/pds:checkpoint` |
 | Version bump only (no push) | `/pds:bump` |
 | Verify before shipping | `/pds:verify` then `/finish` |
 

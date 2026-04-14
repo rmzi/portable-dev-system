@@ -96,7 +96,7 @@ if [ -f "$SCRIPT_DIR/codebase-context.sh" ]; then
 fi
 
 # --- Output additionalContext ---
-CONTEXT="PDS v${PDS_VERSION} active. Key skills: /pds:swarm (parallel work), /pds:grill (requirements), /pds:verify (completion check), /pds:bugfix (test-first fixes), /pds:finish (branch completion).${WORKTREE_INFO}${STALE_WARNING}${WORKTREE_WARNING}${LEDGER_STATUS}${CODEBASE_CONTEXT}"
+CONTEXT="PDS v${PDS_VERSION} active. Key skills: /pds:swarm (parallel work), /pds:grill (requirements), /pds:verify (completion check), /pds:bugfix (test-first fixes), /pds:checkpoint (ship work), /pds:finish (formal branch completion).${WORKTREE_INFO}${STALE_WARNING}${WORKTREE_WARNING}${LEDGER_STATUS}${CODEBASE_CONTEXT}"
 
 # Use python3 for safe JSON encoding
 python3 -c "
