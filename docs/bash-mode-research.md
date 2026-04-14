@@ -102,6 +102,27 @@ A separate terminal earns its keep for:
 
 ---
 
+## 6. The `!` Prefix as Sandbox Escalation
+
+The `!` prefix has a critical secondary role: **sandbox bypass for legitimate escalation**.
+
+The OS-level sandbox confines the Bash tool to the working directory. When a legitimate command needs to write outside that boundary (e.g., `claude config set --global` which writes to `~/.claude/settings.json`), the sandbox blocks it. The `!` prefix bypasses the sandbox entirely because it runs in the user's shell, not through the Bash tool.
+
+**Escalation pattern:**
+1. Agent attempts a command via the Bash tool → sandbox blocks it
+2. Agent retries with `dangerouslyDisableSandbox: true` → user prompted
+3. If denied or insufficient, agent outputs the exact command for the user to run:
+   ```
+   ! claude config set --global sandbox.filesystem.allowWrite /path/to/dir
+   ```
+4. User runs it in the terminal pane → output returns to Claude's context
+
+This is the resolution for sandbox Catch-22s — when the tool that widens the sandbox is itself sandboxed. See `/pds:sandbox` (Escalation Model) and `/pds:allow` for the full flow.
+
+**Key insight:** The terminal pane isn't just for TUI tools and watchers — it's the human-in-the-loop escalation path for the sandbox's own configuration. This makes the terminal pane a first-class part of the security model, not just a convenience.
+
+---
+
 ## Sources
 
 - [What is Bash Mode in Claude Code — ClaudeLog](https://claudelog.com/faqs/what-is-bash-mode/)

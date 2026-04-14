@@ -5,7 +5,17 @@ All notable changes to this project will be documented in this file.
 ## [4.14.0] - 2026-04-13
 
 ### Added
-- **`cg` — Code Graph Browser TUI** — Ratatui-based terminal UI for browsing codebase-memory-mcp SQLite indexes. Three views: Module Tree (folder/file hierarchy with symbol detail), Function List (sortable table with caller/callee counts), Search (FTS5 fuzzy search with BM25 ranking). Auto-detects project from cwd. `cg list` shows all indexed projects with stats. Binary at `crates/cg/`, installable via `make build-cg`.
+- **`gh` added to `excludedCommands`** — Fixes TLS and Keychain failures for `gh` by excluding it from the sandbox. Go-based CLIs use Security.framework for TLS verification, which requires Mach access to `com.apple.trustd` and `com.apple.securityd`. Without sandbox exclusion, `gh` fails with misleading `x509` and "invalid token" errors.
+- **Sandbox escalation model** — Three-tier escalation path documented in `/sandbox`: `dangerouslyDisableSandbox` → `!` prefix terminal bypass → `/pds:allow` persistent allowlisting
+- **Go-based CLI troubleshooting** — Documented root cause of sandbox failures for Go binaries (Security.framework + Seatbelt interaction) in `/sandbox`
+
+### Fixed
+- **`/pds:allow` broken** — Skill used wrong config key (`sandbox.write.allowOnly` → `sandbox.filesystem.allowWrite`) and couldn't write to `~/.claude/settings.json` (sandboxed out). Now uses `dangerouslyDisableSandbox` with `!` prefix fallback.
+
+### Changed
+- **Audit checklist** — Replaced non-verifiable Mach lookup check with CLI tools exclusion check (`gh` and `git` in `excludedCommands`)
+- **Security layer model** — Reconciled whitepaper (was 8 layers) and sandbox skill (was 6) to a consistent 6-layer enforcement model. Merged overlapping PreToolUse hook layers, moved observability out of defense-in-depth stack (monitoring, not enforcement)
+- **Removed non-enforceable config** — Stripped `allowMachLookup` and `allowUnixSockets` from settings and documentation. Neither key is honored by the Claude Code runtime; keeping them implied enforcement that didn't exist.
 
 ## [4.13.1] - 2026-04-10T03:28:52-04:00
 

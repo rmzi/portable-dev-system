@@ -57,8 +57,9 @@ Search the repo for files that should NOT be committed:
 
 - [ ] **Sandbox enabled** (3 pts) — `sandbox.enabled` is `true`
 - [ ] **Conservative domain allowlist** (3 pts) — `sandbox.network.allowedDomains` contains only necessary domains (package registries, GitHub)
-- [ ] **Docker excluded** (2 pts) — `docker` in `sandbox.excludedCommands`
-- [ ] **Platform deps present** (2 pts) — On Linux: `bwrap` and `socat` installed (skip on macOS — Seatbelt is built-in)
+- [ ] **Docker excluded** (1 pt) — `docker` in `sandbox.excludedCommands`
+- [ ] **CLI tools excluded** (2 pts) — `gh` and `git` in `sandbox.excludedCommands` (required for TLS + SSH agent on macOS)
+- [ ] **Platform deps present** (1 pt) — On Linux: `bwrap` and `socat` installed (skip on macOS — Seatbelt is built-in)
 
 ## Grading
 
