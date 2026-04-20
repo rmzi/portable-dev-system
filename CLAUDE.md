@@ -51,10 +51,9 @@ See `/pds:team` for the 8-agent roster (orchestrator, researcher, worker, valida
 ```
 .claude-plugin/    — Plugin manifest (plugin.json)
 agents/            — 8 agent definitions + shared-rules.md
-skills/            — 18 workflow skills (dir/SKILL.md format)
+skills/            — 19 workflow skills (dir/SKILL.md format)
 hooks/             — Quality gates (SessionStart, Stop, TaskCompleted, TeammateIdle, SubagentStart, PreCompact, PostCompact, UserPromptSubmit, PostToolUse, WorktreeCreate, InstructionsLoaded)
 scripts/           — Utility scripts (telemetry-summary, detect-patterns)
-crates/            — Rust binaries (cg — code graph TUI browser)
 .claude/           — Security settings (deny rules, sandbox config) — optional per-project
 .claude/swarm/     — Active swarm state (phase, tier, checkpoint.json, reports) — runtime only
 docs/              — Philosophy, whitepaper, team setup

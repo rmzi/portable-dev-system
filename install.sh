@@ -684,6 +684,9 @@ run_tests() {
   assert_dir  "hooks"              "$SRC_DIR/hooks"
   assert_file "settings.json"      "$SRC_DIR/settings.json"
 
+  # Portability contract: no compiled artifacts or Rust toolchain in PDS.
+  assert_not_dir "crates" "$SRC_DIR/crates"
+
   # Count agents (at least 1)
   agent_count=$(ls "$SRC_DIR/agents/"*.md 2>/dev/null | wc -l | tr -d ' ')
   assert "agents count > 0 (got $agent_count)" test "$agent_count" -gt 0

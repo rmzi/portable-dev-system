@@ -101,14 +101,13 @@ make install    # symlinks this checkout as the plugin
 portable-dev-system/
 ├── .claude-plugin/plugin.json     # Plugin manifest
 ├── agents/                        # 8 agent definitions + shared-rules.md
-├── skills/                        # 14 skills (dir/SKILL.md format)
+├── skills/                        # 15 skills (dir/SKILL.md format)
 │   ├── swarm/SKILL.md
 │   ├── team/SKILL.md
 │   └── ...
 ├── hooks/hooks.json               # Hook event handlers (see below)
 ├── hooks/scripts/                 # Hook implementation scripts
 ├── scripts/                       # Utility scripts (detect-patterns, efficiency-chart)
-├── crates/cg/                     # Code Graph Browser TUI (Rust, ratatui)
 ├── docs/                          # Philosophy, whitepaper, team setup, source analysis
 ├── .claude/settings.json          # Security settings (installed separately)
 ├── install.sh                     # Plugin installer
