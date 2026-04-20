@@ -24,6 +24,16 @@ Skills encode team knowledge:
 
 ---
 
+## Portability Contract
+
+PDS is "install once, works across all projects." To hold that promise, it ships **only** markdown, bash, Python 3, and `jq`. No compiled artifacts. No language toolchains (Rust, Go, Node). No private binaries.
+
+If a feature needs a compiled component, that component lives in a separate repo and PDS consumes its output through a skill — never bundles the build. Skills like `/pds:explore` read SQLite indexes written by external tools; PDS does not produce the indexer.
+
+This keeps the install path honest: `curl | bash` is enough, no hidden prerequisites. Users without Rust, Go, or Node installed still get the full PDS experience.
+
+---
+
 ## Why Worktrees?
 
 Worktrees give you parallel, isolated environments. No stashing. No branch switching. No lost context. Each worktree has its own working directory and Claude Code session, but shares git history.
