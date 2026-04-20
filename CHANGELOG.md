@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.16.0] - 2026-04-20T16:09:35-04:00
+
+### Added
+- **ADR 0005: Release Profiles** — Design for declarative per-project release methodology: a `## Release` section in each project's CLAUDE.md names a profile, and a profile registry at `docs/release-profiles/` defines reusable methodologies (claude-plugin-marketplace, npm-package, vercel-auto-deploy, etc.). Motivated by recurring `marketplace.json` drift — fixed manually in 4.11.1, 4.13.1, and again this release — without systemic prevention. Six-phase rollout plan deferred pending design review.
+- **`Bash(claude plugins:*)` in project permissions** — Surfaced during `/pds:finish` permission audit. Eliminates per-session approval for plugin management commands.
+
+### Changed
+- **Activity-based session health check** — `hooks/scripts/health-check.sh` rewritten to track *continuous* activity rather than wall-clock from session start. Idle gaps between prompts (default 20m, `PDS_IDLE_RESET_MIN`) reset the session clock. Silent below 3h; single factual state line at 3h and 5h thresholds; fires once per tier crossing (no per-prompt spam). New env vars: `PDS_HEALTH_SERIOUS_MIN` (default 180), `PDS_HEALTH_VERY_SERIOUS_MIN` (default 300). Old env vars (`PDS_BREAK_GENTLE`, `PDS_BREAK_FIRM`, `PDS_BREAK_URGENT`) silently ignored. Marker renamed `pds-session-start` → `pds-session-activity`. Supersedes the session-start.sh reset fix from 4.15.0 (#128) — activity-based tracking handles session boundaries via idle detection, so external resets are redundant.
+- **Spinner tips reworked** — Prescriptive health reminders ("Take a walk", "Your health matters more than this commit") replaced with factual workflow hints referencing surviving skills. Health context surfaces exclusively via the activity-aware health-check hook, where it can be threshold-gated and activity-based rather than firing interruptively.
+- **`/pds:finish` step reorder** — "Extract Knowledge" moves from Step 0 to Step 6 (post-audit, pre-ship), with its own atomic `chore: archive swarm artifacts` commit. Previous placement mixed archived swarm artifacts with code-cleanliness steps (verify/rebase/clean), creating tree-state surprises. Ship renumbered Step 6 → Step 7 with subsections 7a-7d.
+
+### Fixed
+- **Marketplace version drift (third occurrence)** — `.claude-plugin/marketplace.json` was at 4.14.0 while `VERSION` had advanced to 4.15.0. Synced to 4.16.0. ADR 0005 (this release) proposes the systemic fix.
+
+### Philosophy
+- **Inform, don't legislate** — The health-check refactor, spinner tips rework, and Step 0 reorder in `/pds:finish` all apply the same principle: the system's job is to surface state and capabilities; the human's job is to act on them. Prescriptive reminders get ignored when they matter most and erode trust; factual state lines are harder to dismiss. Complements the human-factors draft added in 4.15.0 (`docs/human-factors.md`).
+
 ## [4.15.0] - 2026-04-13
 
 ### Changed
