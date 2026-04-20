@@ -53,7 +53,8 @@
       "Bash(gh issue:*)",
       "Bash(gh pr:*)",
       "Bash(gh release:*)",
-      "Bash(gh api:*)"
+      "Bash(gh api:*)",
+      "Bash(claude plugins:*)"
     ],
     "deny": [
       "Bash(*~/.aws*)",
