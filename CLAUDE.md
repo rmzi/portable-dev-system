@@ -18,7 +18,7 @@ PDS is a Claude Code plugin. Skills and agents are distributed via the plugin sy
 
 **Before performing ANY action, check if a skill exists for it. If a relevant skill exists, read it FIRST.**
 
-### Available Skills (18)
+### Available Skills (19)
 
 | Skill | When to Use |
 |-------|-------------|
@@ -40,6 +40,7 @@ PDS is a Claude Code plugin. Skills and agents are distributed via the plugin sy
 | `/pds:ethos` | Core development principles — grounding ritual |
 | `/pds:instinct` | Pattern lifecycle — record, validate, promote recurring patterns |
 | `/pds:export` | Export session to human-readable markdown |
+| `/pds:explore` | Structural codebase queries via codebase-memory-mcp index (fallback to Grep) |
 
 See `/pds:team` for the 8-agent roster (orchestrator, researcher, worker, validator, reviewer, documenter, scout, auditor).
 
