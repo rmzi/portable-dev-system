@@ -17,24 +17,6 @@ Default target: main.
 
 ## Protocol
 
-### 0. Extract Knowledge
-If `.claude/swarm/` exists in the current worktree, preserve ephemeral state before it's lost:
-
-1. **Archive artifacts to git.** Copy all `*.md` files from `.claude/swarm/` to `docs/swarm-reports/<YYYY-MM-DD-HHmm>/`:
-   ```bash
-   REPORT_DIR="docs/swarm-reports/$(date +%Y-%m-%d-%H%M)"
-   mkdir -p "$REPORT_DIR"
-   cp .claude/swarm/*.md "$REPORT_DIR/"
-   git add "$REPORT_DIR"
-   ```
-2. **Distill to auto-memory.** Review the archived artifacts and write **1-2** auto-memory entries (project or feedback type) capturing:
-   - WHY key decisions were made and what alternatives were rejected
-   - Surprising findings or constraints discovered during the swarm
-   - Skip anything derivable from code, git history, or existing docs
-3. The archived reports are included in the finish commit automatically (already staged via `git add`).
-
-If `.claude/swarm/` does not exist, skip to Step 1.
-
 ### 1. Verify Completeness
 Run `/pds:verify` first. Do not proceed until it passes.
 
@@ -92,7 +74,28 @@ Review `.claude/settings.local.json` for permission patterns that should be prom
 
 This ensures permission improvements ship with the code rather than accumulating silently in local settings.
 
-### 6. Ship
+### 6. Extract Knowledge
+
+If `.claude/swarm/` exists in the current worktree, preserve ephemeral state as its own commit before shipping:
+
+1. **Archive artifacts to git.** Copy all `*.md` files from `.claude/swarm/` to `docs/swarm-reports/<YYYY-MM-DD-HHmm>/`:
+   ```bash
+   REPORT_DIR="docs/swarm-reports/$(date +%Y-%m-%d-%H%M)"
+   mkdir -p "$REPORT_DIR"
+   cp .claude/swarm/*.md "$REPORT_DIR/"
+   git add "$REPORT_DIR"
+   git commit -m "chore: archive swarm artifacts to docs/swarm-reports"
+   ```
+2. **Distill to auto-memory.** Review the archived artifacts and write **1-2** auto-memory entries (project or feedback type) capturing:
+   - WHY key decisions were made and what alternatives were rejected
+   - Surprising findings or constraints discovered during the swarm
+   - Skip anything derivable from code, git history, or existing docs
+
+Auto-memory writes happen outside git (under `~/.claude/projects/`) and survive worktree removal automatically.
+
+Extraction lives here — after the branch is clean and audited, before ship — so the archive commit is atomic and reviewable in the PR, never mixed into a verify/rebase/clean step. If `.claude/swarm/` does not exist, skip to Step 7.
+
+### 7. Ship
 
 Bump, commit, push, and create/update PR.
 
@@ -102,16 +105,16 @@ Bump, commit, push, and create/update PR.
 2. If the current branch or push target matches a protected pattern, **prompt the user** for confirmation before pushing
 3. If no `Protected Branches` section exists in CLAUDE.md, no branches are protected — push freely
 
-#### 6a. Commit Work
+#### 7a. Commit Work
 
 If uncommitted changes exist (staged or unstaged):
 - Stage changes: `git add` relevant files (not `-A` — be deliberate)
 - Commit with provided message, or derive from branch name and changes
 - Use conventional commit format: `<type>(<scope>): <subject>`
 
-If working tree is clean, skip to 6b.
+If working tree is clean, skip to 7b.
 
-#### 6b. Detect Bump Type (if not specified)
+#### 7b. Detect Bump Type (if not specified)
 
 If no bump type was passed, scan git log since the last version tag:
 
@@ -129,7 +132,7 @@ Apply the highest-precedence rule found:
 
 Default to **patch** if no conventional commits found.
 
-#### 6c. Bump Version
+#### 7c. Bump Version
 
 Follow `/pds:bump` protocol:
 1. Detect version file (VERSION, package.json, etc.)
@@ -137,7 +140,7 @@ Follow `/pds:bump` protocol:
 3. Update version file(s) + CHANGELOG.md
 4. Commit: `chore: bump version to X.Y.Z`
 
-#### 6d. Push and PR
+#### 7d. Push and PR
 
 ```bash
 git push origin HEAD
