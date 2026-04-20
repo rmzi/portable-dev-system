@@ -121,13 +121,13 @@
   "spinnerTipsOverride": {
     "excludeDefault": false,
     "tips": [
-      "Take a walk. Your best ideas come after breaks.",
-      "Hydration check — when did you last drink water?",
-      "Stretch your hands and wrists. RSI is real.",
-      "Step away for 5 minutes. The code will be here.",
-      "Your health matters more than this commit.",
       "Use /pds:swarm to launch a parallel agent team",
-      "Use /pds:pause to save state and take a break"
+      "Use /pds:pause to save session state",
+      "Use /pds:verify to check completion before shipping",
+      "Use /pds:finish when your branch is ready to merge",
+      "Use /pds:grill to interrogate requirements before building",
+      "Use /pds:instinct to record engineering patterns",
+      "Use /pds:ethos to reset on core development principles"
     ]
   },
   "worktree": {
