@@ -3,9 +3,6 @@
 # Outputs JSON with additionalContext for Claude's context window.
 # Writes PDS_VERSION and PDS_PLUGIN_ROOT to CLAUDE_ENV_FILE.
 
-# --- Reset session health timer (prevents accumulation across sessions) ---
-rm -f "${TMPDIR:-/tmp}/pds-session-start"
-
 # --- Linux sandbox dependency check (preserved from inline hook) ---
 if [ "$(uname)" = "Linux" ]; then
   for dep in bwrap socat; do
