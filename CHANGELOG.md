@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.18.0] - 2026-04-21
+
+### Added
+- **Dev-diary posting in `/pds:finish`** — New Step 7f invokes `scripts/assemble-diary.sh` to assemble a structured dev diary (Summary / Timeline / What went well / What went wrong) and post it as a canonical comment on the branch's tracking issue. Re-ships edit the existing comment in place, keyed off a stable `<!-- pds:diary -->` marker, so each issue ends up with exactly one diary comment. The full session transcript (from `export-session.sh`) is appended inside a collapsed `<details>` block. Signal sources: `.claude/instincts.md` deltas, auto-memory files mtime'd inside the session window, and ★ Insight blocks parsed from the transcript. `gh` failures fall back to a path under `$TMPDIR` — never silent.
+- **Branch↔issue convention enforced in `/pds:worktree`** — New "Issue-tied creation" section at the top describes the canonical `/pds:worktree <issue-number> [type]` flow: fetch the issue via `gh issue view`, slugify the title, create a worktree on branch `<type>/<issue>-<slug>` (e.g., `feat/89-cg-receive`). Fails fast if the issue doesn't exist. Free-form creation remains a documented fallback for spikes and PR review.
+- **`scripts/assemble-diary.sh`** — Bash + python3 + jq + `gh`. Inputs via env (`BRANCH`, `ISSUE`, `SINCE`, `MODE=post|post-dry`). Honors the portability contract (no compiled artifacts, no new runtime toolchains).
+- **Pipeline note in `/pds:export`** — Makes the new caller (`assemble-diary.sh`) discoverable from the export skill.
+
+### Changed
+- **`/pds:finish` Step 7** — New Step 7e (parse issue from branch; prompt-and-rename for legacy branches) and Step 7f (post/edit diary) land after the existing 7d push+PR. Legacy branches that don't match `<type>/<issue>-<slug>` trigger an interactive rename rather than silently skipping the diary. Users can still answer `skip` to proceed without posting.
+
+### Migration
+- Existing branches without the `<type>/<issue>-<slug>` naming will not be forced through the new convention retroactively. At the next `/pds:finish`, the prompt-and-rename flow offers a one-shot migration. Answer `skip` if the branch genuinely has no tracking issue.
+
 ## [4.17.1] - 2026-04-20T21:04:40-04:00
 
 ### Added
