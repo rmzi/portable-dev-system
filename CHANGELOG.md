@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.17.0] - 2026-04-20T20:12:24-04:00
+
+### Added
+- **`/pds:explore` skill (skill #19)** — Agent-side consumer of the `codebase-memory-mcp` SQLite index. Detects `~/.cache/codebase-memory-mcp/<project>.db`; if present, the agent prefers structural SQL queries (callers, callees, module tree, FTS5 fuzzy symbol search, high-complexity triage) over blind Grep. Falls back to Grep cleanly with a one-line hint when no index exists. Zero new runtime dependencies — pure markdown.
+- **Portability contract paragraph in `docs/philosophy.md`** — Makes the "markdown + bash + python3 + jq, no compiled artifacts" rule explicit and discoverable. References `/pds:explore` as the pattern: consume external index data via a skill; don't bundle the indexer.
+
+### Removed
+- **`crates/cg/` (Code Graph Browser TUI)** — Violated the portability contract: required a Rust toolchain, depended on undeclared `codebase-memory-mcp`, and `install.sh` never copied it to user installs (so it never reached anyone through supported paths). Preserved with full authorship history at `amok-labs/federation` (issue [#89](https://github.com/amok-labs/federation/issues/89)). The agent-side capability ships as `/pds:explore`.
+- **`docs/tui-architecture.md`** — Moved with the crate. Lives at `cg/docs/architecture.md` in federation.
+- **`build-cg` Makefile target** — Removed alongside the crate.
+
+### Changed
+- **`install.sh` smoke tests** — Added `assert_not_dir "crates"` regression guard to prevent future contributions from re-introducing the toolchain dependency without an explicit decision.
+- **README.md, CLAUDE.md, docs/architecture.md** — Plugin Structure / Project Structure / Plugin Layout diagrams updated to drop the `crates/` entry. Skills counts incremented (README 14→15, CLAUDE.md 18→19).
+
 ## [4.16.0] - 2026-04-20T16:09:35-04:00
 
 ### Added
