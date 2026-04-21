@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.17.1] - 2026-04-20T21:04:40-04:00
+
+### Added
+- **Portability contract assertions in `install.sh --test`** — expanded the regression guard from a single `assert_not_dir crates` into a full ten-assertion block checking for root-level toolchain manifests and build outputs: `Cargo.toml`, `Cargo.lock`, `go.mod`, `go.sum`, `package.json`, `pyproject.toml`, and directories `crates/`, `node_modules/`, `target/`, `dist/`. The prose in `docs/philosophy.md` is the "why"; this block is the enforcement. Motivated by the cg incident where a Rust crate lived in PDS for weeks without being installed or flagged (recorded as instinct).
+
+### Removed
+- **`check_gitleaks` auto-install from `install.sh`** — install previously attempted to install gitleaks via `brew` (macOS) or `go install` (Linux) when missing, dragging Homebrew or the Go toolchain into the story despite PDS's portability contract. Runtime scrubbers (`hooks/scripts/secret-scrub.sh`, `hooks/scripts/mcp-secret-scrub.sh`) are regex-only and have no gitleaks dependency — confirmed by a codebase sweep with zero matches under `hooks/`. Users who want gitleaks can install it independently; PDS no longer nudges. `.gitleaks.toml` is retained as repo-local dev tooling (not shipped to user installs).
+
 ## [4.17.0] - 2026-04-20T20:12:24-04:00
 
 ### Added
