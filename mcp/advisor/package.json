@@ -12,7 +12,8 @@
     "build": "tsc",
     "prepare": "npm run build",
     "start": "node dist/server.js",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "test": "npm run build && node --input-type=module -e \"import('./dist/server.js').then(async m => { const r = await m.advise('smoke'); if (r.degraded && r.reason.includes('ANTHROPIC_API_KEY')) { console.log('OK: graceful-degrade path works'); process.exit(0); } if (!r.degraded && r.advice) { console.log('OK: live path works'); process.exit(0); } console.error('FAIL: unexpected response'); console.error(JSON.stringify(r)); process.exit(1); })\""
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.4"
