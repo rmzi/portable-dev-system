@@ -14,6 +14,13 @@
 
 set -euo pipefail
 
+# Experimental feature gate — off by default.
+# Enable with PDS_DIARY=1 (or on/true/yes) in the environment.
+case "${PDS_DIARY:-}" in
+  1|on|true|yes) ;;
+  *) echo "assemble-diary.sh: disabled (set PDS_DIARY=1 to enable)" >&2; exit 0 ;;
+esac
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EXPORT_SESSION="$SCRIPT_DIR/export-session.sh"
 MARKER='<!-- pds:diary -->'

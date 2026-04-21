@@ -152,6 +152,15 @@ Work commit is separate from bump commit — clean git history.
 
 #### 7e. Resolve Tracking Issue
 
+> **Experimental — off by default.** Steps 7e and 7f only run when `PDS_DIARY=1` (or `PDS_DIARY=on`) is set in the environment. Without the flag, skip straight to Cleanup — the diary pipeline will not fire and legacy branches will not be prompted for renames. Enable per-invocation with `PDS_DIARY=1 /pds:finish ...`, or export in your shell rc to keep it on.
+
+```bash
+case "${PDS_DIARY:-}" in
+  1|on|true|yes) ;;
+  *) echo "dev-diary disabled (set PDS_DIARY=1 to enable)"; exit 0 ;;
+esac
+```
+
 Parse the issue number from the branch name. The canonical pattern is `<type>/<issue>-<slug>` (see `/pds:worktree` issue-tied creation):
 
 ```bash

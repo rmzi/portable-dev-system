@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.18.1] - 2026-04-21
+
+### Changed
+- **Dev-diary pipeline gated behind `PDS_DIARY` env var, off by default.** Shipped as experimental in 4.18.0 but enabled unconditionally, which meant every `/pds:finish` would attempt the branch-name parse and (for legacy branches) prompt for an issue rename. Now Steps 7e and 7f in `/pds:finish` early-return unless `PDS_DIARY` is set to `1`/`on`/`true`/`yes`. `scripts/assemble-diary.sh` has the same guard as a safety net for direct invocations. Enable per-invocation with `PDS_DIARY=1 /pds:finish ...`, or export in your shell rc to opt in permanently.
+
 ## [4.18.0] - 2026-04-21
 
 ### Added
