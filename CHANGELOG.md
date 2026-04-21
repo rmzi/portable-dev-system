@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.20.1] - 2026-04-21
+
+### Added
+- **Shepherd journal as 4th diary signal source.** `scripts/assemble-diary.sh` now reads `.claude/shepherd-journal.md` when present, parses the current swarm section (matched by today's date, or the most recent section as fallback), and routes `### Decisions` + `### Observations` bullets into the "What went well" bucket and `### Violations caught` + `### Failure mode` content into "What went wrong." Complements the existing three sources (instincts deltas, auto-memory files, ★ Insight blocks) without replacing them. No-op when the journal is absent, which is the default for any project that hasn't run a med/heavy swarm with shepherd. Closes the obvious integration gap between 4.20.0 (shepherd) and 4.19.0 (diary): shepherd captures substance live, diary now surfaces it at ship/session-end.
+
 ## [4.20.0] - 2026-04-21
 
 ### Added

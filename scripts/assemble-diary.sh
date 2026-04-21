@@ -74,6 +74,55 @@ for candidate in "$HOME/.claude/projects/$CWD_HASH/memory" "$HOME/.claude/projec
   fi
 done
 
+# --- Gather: shepherd journal (per-swarm substantive decisions/observations/violations) ---
+# The journal is gitignored by default (see .gitignore) so we read it from the working tree,
+# not git log. Parse the last `## Swarm` section whose date matches today.
+SHEPHERD_DECISIONS=""
+SHEPHERD_VIOLATIONS=""
+if [ -f .claude/shepherd-journal.md ]; then
+  SHEPHERD_PARSED="$(SHEPHERD_JOURNAL=.claude/shepherd-journal.md SHEPHERD_DATE="$SHIP_DATE" python3 -c '
+import os, re
+path = os.environ["SHEPHERD_JOURNAL"]
+today = os.environ["SHEPHERD_DATE"]
+with open(path) as f:
+    txt = f.read()
+sections = re.split(r"(?m)^## Swarm ", txt)[1:]
+target = None
+for s in sections:
+    header = s.splitlines()[0] if s else ""
+    if today in header:
+        target = s
+if target is None and sections:
+    target = sections[-1]
+if target is None:
+    raise SystemExit(0)
+def subsection(body, name):
+    pat = r"(?ms)^### " + re.escape(name) + r"\s*\n(.*?)(?=^### |\Z)"
+    m = re.search(pat, body)
+    return m.group(1).strip() if m else ""
+def bullets(text):
+    out = []
+    for ln in text.splitlines():
+        s = ln.strip()
+        if s.startswith("-") or s.startswith("*"):
+            out.append(s.lstrip("-* \t").strip())
+    return out
+for b in bullets(subsection(target, "Decisions")):
+    print("DECISION\t" + b)
+for b in bullets(subsection(target, "Observations")):
+    print("DECISION\t" + b)
+for b in bullets(subsection(target, "Violations caught")):
+    print("VIOLATION\t" + b)
+fm = subsection(target, "Failure mode")
+if fm:
+    first = fm.splitlines()[0].strip()
+    if first:
+        print("VIOLATION\t" + first)
+' 2>/dev/null || true)"
+  SHEPHERD_DECISIONS="$(printf '%s\n' "$SHEPHERD_PARSED" | awk -F'\t' '$1=="DECISION"{print $2}')"
+  SHEPHERD_VIOLATIONS="$(printf '%s\n' "$SHEPHERD_PARSED" | awk -F'\t' '$1=="VIOLATION"{print $2}')"
+fi
+
 # --- Gather: raw transcript (for ★ Insight parsing and collapsed block) ---
 # Pass through TRANSCRIPT_PATH (canonical, from SessionEnd hook) if set; otherwise
 # export-session.sh falls back to CWD-hash discovery. Always filter to current branch
@@ -110,6 +159,20 @@ if [ -n "$INSTINCTS_ADDED" ]; then
     [ -z "$line" ] && continue
     WELL="$WELL- Instinct recorded: $line"$'\n'
   done <<< "$INSTINCTS_ADDED"
+fi
+
+# Shepherd journal — decisions/observations → well, violations/failure-modes → wrong.
+if [ -n "$SHEPHERD_DECISIONS" ]; then
+  while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    WELL="$WELL- Shepherd: $line"$'\n'
+  done <<< "$SHEPHERD_DECISIONS"
+fi
+if [ -n "$SHEPHERD_VIOLATIONS" ]; then
+  while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    WRONG="$WRONG- Shepherd: $line"$'\n'
+  done <<< "$SHEPHERD_VIOLATIONS"
 fi
 
 # Memory entries → route by type
