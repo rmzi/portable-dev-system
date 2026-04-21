@@ -65,6 +65,18 @@ Understanding the platform deeply — not just its public API — is consistent 
 
 ---
 
+## Advisory, Not Enforcement
+
+PDS has a shepherd agent that walks each swarm from Phase 1 through Phase 6. It reads the whitepaper, this file, and `docs/ethos.md` on spawn, and answers substance questions with citations — `docs/whitepaper.md:142`, `docs/philosophy.md § "Small, Reversible Steps"`. It writes to a project-level journal at `.claude/shepherd-journal.md` that persists across swarms; scout compacts it periodically.
+
+**The shepherd never blocks work.** Its authority is citation, not enforcement. When a user overrides a principle, the shepherd logs the divergence and defers. When the same principle is overridden three times across swarms, the shepherd files a GitHub issue proposing whitepaper review — the living-whitepaper feedback loop driven by observed use, not opinion.
+
+This is consistent with the first principle: the shepherd exists so agents and users can understand before they act. It is consistent with the fourth principle: by citing sources, it makes implicit conventions explicit. And it absorbs capacity that would otherwise sit idle — the orchestrator coordinates; the shepherd thinks about principles — without removing the human as final arbiter.
+
+Routing: graph questions (dispatch, dependencies, phase state) go to the orchestrator. Substance questions (design, trade-offs, principle-checks) go to the shepherd. In lite swarms, the shepherd is skipped to keep the tier cheap — workers invoke `advisor_consult` directly when needed.
+
+---
+
 ## Standing on Giants
 
 - **Thompson & Ritchie** — Unix philosophy: do one thing well

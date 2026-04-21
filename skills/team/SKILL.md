@@ -28,6 +28,7 @@ These map directly to the whitepaper's Agentic SDLC: orchestrator coordinates, w
 | **documenter** | Documentation updates | sonnet | acceptEdits | 30 | — | User-facing docs changed |
 | **scout** | PDS meta-improvements | haiku | acceptEdits | 15 | project | Post-swarm knowledge capture |
 | **auditor** | Codebase analysis -> GitHub issues | sonnet | plan | 30 | project | Periodic tech debt scans |
+| **shepherd** | Substantive advisor — whitepaper/philosophy enforcement by citation, advisory only | opus | acceptEdits (scoped) | 80 | project | Med + heavy tiers only, spawned after Phase 1 grill |
 
 Specialists add value in specific situations but aren't needed every swarm. The orchestrator decides based on task requirements.
 
@@ -45,12 +46,24 @@ Model overrides applied at spawn time via the `model` parameter. Agent definitio
 | documenter | _(skip)_ | sonnet | sonnet |
 | scout | haiku | haiku | sonnet |
 | auditor | _(skip)_ | _(skip)_ | sonnet |
+| shepherd | _(skip)_ | opus | opus |
 
-- **Lite**: 2 modules, existing patterns. 1-2 workers, no reviewer/documenter/auditor. Orchestrator self-researches and self-reviews.
-- **Med**: 2-3 boundaries, some design decisions. 2-3 workers, full specialist roster as needed. Current defaults.
-- **Heavy**: 3+ boundaries, new interfaces, or core refactors. 3-4 workers, all specialists including auditor. Opus for reasoning.
+- **Lite**: 2 modules, existing patterns. 1-2 workers, no reviewer/documenter/auditor/shepherd. Orchestrator self-researches and self-reviews. Workers use `advisor_consult` directly if a substantive consult is needed.
+- **Med**: 2-3 boundaries, some design decisions. 2-3 workers, full specialist roster as needed, **shepherd spawned** after Phase 1 grill. Current defaults.
+- **Heavy**: 3+ boundaries, new interfaces, or core refactors. 3-4 workers, all specialists including auditor, **shepherd spawned** after Phase 1 grill. Opus for reasoning.
 
 User override: `/pds:swarm lite|med|heavy`. Without argument, auto-selected via `/pds:grill` step 10.
+
+## Graph-vs-Substance Routing
+
+Two kinds of questions arise during swarm execution. Route by kind:
+
+| Kind | Examples | Route to |
+|------|----------|----------|
+| **Graph** | "Which task comes next?" "Who is blocked on what?" "Has Phase 4 started?" "Who owns task #7?" "When do I run `/pds:verify`?" | **orchestrator** (via SendMessage) |
+| **Substance** | "Should this module own retry logic?" "Is squashing these commits before PR the right call?" "Which layering convention applies here?" "Does the whitepaper mandate X?" "What trade-off does choosing Y over Z make?" | **shepherd** (via SendMessage) |
+
+The orchestrator handles coordination. The shepherd handles principles. When a teammate receives a question off-lane, reply with a one-line redirect ("Graph question — ask the orchestrator" / "Substance question — ask the shepherd") rather than answering out of scope. If no shepherd is active (lite tier), substance questions route to the orchestrator which either answers itself or delegates to `advisor_consult`.
 
 ## Permission Modes
 
@@ -59,7 +72,8 @@ User override: `/pds:swarm lite|med|heavy`. Without argument, auto-selected via 
 | **default** | orchestrator | Standard permission flow — coordinates and delegates to agents |
 | **acceptEdits** | worker, validator, documenter | Auto-accept file edits, full implementation access |
 | **plan** | researcher, reviewer, auditor | Read-only exploration, no file modifications |
-| **acceptEdits** (scoped) | scout | Write limited to `.claude/swarm/scout-report.md`, `.claude/instincts.md`, and `.claude/eval-results.md` |
+| **acceptEdits** (scoped) | scout | Write limited to `.claude/swarm/scout-report.md`, `.claude/instincts.md`, `.claude/eval-results.md`, and `.claude/shepherd-journal.md` |
+| **acceptEdits** (scoped) | shepherd | Write limited to `.claude/shepherd-journal.md` |
 | **auto** | all (when user enables) | Sonnet classifier evaluates each tool call — overrides agent-declared modes |
 
 **Note**: In auto mode, agent-declared `permissionMode` values (`plan`, `acceptEdits`, `default`) are overridden by the classifier. Behavioral constraints in agent `.md` files and the classifier's context awareness provide enforcement. Static deny rules and the sandbox are unaffected.
@@ -127,9 +141,9 @@ Is the task >3 turns with artifact output?
                     +---------------+
                     | orchestrator  |  (your Claude session)
                     +-------+-------+
-           +-------+-------+-------+-------+-------+
-           |       |       |       |       |       |
-      researcher worker validator reviewer documenter scout/auditor
+           +-------+-------+-------+-------+-------+-------+
+           |       |       |       |       |       |       |
+      researcher worker validator reviewer documenter scout/auditor shepherd
       (each spawned via Task tool with worktree isolation)
 ```
 
@@ -143,6 +157,7 @@ These patterns are PDS-specific — they layer on top of native Claude Code team
 - **Results delivery**: Agents send reports via `SendMessage`. Orchestrator writes to `.claude/swarm/` artifacts (required by phase gates).
 - **Task discovery**: Workers create new tasks via `TaskCreate` when they discover additional work during implementation.
 - **Blocker escalation**: Agents commit progress, update task status, `SendMessage` to orchestrator with details.
+- **Substantive consultation**: For design, trade-offs, or principle-checks, agents consult the shepherd via `SendMessage` (med/heavy) or `advisor_consult` directly (lite or degraded). See `agents/shared-rules.md` for the protocol.
 
 ## Native Behaviors Worth Knowing
 
@@ -158,3 +173,4 @@ These are Claude Code native behaviors, but agents that haven't seen them before
 - **Human gate.** Get approval at phase boundaries (planning, before PR).
 - **Worktree isolation.** Each worker gets their own worktree. No shared state.
 - **Fail fast.** Fix specific issues rather than retrying blindly.
+- **Route by kind.** Graph questions go to the orchestrator; substance questions go to the shepherd.

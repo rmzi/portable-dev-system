@@ -42,7 +42,7 @@ PDS is a Claude Code plugin. Skills and agents are distributed via the plugin sy
 | `/pds:export` | Export session to human-readable markdown |
 | `/pds:explore` | Structural codebase queries via codebase-memory-mcp index (fallback to Grep) |
 
-See `/pds:team` for the 8-agent roster (orchestrator, researcher, worker, validator, reviewer, documenter, scout, auditor).
+See `/pds:team` for the 9-agent roster (orchestrator, researcher, worker, validator, reviewer, documenter, scout, auditor, shepherd). The **shepherd** is a persistent substantive advisor (opus) spawned after Phase 1 grill in med/heavy tiers — advisory-only, enforces the whitepaper/philosophy/ethos by citation.
 
 ---
 
@@ -50,7 +50,7 @@ See `/pds:team` for the 8-agent roster (orchestrator, researcher, worker, valida
 
 ```
 .claude-plugin/    — Plugin manifest (plugin.json)
-agents/            — 8 agent definitions + shared-rules.md
+agents/            — 9 agent definitions + shared-rules.md
 skills/            — 19 workflow skills (dir/SKILL.md format)
 hooks/             — Quality gates (SessionStart, Stop, TaskCompleted, TeammateIdle, SubagentStart, PreCompact, PostCompact, UserPromptSubmit, PostToolUse, WorktreeCreate, InstructionsLoaded)
 scripts/           — Utility scripts (telemetry-summary, detect-patterns)
