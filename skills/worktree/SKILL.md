@@ -5,6 +5,43 @@ description: Managing git worktrees for isolated parallel development. Use when 
 
 Each stream of work gets its own directory. No stashing, no branch switching, no lost context.
 
+## Issue-tied creation (default)
+
+Every meaningful branch should be tied to a GitHub tracking issue so `/pds:finish` can post a canonical dev diary comment. Branch names must encode the issue number:
+
+```
+<type>/<issue>-<slug>
+
+# examples
+feat/89-cg-receive
+fix/132-tmux-socket
+refactor/108-backpressure
+```
+
+Invoke with an issue number and (optional) type:
+
+```
+/pds:worktree <issue-number> [type]
+```
+
+Protocol:
+
+1. Resolve `REPO_ROOT` (see Path Resolution below).
+2. `gh issue view <N> --json title -q .title` to fetch the issue title.
+3. Slugify the title: lowercase, alphanumerics and hyphens only, collapse runs, truncate to ~40 chars.
+4. Compose the branch name: `<type>/<N>-<slug>` (default `type=feat` if omitted; use `fix` for bug issues, `refactor` for cleanup, etc.).
+5. Create the worktree:
+   ```bash
+   git worktree add "$REPO_ROOT/.worktrees/<type>-<N>-<slug>" -b <type>/<N>-<slug>
+   ```
+6. `cd` into the worktree.
+
+Fail fast if `gh issue view <N>` returns no issue — do not fabricate a branch name from a stale or wrong number.
+
+### Fallback: free-form creation
+
+For spike exploration, PR review, or other work that genuinely has no tracking issue, the raw `git worktree add` forms below remain supported. `/pds:finish` will prompt for an issue number at ship time if it encounters a branch without the `<type>/<issue>-<slug>` pattern.
+
 ## Commands
 
 ```bash
