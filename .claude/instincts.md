@@ -86,3 +86,21 @@ Persistent engineering patterns observed during work. Lighter than skills — ob
 - **Pattern**: Plugin installs, marketplace updates, and dev symlinks leave artifacts behind. No cleanup runs automatically. Over time, the plugin directory accumulates stale versions, temp clones, and broken symlinks.
 - **Action**: Add periodic plugin cache pruning to session start or a scheduled task.
 - **Status**: active
+
+### Portability contract violations land silently without structural invariants in install.sh
+- **Observed**: 2026-04-20
+- **Times seen**: 1
+- **Confidence**: low
+- **Context**: `crates/cg/` (Rust TUI requiring Rust toolchain + undeclared `codebase-memory-mcp` dependency) lived in PDS for weeks. `install.sh` never copied it to user installs — so it was inert to users — but it was also never flagged as a contract violation. Author's own machine did not have `cg` installed, confirming the dead-weight nature. Removed in 4.17.0; added `assert_not_dir "crates"` as regression guard.
+- **Pattern**: PDS has a portability contract ("markdown + bash + python3 + jq, no compiled artifacts, no toolchains") but relies on human review to enforce it. A contribution that violates the contract but also doesn't wire itself into `install.sh` is especially easy to miss — no user-visible failure, nothing runs, nothing breaks, but the repo accumulates dead weight and an implicit signal that the contract is negotiable.
+- **Action**: For every structural contract (portability, file layout, naming), add a `bash install.sh --test` assertion that enforces it. The contract in prose (`docs/philosophy.md`) is the "why"; the assertion in `install.sh` is the "enforcement." Prose alone is not enforcement. When introducing a new artifact class, ask: "What assertion would catch this being done wrong?"
+- **Status**: active
+
+### Filing an issue in a diverged fork beats pushing reconstructed history
+- **Observed**: 2026-04-20
+- **Times seen**: 1
+- **Confidence**: low
+- **Context**: During cg migration from PDS to federation, completed the work locally against `~/dev/tools/universe/` (4 commits, branch `feat/cg-receive`, authorship preserved via `git format-patch` → sed path-rewrite → `git am`). Then learned federation had diverged significantly from local universe (org migration). Rather than attempt to rebase or reconcile, filed issue amok-labs/federation#89 with reproducible patch-generation commands and discarded the local branch. No conflict fighting, no force-pushes, no lost work — source commits live in PDS and patches are regeneratable on demand.
+- **Pattern**: When a code-move target repo has diverged from the source you're working against, the cost of replicating the work as a PR (rebase, conflict resolution, testing in the new environment) can exceed the cost of documenting the work as an issue that someone familiar with the diverged target can execute. This especially holds when the source repo retains the original commits (so regenerating patches is trivial) and the work is small enough to describe precisely.
+- **Action**: Before attempting a cross-repo migration push, check divergence with `git fetch && git log HEAD..target/main --oneline | wc -l`. If divergence is non-trivial and the source commits are still reachable in their origin repo, write an issue with: (1) the goal, (2) the source commit SHAs, (3) a reproducible patch-generation block (`git format-patch` + sed + `git am`), (4) acceptance criteria. Discard local reconstruction work rather than fight the merge.
+- **Status**: active
