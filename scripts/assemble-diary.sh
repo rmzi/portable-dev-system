@@ -75,9 +75,13 @@ for candidate in "$HOME/.claude/projects/$CWD_HASH/memory" "$HOME/.claude/projec
 done
 
 # --- Gather: raw transcript (for ★ Insight parsing and collapsed block) ---
+# Pass through TRANSCRIPT_PATH (canonical, from SessionEnd hook) if set; otherwise
+# export-session.sh falls back to CWD-hash discovery. Always filter to current branch
+# so the transcript reflects this session's work, not the entire project history.
 TRANSCRIPT=""
 if [ -x "$EXPORT_SESSION" ]; then
-  TRANSCRIPT="$("$EXPORT_SESSION" 2>/dev/null || true)"
+  TRANSCRIPT="$(FILTER_BRANCH="$BRANCH" TRANSCRIPT_PATH="${TRANSCRIPT_PATH:-}" \
+    "$EXPORT_SESSION" 2>/dev/null || true)"
 fi
 
 INSIGHTS=""

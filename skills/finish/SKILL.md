@@ -153,6 +153,8 @@ Work commit is separate from bump commit — clean git history.
 #### 7e. Resolve Tracking Issue
 
 > **Experimental — off by default.** Steps 7e and 7f only run when `PDS_DIARY=1` (or `PDS_DIARY=on`) is set in the environment. Without the flag, skip straight to Cleanup — the diary pipeline will not fire and legacy branches will not be prompted for renames. Enable per-invocation with `PDS_DIARY=1 /pds:finish ...`, or export in your shell rc to keep it on.
+>
+> **Also fires automatically at session end.** When `PDS_DIARY=1` is set, a `SessionEnd` hook (`hooks/scripts/diary-session-end.sh`) posts the diary for you using the canonical `transcript_path` handed down by Claude Code. Manual invocation from `/pds:finish` remains supported for ship-time diaries — both paths end up editing the same canonical comment keyed off the `<!-- pds:diary -->` marker, so re-fires are idempotent.
 
 ```bash
 case "${PDS_DIARY:-}" in

@@ -25,6 +25,13 @@ scripts/export-session.sh -o docs/conversations/session-name.md
 scripts/export-session.sh --list
 ```
 
+### Env var overrides
+
+| Var | Purpose |
+|---|---|
+| `TRANSCRIPT_PATH` | Absolute path to the JSONL. Skips CWD-hash session discovery entirely — canonical source is the `transcript_path` field in hook payloads. |
+| `FILTER_BRANCH` | If set, JSONL entries are filtered to those whose `gitBranch` matches (entries without `gitBranch`, like early-session system messages, pass through). Produces a tighter, branch-scoped transcript. |
+
 Or from the plugin root:
 
 ```bash

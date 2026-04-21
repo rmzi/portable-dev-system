@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.19.0] - 2026-04-21
+
+### Added
+- **SessionEnd hook auto-fires the diary (`hooks/scripts/diary-session-end.sh`).** Registered in `hooks/hooks.json` under `SessionEnd`. Reads `session_id`, `transcript_path`, and `cwd` from the hook JSON payload (schema: `SessionEndHookInputSchema` in Claude Code source). Gated behind `PDS_DIARY=1` and a parseable `<type>/<issue>-<slug>` branch name — no-ops silently otherwise. Invokes `assemble-diary.sh` in the background so shutdown is never blocked. Manual `/pds:finish` invocation remains supported; both paths edit the same canonical comment via the `<!-- pds:diary -->` marker, so double-fires are idempotent.
+- **`TRANSCRIPT_PATH` env var in `scripts/export-session.sh`.** Short-circuits the CWD-hash session discovery when an absolute JSONL path is handed in directly. This is the canonical resolution path — Claude Code hooks receive `transcript_path` in their stdin payload, and `assemble-diary.sh` now passes it through. Fixes the fragile "two projects with similar CWD" edge case in the previous heuristic.
+- **`FILTER_BRANCH` env var in `scripts/export-session.sh`.** Filters JSONL entries by their `gitBranch` field (confirmed load-bearing via `SerializedMessage` in Claude Code source). Entries without `gitBranch` (early-session system messages) pass through. `assemble-diary.sh` now always passes the current branch, producing a branch-scoped transcript instead of the whole session log.
+
+### Changed
+- **`/pds:finish` 7e/7f prose** — Added a pointer to the SessionEnd auto-fire so users understand the diary posts on session close when `PDS_DIARY=1`, not only at ship time.
+- **`/pds:export` skill** — Documents `TRANSCRIPT_PATH` and `FILTER_BRANCH` env vars for advanced callers (hook scripts, CI).
+
+### Source-derived
+These three changes came from a read of the Claude Code TypeScript source (`src/entrypoints/sdk/coreSchemas.ts`, `src/types/logs.ts`). The hook payload shape and the `gitBranch` message field are stable contract surfaces in the current release; both were load-bearing APIs we weren't using.
+
 ## [4.18.1] - 2026-04-21
 
 ### Changed

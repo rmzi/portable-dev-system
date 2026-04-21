@@ -71,8 +71,12 @@ if [ "$LIST_MODE" = true ]; then
   exit 0
 fi
 
+# Canonical resolution path: caller (SessionEnd hook, /pds:finish) hands us the
+# JSONL path directly via TRANSCRIPT_PATH env var. Skips CWD-hash heuristic entirely.
+if [ -n "${TRANSCRIPT_PATH:-}" ] && [ -f "$TRANSCRIPT_PATH" ]; then
+  SESSION_FILE="$TRANSCRIPT_PATH"
 # Find session file
-if [ -z "$SESSION_ID" ]; then
+elif [ -z "$SESSION_ID" ]; then
   # Latest session by modification time
   SESSION_FILE=$(ls -t "$PROJECT_DIR"*.jsonl 2>/dev/null | head -1)
   if [ -z "$SESSION_FILE" ]; then
@@ -89,17 +93,24 @@ else
 fi
 
 SESSION_ID=$(basename "$SESSION_FILE" .jsonl)
+FILTER_BRANCH="${FILTER_BRANCH:-}"
 
 # Convert JSONL to markdown
-python3 << 'PYEOF' - "$SESSION_FILE" "$SESSION_ID"
+python3 << 'PYEOF' - "$SESSION_FILE" "$SESSION_ID" "$FILTER_BRANCH"
 import json, sys, re
 from datetime import datetime
 
 session_file = sys.argv[1]
 session_id = sys.argv[2]
+filter_branch = sys.argv[3] if len(sys.argv) > 3 else ''
 
 with open(session_file) as f:
     lines = [json.loads(l.strip()) for l in f]
+
+# Optional: filter to entries recorded on a specific branch.
+# Entries without gitBranch (e.g. system messages) pass through.
+if filter_branch:
+    lines = [l for l in lines if not l.get('gitBranch') or l.get('gitBranch') == filter_branch]
 
 out = []
 
