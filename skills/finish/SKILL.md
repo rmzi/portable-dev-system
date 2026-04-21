@@ -150,6 +150,43 @@ gh pr view             # Show existing PR
 
 Work commit is separate from bump commit — clean git history.
 
+#### 7e. Resolve Tracking Issue
+
+Parse the issue number from the branch name. The canonical pattern is `<type>/<issue>-<slug>` (see `/pds:worktree` issue-tied creation):
+
+```bash
+BRANCH="$(git branch --show-current)"
+ISSUE="$(echo "$BRANCH" | sed -nE 's|^[a-z]+/([0-9]+)-.*|\1|p')"
+```
+
+**Legacy branches (no issue encoded).** If `$ISSUE` is empty:
+
+1. Prompt the user: "This branch doesn't encode a tracking issue. Issue number for the diary, or `skip`?"
+2. If they supply a number, rename the branch in place:
+   ```bash
+   NEW_BRANCH="<type>/<N>-$(echo "$BRANCH" | sed -E 's|^[a-z]+/||' | tr '/ ' '--')"
+   git branch -m "$NEW_BRANCH"
+   git push origin -u "$NEW_BRANCH" :"$BRANCH" 2>/dev/null || git push origin -u "$NEW_BRANCH"
+   BRANCH="$NEW_BRANCH"; ISSUE="<N>"
+   ```
+3. If they say `skip`, proceed to 7f with an empty `$ISSUE`; the diary step will be skipped with a note.
+
+#### 7f. Post Dev Diary
+
+If `$ISSUE` is set, invoke the diary assembler:
+
+```bash
+BRANCH="$BRANCH" ISSUE="$ISSUE" MODE=post bash "$CLAUDE_PLUGIN_ROOT/scripts/assemble-diary.sh"
+```
+
+The script:
+- Derives a Summary from commit subjects, a Timeline from commit timestamps, and "What went well / wrong" from instincts, auto-memory, commit signals (fixups/reverts), and ★ Insight blocks parsed out of the raw transcript.
+- Wraps the full `export-session.sh` output inside a collapsed `<details>` block.
+- Looks up an existing diary comment on the issue by a stable `<!-- pds:diary -->` marker. If found, edits in place; otherwise posts a new comment (single canonical comment per issue).
+- On `gh` failure, writes the assembled document to `$TMPDIR/pds-diary-<issue>-<ts>.md` and surfaces the path. Never silently swallows.
+
+If `$ISSUE` is empty (user chose `skip`), skip this step and report it plainly.
+
 ## Cleanup
 
 After the branch is merged:
