@@ -1,10 +1,14 @@
 # Secret Scanner Evaluation: sentinel-ai vs detect-secrets
 
+> **Status (2026-04-20):** Evaluation drafted against a prior state where gitleaks was auto-installed by `install.sh`. As of 4.17.1 PDS no longer installs gitleaks and runtime scrubbing is regex-only (`hooks/scripts/secret-scrub.sh`, `hooks/scripts/mcp-secret-scrub.sh` — zero gitleaks references). The "fall through to gitleaks" fallback discussed below is historical. Revisit this document before any fresh scanner integration work.
+
 ## Problem Statement
 
-PDS uses a PostToolUse hook for secret scrubbing (gitleaks + regex redaction). This evaluation examines two additional tools — **sentinel-ai** and **detect-secrets** — to determine whether either should replace or complement the existing approach for hook-based secret detection in Claude Code workflows.
+PDS uses PostToolUse hooks for secret scrubbing (pure regex redaction, no external scanner binary). This evaluation examines two tools — **sentinel-ai** and **detect-secrets** — to determine whether either should replace or complement the regex approach for hook-based secret detection in Claude Code workflows. Adopting either would re-introduce a runtime dependency PDS currently does not require; that cost must be weighed against the detection upgrade.
 
 **Key constraint:** PDS's security philosophy is *scrub, don't block* — secrets should be redacted from output, not used to block commands. Any tool evaluated here must fit that model or be used in a way that does.
+
+**Second constraint (added 4.17.1):** PDS's portability contract forbids `install.sh` from installing language toolchains or runtime binaries on the user's behalf. Any adopted scanner must be (a) pure Python using only stdlib + already-required packages, (b) bundled via MCP, or (c) strictly opt-in via user-installed prerequisites.
 
 ---
 
@@ -194,8 +198,9 @@ if __name__ == "__main__":
 1. **Verify sentinel-ai PyPI package** — confirm `sentinel_guardrails.scanners.secrets_scanner` is importable standalone
 2. **Benchmark hook latency** — measure wall-clock time for the hook on realistic Bash tool output
 3. **Test false positive rate** — run against PDS's own source tree; tune if needed
-4. **Wire into PostToolUse** — add to `.claude/settings.json` alongside existing gitleaks hook
-5. **Fallback strategy** — if sentinel-ai is unavailable (import error), fall through to gitleaks
+4. **Wire into PostToolUse** — add to `.claude/settings.json` alongside the existing regex scrubber (`hooks/scripts/secret-scrub.sh`, `hooks/scripts/mcp-secret-scrub.sh`)
+5. **Fallback strategy** — if sentinel-ai is unavailable (import error), fall through to the regex scrubber (the regex path is now the canonical baseline — as of 4.17.1, there is no gitleaks path to fall through to)
+6. **Portability check** — reconcile with the 4.17.1 contract: PDS does not install scanner binaries via `install.sh`. A pip-installed Python package may still fit if the user opts in; a Go-installed binary does not.
 
 ---
 
