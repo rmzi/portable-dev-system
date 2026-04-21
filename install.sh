@@ -684,8 +684,20 @@ run_tests() {
   assert_dir  "hooks"              "$SRC_DIR/hooks"
   assert_file "settings.json"      "$SRC_DIR/settings.json"
 
-  # Portability contract: no compiled artifacts or Rust toolchain in PDS.
-  assert_not_dir "crates" "$SRC_DIR/crates"
+  # Portability contract: PDS ships only markdown, bash, python3, and jq.
+  # No compiled artifacts, no language toolchains (Rust, Go, Node),
+  # no language-specific build manifests at repo root.
+  # See docs/philosophy.md § Portability Contract.
+  assert_not_dir  "no crates/ (Rust)"         "$SRC_DIR/crates"
+  assert_no_file  "no root Cargo.toml"        "$SRC_DIR/Cargo.toml"
+  assert_no_file  "no root Cargo.lock"        "$SRC_DIR/Cargo.lock"
+  assert_no_file  "no root go.mod"            "$SRC_DIR/go.mod"
+  assert_no_file  "no root go.sum"            "$SRC_DIR/go.sum"
+  assert_no_file  "no root package.json"      "$SRC_DIR/package.json"
+  assert_no_file  "no root pyproject.toml"    "$SRC_DIR/pyproject.toml"
+  assert_not_dir  "no node_modules/"          "$SRC_DIR/node_modules"
+  assert_not_dir  "no target/ (Rust build)"   "$SRC_DIR/target"
+  assert_not_dir  "no dist/ (JS build)"       "$SRC_DIR/dist"
 
   # Count agents (at least 1)
   agent_count=$(ls "$SRC_DIR/agents/"*.md 2>/dev/null | wc -l | tr -d ' ')
