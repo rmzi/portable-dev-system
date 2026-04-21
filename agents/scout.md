@@ -36,13 +36,13 @@ Analyze `.claude/` artifacts — skills, agents, settings — to identify opport
 
 ## Constraints
 
-- **Write limited to `.claude/swarm/scout-report.md`, `.claude/instincts.md`, and `.claude/eval-results.md`.** No other file writes.
+- **Write limited to `.claude/swarm/scout-report.md`, `.claude/instincts.md`, `.claude/eval-results.md`, and `.claude/shepherd-journal.md`.** No other file writes.
 - **Scoped to PDS artifacts.** Only `.claude/`, `CLAUDE.md`, and related config.
 - **Suggestions only.** Report for human review.
 
 ## Sandbox Constraints
 
-acceptEdits mode + sandbox = writes confined to CWD. Only write to `.claude/swarm/scout-report.md` (report), `.claude/instincts.md` (instinct updates), and `.claude/eval-results.md` (eval results).
+acceptEdits mode + sandbox = writes confined to CWD. Only write to `.claude/swarm/scout-report.md` (report), `.claude/instincts.md` (instinct updates), `.claude/eval-results.md` (eval results), and `.claude/shepherd-journal.md` (Phase 6 compaction).
 
 ## Claude-Mem Integration
 
@@ -64,10 +64,26 @@ If claude-mem tools are unavailable, proceed without them — all other analysis
 7. Analyze telemetry. If `.claude/telemetry.jsonl` exists, run `scripts/detect-patterns.sh` (or `$CLAUDE_PLUGIN_ROOT/scripts/detect-patterns.sh`) and incorporate detected patterns into instinct evaluation. If telemetry file is absent, skip this step.
 7a. Include detect-patterns.sh output in the report under `### Telemetry-Detected Patterns` and summarize usage stats under `### Usage`.
 7b. **Efficiency analysis.** If `.claude/telemetry.jsonl` exists, run `scripts/efficiency-chart.sh` (or `$CLAUDE_PLUGIN_ROOT/scripts/efficiency-chart.sh`). Include the efficiency ratio, per-agent chart, and top waste points in the report under `### Efficiency`. If ratio < 0.5, flag the top waste category for investigation.
+7c. **Journal compaction.** If `.claude/shepherd-journal.md` exists, review it and compact (see Journal Compaction below). Identify any patterns with 3+ observations for promotion to `.claude/instincts.md`.
 8. Update instincts. For patterns re-observed: bump `Times seen`, adjust `Confidence`. For new patterns: propose new instinct entries.
 9. Flag promotions. If any instinct reaches `high` confidence (3+ validations), draft a skill file for human review.
 10. Run evals. For skills exercised in this swarm, read their `EVAL.md` and grade observed agent behavior against the rubric. Record results in `.claude/eval-results.md`.
 11. Produce report. Write report to `.claude/swarm/scout-report.md`.
+
+## Journal Compaction (Phase 6, step 7c)
+
+If `.claude/shepherd-journal.md` exists, compact it to keep growth bounded.
+
+**Read-write contract**:
+
+- Preserve the journal header (line 1 and the initialization line) unchanged.
+- **Keep the 3 most recent `## Swarm` sections verbatim.** Do not edit them.
+- **Condense older swarm sections into a `## Historical Digest` section.** Each older swarm contributes a bullet summary: swarm id, date, tier, task count, status, 1-2 sentences on the most significant decision and any lasting observation. Drop the verbose decisions/observations/violations subsections for these older entries.
+- **Promote patterns seen 3+ times across the journal.** If the same principle was overridden or the same observation was recorded in 3+ distinct swarm sections (including the historical digest count), draft a new entry for `.claude/instincts.md` and reference it in the scout report under `### Instincts -> New`.
+- **Idempotent.** Running compaction twice on the same journal must produce the same output (newly added swarms can shift the 3-recent window, but no destructive dedupe artifacts should accumulate).
+- **Record compaction.** Append a single line `<compacted YYYY-MM-DDTHH:MM:SSZ by scout: kept-recent=N, digested=M, promoted=K>` to the end of the `## Historical Digest` section.
+
+Compaction runs only during Phase 6. Do not compact mid-swarm. If the journal is absent or unreadable, skip silently and note "shepherd-journal.md not found, skipping compaction" in the scout report.
 
 ## Output Format
 
@@ -100,6 +116,11 @@ If claude-mem tools are unavailable, proceed without them — all other analysis
 - **Recommendation**: [action to reduce top waste]
 ### Telemetry-Detected Patterns
 - **[Pattern]**: [type] — [evidence summary]
+### Journal Compaction
+- **Swarms retained verbatim**: N (most recent)
+- **Swarms digested**: M
+- **Patterns promoted to instincts**: K ([brief list])
+- **Notes**: [anything worth human attention]
 ### Observations
 - [Patterns or insights worth noting]
 ```

@@ -35,6 +35,7 @@ Scripts encode knowledge. CI runs what developers run. Automate the repeated.
 2. What's the simplest thing that could work?
 3. What would I do if I had to delete this in a month?
 4. Am I building for today or for imaginary tomorrow?
+5. Which principle is in tension here? (Ask the shepherd — it cites sources.)
 
 ## MECE — Structure for Clarity
 

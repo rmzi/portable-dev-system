@@ -48,10 +48,11 @@ Three tiers control model selection and specialist inclusion. The tier is set du
 | **documenter** | _(skip)_ | sonnet | sonnet |
 | **scout** | haiku | haiku | sonnet |
 | **auditor** | _(skip)_ | _(skip)_ | sonnet |
+| **shepherd** | _(skip)_ | opus | opus |
 
-- **Lite**: Daily driver. Crosses 2 modules, follows existing patterns. Haiku workers, sonnet orchestrator. 1-2 workers. Orchestrator self-researches and self-reviews. Cheapest effective configuration.
-- **Med**: Serious work. Crosses 2-3 boundaries, some design decisions. Current defaults — no model overrides needed. 2-3 workers. Full specialist roster as needed.
-- **Heavy**: Maximum capability. 3+ boundaries, new interfaces, or core abstraction refactors. Opus for reasoning-heavy roles. 3-4 workers. Full specialist roster including auditor.
+- **Lite**: Daily driver. Crosses 2 modules, follows existing patterns. Haiku workers, sonnet orchestrator. 1-2 workers. Orchestrator self-researches and self-reviews. **No shepherd** — workers invoke `advisor_consult` directly for substance questions. Cheapest effective configuration.
+- **Med**: Serious work. Crosses 2-3 boundaries, some design decisions. Current defaults — no model overrides needed. 2-3 workers. Full specialist roster as needed. **Shepherd spawned** after Phase 1 grill to walk the ticket alongside workers.
+- **Heavy**: Maximum capability. 3+ boundaries, new interfaces, or core abstraction refactors. Opus for reasoning-heavy roles. 3-4 workers. Full specialist roster including auditor. **Shepherd spawned** after Phase 1 grill.
 
 ### Tier Override
 
@@ -89,7 +90,17 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
 
 2. Write the tier to state: `echo "<tier>" > .claude/swarm/tier`
 3. Synthesize grill output + researcher findings into acceptance criteria (see Phase 2 for format).
-4. **If spawned as Phase 1 only** (plan prompt): Return the plan + criteria + tier. The parent handles human approval and spawns a Phase 2+ orchestrator.
+4. **Spawn shepherd (med/heavy only, after grill).** After the grill completes and you know the tier is med or heavy, spawn the shepherd agent to walk the ticket alongside workers through Phases 2-6:
+   ```
+   Task(shepherd, team_name=team_name, name="shepherd",
+        model="opus",
+        prompt="Walk this ticket. Reference corpus: docs/whitepaper.md, docs/philosophy.md, docs/ethos.md, CLAUDE.md, skills/swarm/SKILL.md, .claude/shepherd-journal.md. Tier: <tier>. Plan context: see .claude/swarm/context.md once Phase 2 writes it. Respond to substance questions via SendMessage. Flag observed drift proactively. Write to journal continuously and on teardown.")
+   ```
+   **Do NOT spawn shepherd at lite tier** — keeps lite cheap. Workers at lite tier invoke `advisor_consult` directly for substance questions.
+
+   The shepherd reads its reference corpus on spawn, notes its arrival to the orchestrator via SendMessage, and enters steady state. It is single-instance per swarm — if one is already active, skip this step.
+
+5. **If spawned as Phase 1 only** (plan prompt): Return the plan + criteria + tier. The parent handles human approval and spawns a Phase 2+ orchestrator.
    **If spawned with pre-approval** (full execution prompt): Proceed directly to Phase 2.
 
 ## Phase 2: Decompose
@@ -115,7 +126,7 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
    - **Key decisions** — architectural choices made during planning, with rationale
    - **Contracts** — interface boundaries between zones (if any)
 
-   This file bridges the context gap — workers read it on init to recover the orchestrator's reasoning without requiring fork-level context inheritance. Keep it concise (under 200 lines) and factual.
+   This file bridges the context gap — workers read it on init to recover the orchestrator's reasoning without requiring fork-level context inheritance. Keep it concise (under 200 lines) and factual. The shepherd (if spawned) also reads this file to pick up the current swarm's plan.
 
 ## Phase 3: Dispatch
 
@@ -147,6 +158,8 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
    - Read task via `TaskGet` for requirements and acceptance criteria
    - Implement, commit frequently
    - Use `SendMessage` for cross-agent coordination or to report blockers
+   - For **substance questions** (design, trade-offs, principle-checks), SendMessage the **shepherd** (med/heavy) or invoke `advisor_consult` (lite or shepherd down)
+   - For **graph questions** (dispatch, dependencies, phase state), SendMessage the **orchestrator**
    - Run `/pds:verify` before declaring done
    - Mark task completed: `TaskUpdate(taskId="1", status="completed")`
    - Check `TaskList` and **self-claim** next unblocked task (prefer lowest ID)
@@ -156,6 +169,7 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
    - If the agent has an unblocked task and is idle, send a `SendMessage` to re-activate
    - **Health timeout**: default is 2x the task's estimated turns. On first timeout, send a warning via `SendMessage`. On second timeout, use `TaskStop` and reassign the task
    - If 3+ workers are idle simultaneously with blocked tasks, the bottleneck task may need decomposition or priority escalation
+6. **Shepherd is idle-resilient.** The shepherd spawned in Phase 1 continues to respond to SendMessage during Phase 3 and later. If the shepherd goes idle with no traffic, that's normal — proactive flagging is evidence-based, not scheduled. The shepherd will log observations as they accrue.
 
 **Hook note:** PDS hooks log `WorktreeCreate` and `WorktreeRemove` events as workers start and finish. These appear in the audit log for lifecycle traceability.
 
@@ -280,7 +294,7 @@ Landing approved PRs on the main branch:
    ```
    Task(scout, team_name="project-name", name="scout",
         model="<tier-model>",
-        prompt="Read .claude/instincts.md. Update counts for re-observed patterns. Propose new instincts. Flag high-confidence patterns for skill promotion. Run /pds:eval on skills exercised in this swarm. Distill key learnings: write 1-2 auto-memory entries (project or feedback type) capturing decisions that future sessions need, patterns worth remembering, and constraints discovered — skip anything derivable from code or git history. If telemetry exists, run scripts/detect-patterns.sh and scripts/efficiency-chart.sh — include pattern results and efficiency ratio in the report. Permission audit: read .claude/settings.local.json and .claude/settings.json — identify glob-style allow patterns in local that should be promoted to project-level settings (exclude one-off paths). Write a '### Permission Promotions' section in the report. Write report to .claude/swarm/scout-report.md. Send summary via SendMessage when done.")
+        prompt="Read .claude/instincts.md. Update counts for re-observed patterns. Propose new instincts. Flag high-confidence patterns for skill promotion. Run /pds:eval on skills exercised in this swarm. Compact .claude/shepherd-journal.md (keep 3 most recent swarms verbatim, digest older into Historical Digest, promote 3+-observation patterns to instincts). Distill key learnings: write 1-2 auto-memory entries (project or feedback type) capturing decisions that future sessions need, patterns worth remembering, and constraints discovered — skip anything derivable from code or git history. If telemetry exists, run scripts/detect-patterns.sh and scripts/efficiency-chart.sh — include pattern results and efficiency ratio in the report. Permission audit: read .claude/settings.local.json and .claude/settings.json — identify glob-style allow patterns in local that should be promoted to project-level settings (exclude one-off paths). Write a '### Permission Promotions' section in the report. Write report to .claude/swarm/scout-report.md. Send summary via SendMessage when done.")
    ```
    Tier models — lite: `model="haiku"` (default). Med: omit (haiku default). Heavy: `model="sonnet"`.
 2. **Heavy tier only**: Spawn auditor for tech debt scan:
@@ -289,7 +303,7 @@ Landing approved PRs on the main branch:
         prompt="Scan the codebase for tech debt, missing tests, and inconsistencies. File findings as GitHub issues. Send summary via SendMessage when done.")
    ```
 3. Scout writes report to `.claude/swarm/scout-report.md` **(required — TeamDelete gate checks for this file)**
-4. Scout updates observation counts, proposes new patterns, flags promotions (human-gated — new skill = new file = PR review). Scout also runs skill evals per `/pds:eval`.
+4. Scout updates observation counts, proposes new patterns, flags promotions (human-gated — new skill = new file = PR review). Scout also runs skill evals per `/pds:eval` and compacts `.claude/shepherd-journal.md`.
 5. **Memory distillation**: Before writing scout-report.md, scout distills key learnings into **1-2 auto-memory entries** (project or feedback type). Focus on:
    - Decisions that future sessions need (WHY option A was chosen over B)
    - Patterns worth remembering (recurring constraints, architectural boundaries)
@@ -297,20 +311,25 @@ Landing approved PRs on the main branch:
    - Skip anything derivable from code, git history, or existing CLAUDE.md
 6. **Telemetry analysis**: If `.claude/telemetry.jsonl` exists, scout runs `scripts/detect-patterns.sh` to detect usage patterns and proposes instinct entries for recurring patterns. Results appear in `### Telemetry-Detected Patterns` section of the scout report.
 7. **Permission audit**: Scout reads `.claude/settings.local.json` and `.claude/settings.json`. Identifies recurring allow patterns in local (e.g., `Bash(git add:*)`, `Bash(gh pr:*)`) that aren't already in project-level settings. Recommends promotions in a `### Permission Promotions` section of the scout report. One-off commands (specific file paths, session artifacts) are excluded. Only glob-style patterns (`Bash(git *:*)`, `Bash(gh *:*)`, tool names) qualify for promotion.
-8. **Shutdown all agents** after scout and auditor complete:
+8. **Shepherd teardown.** If a shepherd was spawned (med/heavy), send shutdown after scout completes and before `TeamDelete`:
+   ```
+   SendMessage(type="shutdown_request", recipient="shepherd", content="Swarm complete, shutting down.")
+   ```
+   The shepherd marks its current swarm section `**Status**: graceful` in the journal and responds with `shutdown_response`. The `SubagentStop` hook (`hooks/scripts/shepherd-finalize.sh`) also fires on abort paths, so the journal is finalized even if shutdown is interrupted.
+9. **Shutdown all remaining agents** after scout, auditor, and shepherd complete:
    ```
    SendMessage(type="shutdown_request", recipient="worker-auth", content="Work complete, shutting down.")
    SendMessage(type="shutdown_request", recipient="validator", content="Work complete, shutting down.")
    # ... for each active agent
    ```
    Wait for `shutdown_response` from each agent before proceeding.
-9. Clean up: `TeamDelete`
-   **Note:** The teardown gate blocks `TeamDelete` unless phase is `knowledge` AND all 3 reports exist. TeamDelete also **fails if agents are still active** — always shut down first.
-10. **Cleanup sub-phase.** After TeamDelete:
-   - **Worktree deletion**: For each `.worktrees/` directory created during the swarm, run `git worktree remove <path>` (call `ExitWorktree` if the orchestrator is inside a worktree)
-   - **Artifact archival**: Copy `.claude/swarm/*.md` to `docs/swarm-reports/<YYYY-MM-DD-HHmm>/`
-   - **State validation**: Verify all tasks have status `completed` and all branches are merged
-   - **Branch cleanup**: Delete merged feature branches: `git branch -d <branch>`
+10. Clean up: `TeamDelete`
+    **Note:** The teardown gate blocks `TeamDelete` unless phase is `knowledge` AND all 3 reports exist. TeamDelete also **fails if agents are still active** — always shut down first.
+11. **Cleanup sub-phase.** After TeamDelete:
+    - **Worktree deletion**: For each `.worktrees/` directory created during the swarm, run `git worktree remove <path>` (call `ExitWorktree` if the orchestrator is inside a worktree)
+    - **Artifact archival**: Copy `.claude/swarm/*.md` to `docs/swarm-reports/<YYYY-MM-DD-HHmm>/`
+    - **State validation**: Verify all tasks have status `completed` and all branches are merged
+    - **Branch cleanup**: Delete merged feature branches: `git branch -d <branch>`
 
 ## Phase Gates
 
@@ -321,28 +340,31 @@ Mechanical enforcement of phase transitions via PreToolUse hooks on the orchestr
 | PR gate | `orchestrator-pr-gate.sh` | `gh pr create` in Bash | Phase >= `consolidate` + `validation-report.md` + `review-report.md` exist |
 | Teardown gate | `orchestrator-teardown-gate.sh` | `TeamDelete` | Phase = `knowledge` + all 3 reports exist |
 | Validator stop | Prompt hook in validator.md | Validator Stop | Structured report written to `.claude/swarm/validation-report.md` |
+| Shepherd finalize | `shepherd-finalize.sh` (SubagentStop) | Shepherd subagent stops (graceful or abort) | Always runs — finalizes journal; never blocks |
 
 All gates are no-ops when `.claude/swarm/` doesn't exist (non-swarm tasks pass through). Phase checks are defense-in-depth — if the phase file is absent, gates fall through to artifact-only checks.
 
 ### Swarm Artifacts
 
-All phase artifacts are written to `.claude/swarm/`:
+All phase artifacts are written to `.claude/swarm/` (ephemeral, archived to `docs/swarm-reports/` in cleanup):
 
 | File | Phase | Producer | Required By |
 |------|-------|----------|-------------|
 | `phase` | all | orchestrator | PR gate, teardown gate |
 | `tier` | 1 | orchestrator | Dispatch (model selection) |
 | `plan.md` | 2 | orchestrator | — |
-| `context.md` | 2 | orchestrator | Worker init |
+| `context.md` | 2 | orchestrator | Worker init, shepherd |
 | `contracts.md` | 2 | orchestrator | — |
 | `checkpoint.json` | all | orchestrator | Restart recovery |
 | `validation-report.md` | 4 | validator | PR gate, teardown gate |
 | `review-report.md` | 5 | reviewer (or orchestrator at lite tier) | PR gate, teardown gate |
 | `scout-report.md` | 6 | scout | Teardown gate |
 
+The shepherd's journal lives at `.claude/shepherd-journal.md` (project-level, not under `.claude/swarm/`). It persists across swarms and is gitignored by default. Scout compacts it in Phase 6.
+
 ## See Also
 
 - `/pds:grill` — Requirement interrogation (Phase 1)
 - `/pds:verify` — Completion self-check (Phase 4 worker exit)
 - `/pds:finish` — Branch completion protocol (Phase 5)
-- `/pds:team` — Agent roster, coordination tools, and protocols
+- `/pds:team` — Agent roster, coordination tools, and protocols (including graph-vs-substance routing)

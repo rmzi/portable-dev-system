@@ -16,6 +16,28 @@ Behavioral rules that apply to all PDS agents. Individual agent definitions inhe
 - **Plain text is invisible to teammates.** Always use `SendMessage` to communicate with other agents. Direct output is only visible to the user.
 - **Report blockers immediately.** Commit current progress, update task status, send details to the orchestrator via `SendMessage`.
 
+## Substantive Consultation
+
+Two kinds of questions come up during swarm work. Route by kind:
+
+| Kind | Examples | Route to |
+|------|----------|----------|
+| **Graph** | "Which task comes next?" "Who's blocked on what?" "Has Phase 4 started?" "Who owns task #7?" | **orchestrator** |
+| **Substance** | "Should this module own retry logic?" "Is squashing these commits before PR the right call?" "Which layering convention applies?" "Does the whitepaper mandate X?" | **shepherd** |
+
+Use `SendMessage` for both. The shepherd is spawned in med/heavy tiers only (after Phase 1 grill) — if it's active for your swarm, consult it for substance questions. It answers with citations to `docs/whitepaper.md`, `docs/philosophy.md`, or `docs/ethos.md` and presents trade-offs rather than verdicts.
+
+### When the shepherd is unavailable
+
+- **Lite tier**: no shepherd is spawned. For substance questions, invoke `mcp__pds-advisor__advisor_consult` directly if your agent has it in its tools allowlist. Use this prompt template:
+  ```
+  You are playing the Shepherd role for PDS. Advise on: {question}. Cite specific whitepaper/philosophy/ethos sections. Advisory only — do not tell me what to do, tell me trade-offs and which principle applies. Under 200 words.
+  ```
+- **Shepherd idle or timed out**: same fallback — invoke `advisor_consult` with the template above. Note the degradation in your next status update.
+- **Both shepherd and advisor degraded**: make your best call, cite your reasoning, and flag the missing consultation in your SendMessage to the orchestrator so the human sees it.
+
+The shepherd's authority is advisory-only — even when it responds, you still own the decision. Its value is citation and trade-off analysis, not enforcement.
+
 ## Health Reporting
 
 Workers must report progress periodically so the orchestrator can detect stalls:

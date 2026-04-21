@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.20.0] - 2026-04-21
+
+### Added
+- **Shepherd agent (`agents/shepherd.md`) — persistent cross-swarm substantive advisor.** New first-class role in the agentic SDLC. Spawned once per med/heavy swarm after Phase 1 grill completes; walks the ticket alongside workers through Phases 2-6. Distinct from the orchestrator: orchestrator owns **graph** (dispatch, dependencies, phase state), shepherd owns **substance** (design, trade-offs, principle-checks, whitepaper enforcement). Opus model. Advisory-only — never blocks work. Four capabilities: reactive consult (with citation), running journal (`.claude/shepherd-journal.md`), proactive drift flagging, loop-break after 3 consults on the same unresolved question. Conflict handling: defers to user on user-vs-whitepaper conflicts; after 3 overrides of the same principle across swarms, files a GitHub issue proposing whitepaper review (living-whitepaper feedback loop). Addresses issue #134 and the capacity-waste dimension of issue #111 — shepherd absorbs orchestrator idle time identified in instinct #2.
+
+- **`pds-advisor` MCP server (`mcp/advisor/`).** Bundled MCP server wraps the Anthropic `advisor_20260301` beta tool and exposes a single `advisor_consult` tool. Three-level graceful fallback: (1) no `ANTHROPIC_API_KEY` -> structured degraded response, (2) beta 4xx/5xx/timeout -> retry as plain opus `/v1/messages` without the beta header, (3) 401/403 auth -> surface immediately (no retry). Never throws — every error path returns `{ advice, degraded, reason }`. Registered in `.claude-plugin/plugin.json` as `mcpServers.pds-advisor`. TypeScript source at `mcp/advisor/src/server.ts`; requires one-time `npm install && npm run build` in that directory to produce `dist/server.js`. See `mcp/advisor/README.md`.
+
+- **Shepherd journal protocol.** Project-level `.claude/shepherd-journal.md` accumulates across swarms: decisions made, observations, violations caught + outcomes, user preferences, and cross-swarm technical context. Free-form markdown with per-swarm `## Swarm <id>` sections. Shepherd creates the journal with header on first spawn if absent. Gitignored by default (privacy); users can commit explicitly. Scout compacts in Phase 6 via a keep-recent + historical-digest scheme — patterns seen 3+ times get promoted to `.claude/instincts.md` (the living-instincts feedback loop).
+
+- **`SubagentStop` hook for shepherd journal finalization (`hooks/scripts/shepherd-finalize.sh`).** Idempotent bash script scoped to the `shepherd` subagent via matcher. Finalizes the journal on both graceful exit and abort paths (captures failure-mode data on abort — high-signal pattern learning). Never blocks termination (always exits 0). Safe to retry. Registered in `hooks/hooks.json` under `SubagentStop` with matcher `shepherd`.
+
+- **Worker `advisor_consult` fallback.** `agents/worker.md` adds `mcp__pds-advisor__advisor_consult` to its tools allowlist with a shepherd-style prompt template. Workers route substance questions to the shepherd primarily; when shepherd is unavailable (lite tier — no shepherd — or the shepherd is down), workers invoke `advisor_consult` directly as a fallback with the shepherd-style prompt shape.
+
+### Changed
+- **`skills/swarm/SKILL.md` — shepherd spawn in Phase 1, presence through Phase 3.** Phase 1 step 4 spawns the shepherd after grill completes when tier is med or heavy (never lite — keeps lite cheap). Phase 3 (Dispatch) adds a "shepherd is idle-resilient" note — proactive flagging is evidence-based, not scheduled, so an idle shepherd is normal. Worker pull-model updated: substance questions go to shepherd, graph questions go to orchestrator.
+
+- **`skills/team/SKILL.md` — shepherd added to the roster** with the graph-vs-substance routing rule.
+
+- **`agents/shared-rules.md` — shepherd consultation protocol.** Documents how any agent consults the shepherd via `SendMessage` for substance questions.
+
+- **`agents/scout.md` — journal review, compaction, and instinct promotion capability.** Scout now reads `.claude/shepherd-journal.md` in Phase 6, compacts older swarms into a historical digest while preserving the 3 most recent swarms verbatim, and promotes 3+-observation patterns to `.claude/instincts.md`. Write scope extended to include the journal.
+
+- **`docs/whitepaper.md` — shepherd subsection.** Shepherd named as a first-class role; ~20-line paragraph explains shepherd-absorbs-orchestrator-idle-capacity, citing instinct #2 and the transport-waste observation from `docs/claude-code-source-analysis.md`.
+
+- **`docs/philosophy.md` — shepherd principle.** The substance-vs-graph separation added as a development principle.
+
+- **`docs/ethos.md`, `CLAUDE.md`** — shepherd referenced in the agent roster.
+
+- **`.gitignore`** — `/.claude/shepherd-journal.md` ignored by default (privacy).
+
+### Notes
+- **Prior-art linkage**: Issue #111 (orchestrator capacity waste + stalling + opacity) seeded `docs/orchestrator-redesign-research.md`, which proposed Option A (spawned orchestrator) and Option B (heartbeat). Shepherd is a third, orthogonal solution — it keeps the orchestrator topology intact and adds a persistent opus companion. Shepherd's existence means Option A can be **explicitly deferred**. #111's remaining recommendations (heartbeat, DAG visualization, TeammateIdle re-engagement) address stalling and opacity, not capacity, and remain separate work.
+- **Bootstrapping note**: This release was built by a HEAVY swarm under the old orchestrator topology (no shepherd was available during the build — the feature was being created). Future med/heavy swarms will have shepherd presence by default.
+- **MCP build prerequisite**: The advisor MCP server requires `npm install && npm run build` inside `mcp/advisor/` once before Claude Code can spawn it. Without the build, the plugin entry exists but fails to launch; the shepherd degrades to its native opus reasoning with no `advisor_consult` tool. This is an accepted v1 trade-off — making the MCP server portable (pure-bash or python) is a follow-up candidate.
+
 ## [4.19.0] - 2026-04-21
 
 ### Added
