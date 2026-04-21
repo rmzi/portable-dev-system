@@ -1,0 +1,27 @@
+{
+  "name": "@pds/advisor-mcp",
+  "version": "0.1.0",
+  "description": "PDS advisor MCP server — wraps the Anthropic advisor_20260301 beta tool with graceful fallback to plain opus.",
+  "private": true,
+  "type": "module",
+  "main": "dist/server.js",
+  "bin": {
+    "pds-advisor": "dist/server.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build",
+    "start": "node dist/server.js",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
