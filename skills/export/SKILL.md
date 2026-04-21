@@ -5,6 +5,8 @@ description: Export a Claude Code session to human-readable markdown. Use when t
 
 Export Claude Code session JSONL files to human-readable markdown.
 
+> Output also feeds the dev-diary pipeline in `/pds:finish` — `scripts/assemble-diary.sh` calls `export-session.sh` to produce the raw transcript block that lives inside the diary comment's `<details>` wrapper.
+
 ## Usage
 
 Run the export script:
