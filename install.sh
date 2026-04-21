@@ -46,32 +46,6 @@ check_python3() {
   fi
 }
 
-check_gitleaks() {
-  if command -v gitleaks >/dev/null 2>&1; then
-    return
-  fi
-  info "gitleaks not found — attempting install (recommended for secret scanning)..."
-  case "$(uname)" in
-    Darwin)
-      if command -v brew >/dev/null 2>&1; then
-        brew install gitleaks && ok "gitleaks installed" || warn "gitleaks install failed. Install manually: brew install gitleaks"
-      else
-        warn "gitleaks not found and brew unavailable. Install: brew install gitleaks or https://github.com/gitleaks/gitleaks/releases"
-      fi
-      ;;
-    Linux)
-      if command -v go >/dev/null 2>&1; then
-        go install github.com/gitleaks/gitleaks/v8@latest && ok "gitleaks installed" || warn "gitleaks install failed. Install manually: https://github.com/gitleaks/gitleaks/releases"
-      else
-        warn "gitleaks not found. Install via Go or download from: https://github.com/gitleaks/gitleaks/releases"
-      fi
-      ;;
-    *)
-      warn "gitleaks not found. Install from: https://github.com/gitleaks/gitleaks/releases"
-      ;;
-  esac
-}
-
 check_age() {
   if command -v age >/dev/null 2>&1; then
     return
@@ -372,7 +346,6 @@ install_plugin() {
 
   check_jq
   check_python3
-  check_gitleaks
   check_age
 
   mkdir -p "$PLUGIN_TARGET"
