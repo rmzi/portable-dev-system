@@ -446,10 +446,16 @@ install_plugin_dir() {
   SRC_DIR="$PLUGIN_DIR"
   install_security_settings "$HOME/.claude/settings.json"
 
+  # CLI: build from linked source so dev edits rebuild correctly.
+  SRC_DIR="$(cd "$PLUGIN_DIR" && pwd)"
+  install_cli
+  run_pds_sync
+
   echo ""
   ok "PDS dev plugin linked!"
   echo "    Plugin: $PLUGIN_TARGET → $(cd "$PLUGIN_DIR" && pwd)"
   echo "    Changes to the source dir are immediately active."
+  echo "    CLI: $(command -v pds 2>/dev/null || echo 'not installed — install Rust + re-run')"
 }
 
 install_project() {
@@ -1003,9 +1009,50 @@ if [ ! -d "$SRC_DIR" ]; then
   exit 1
 fi
 
+install_cli() {
+  # Build and install the pds-cli Rust binary. Source lives at <plugin_root>/cli/.
+  # Users get a `pds` command on PATH (via cargo's default ~/.cargo/bin location).
+  if ! command -v cargo >/dev/null 2>&1; then
+    warn "cargo not found — skipping pds CLI install. Hooks will use env-var fallbacks."
+    warn "  Install Rust: https://rustup.rs   Then re-run install.sh --force."
+    return 0
+  fi
+  if [ ! -d "$SRC_DIR/cli" ]; then
+    warn "cli/ not found in source — older PDS release? Skipping CLI install."
+    return 0
+  fi
+  info "Building pds CLI..."
+  if cargo install --quiet --path "$SRC_DIR/cli" --locked 2>/dev/null; then
+    ok "Installed pds CLI to $HOME/.cargo/bin/pds"
+  else
+    warn "cargo install failed — hooks will fall back to env-var defaults."
+  fi
+}
+
+run_pds_sync() {
+  # Fan user config out to Claude Code settings if a config exists.
+  if ! command -v pds >/dev/null 2>&1; then
+    return 0
+  fi
+  CFG="${XDG_CONFIG_HOME:-$HOME/.config}/pds/config.yaml"
+  if [ ! -f "$CFG" ]; then
+    info "No pds.config.yaml at $CFG — skipping sync (PDS will use defaults)."
+    info "  See $SRC_DIR/examples/config.yaml to get started."
+    return 0
+  fi
+  info "Running pds sync..."
+  if pds sync --yes; then
+    ok "pds sync applied"
+  else
+    warn "pds sync failed — inspect with: pds sync --dry-run"
+  fi
+}
+
 # --- Dispatch ---
 if [ "$MODE" = "project" ]; then
   install_project
 else
   install_plugin
+  install_cli
+  run_pds_sync
 fi

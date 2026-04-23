@@ -1,0 +1,33 @@
+[package]
+name = "pds-cli"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.82"
+description = "PDS user-preference sync CLI — reads pds.config.yaml, fans it out to Claude Code settings."
+license = "MIT"
+repository = "https://github.com/rmzi/portable-dev-system"
+
+[[bin]]
+name = "pds"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4.5", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+serde_yaml = "0.9"
+similar = "2.6"
+sha2 = "0.10"
+anyhow = "1"
+thiserror = "2"
+dirs = "5"
+# preserve_order for JSON keeps diffs stable on round-trip through unknown fields.
+indexmap = { version = "2", features = ["serde"] }
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true

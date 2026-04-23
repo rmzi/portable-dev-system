@@ -1,0 +1,82 @@
+# Example pds.config.yaml.
+#
+# Copy to ${XDG_CONFIG_HOME:-~/.config}/pds/config.yaml and edit. Every
+# section is optional — missing keys fall back to PDS defaults (baked into
+# the CLI schema). Run `pds sync --dry-run` to preview, then `pds sync`.
+
+version: 1
+
+# --- Permissions (row 1 in the plan) ---
+permissions:
+  presets: [pds-default, dev-tools]
+  # Per-user additions. Merged on top of the presets above.
+  allow: []
+  ask: []
+  deny: []
+  write_target: user_plus_project_seed   # user_only | user_plus_project_seed
+
+# --- Shepherd (row 4) ---
+shepherd:
+  tiers: [med, heavy]
+
+# --- Knowledge capture (row 6) ---
+# One journal. Session transcripts, telemetry events, and shepherd
+# consultations are entry types inside it — not separately-togglable streams.
+# Lives at ${XDG_DATA_HOME:-~/.local/share}/pds/journal/.
+capture:
+  journal: true
+  retention:
+    local_hot_days: 30
+    s3_standard_days: 30
+  s3:
+    enabled: false                       # set true once terraform has provisioned a bucket
+    bucket: null                         # e.g. pds-abcd1234-us-east-1
+    region: us-east-1
+
+# --- Health (row 7) ---
+health:
+  serious_min: 90
+  very_serious_min: 180
+  idle_reset_min: 15
+  very_serious_action: ack               # ack | reminder | pause
+  sources: [session, rolling]
+
+# --- Hints (row 9) ---
+hints:
+  enabled: true
+  hit_rate_decay: true
+  decay_after_ignores: 3
+
+# --- CLAUDE.md managed section (row 9) ---
+claude_md:
+  manage_section: true                   # only writes to files that already contain <!-- pds:start --> markers
+
+# --- Sticky skills (row 9) ---
+session:
+  sticky_skills: [ethos, voice, lexicon]
+
+# --- Worktree + branch policy (row 10) ---
+worktree:
+  protected_branches: []
+  cleanup:
+    enabled: true
+    age_days: 30
+    mode: prompt                         # prompt | auto_after_ephemera_attached
+
+# --- Input modality (row 12) ---
+input:
+  modality: numpad-friendly              # numpad-friendly | voice | rich
+
+# --- Plugins + MCP (row 13) ---
+plugins:
+  install: [pds]                         # pds sync shells out to `claude plugins install` per entry
+mcp:
+  core: [pds-advisor, claude-mem-search, zaku, haro]
+
+# --- Gitignore (row 14) ---
+gitignore:
+  apply_global: true
+  paths:
+    - .claude/swarm/
+    - .claude/plans/
+    - journal/
