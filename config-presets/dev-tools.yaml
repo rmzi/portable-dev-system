@@ -1,0 +1,95 @@
+# dev-tools preset — common developer tooling permissions.
+#
+# Reference this in addition to pds-default when your daily work involves
+# package managers, build tools, or test runners. Keeps prompts at bay for
+# operations that are nearly always safe in a working codebase.
+
+name: dev-tools
+description: |
+  Developer-workflow permissions: package managers, build tools, test runners,
+  formatters, and typecheckers. Read-only operations are allow; anything that
+  mutates dependency state is ask.
+
+entries:
+  # --- Package managers: ask on install/uninstall, allow on reads ---
+  - pattern: "Bash(npm install:*)"
+    verb: ask
+    scope: user
+    reason: "Dependency changes affect lockfile and can introduce arbitrary code."
+
+  - pattern: "Bash(npm run:*)"
+    verb: allow
+    scope: user
+    reason: "Running scripts from package.json — scoped by project convention."
+
+  - pattern: "Bash(npm test:*)"
+    verb: allow
+    scope: user
+    reason: "Test runs. Zero production impact."
+
+  - pattern: "Bash(pnpm install:*)"
+    verb: ask
+    scope: user
+    reason: "Same rationale as npm install."
+
+  - pattern: "Bash(pnpm run:*)"
+    verb: allow
+    scope: user
+    reason: "Scripts from package.json."
+
+  - pattern: "Bash(cargo build:*)"
+    verb: allow
+    scope: user
+    reason: "Rust builds. Local compilation only."
+
+  - pattern: "Bash(cargo test:*)"
+    verb: allow
+    scope: user
+    reason: "Rust tests."
+
+  - pattern: "Bash(cargo check:*)"
+    verb: allow
+    scope: user
+    reason: "Type-check only."
+
+  - pattern: "Bash(cargo add:*)"
+    verb: ask
+    scope: user
+    reason: "Dependency changes — mutates Cargo.toml."
+
+  - pattern: "Bash(cargo fmt:*)"
+    verb: allow
+    scope: user
+    reason: "Formatter; idempotent."
+
+  - pattern: "Bash(cargo clippy:*)"
+    verb: allow
+    scope: user
+    reason: "Linter; read-only analysis."
+
+  # --- Python tooling ---
+  - pattern: "Bash(pytest:*)"
+    verb: allow
+    scope: user
+    reason: "Test runner. No production impact."
+
+  - pattern: "Bash(ruff:*)"
+    verb: allow
+    scope: user
+    reason: "Linter/formatter; writes only to tracked source."
+
+  - pattern: "Bash(mypy:*)"
+    verb: allow
+    scope: user
+    reason: "Type checker; read-only."
+
+  - pattern: "Bash(pip install:*)"
+    verb: ask
+    scope: user
+    reason: "Installing arbitrary Python packages — confirm intent."
+
+  # --- Make / generic build runners ---
+  - pattern: "Bash(make:*)"
+    verb: allow
+    scope: user
+    reason: "Makefile targets are project-defined and usually safe."

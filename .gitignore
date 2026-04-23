@@ -9,3 +9,14 @@
 stream-c-staging/
 stream-c-test.txt
 .DS_Store
+
+# Rust / CLI build artifacts
+cli/target/
+**/*.rs.bk
+
+# Terraform state (never commit)
+terraform/**/.terraform/
+terraform/**/*.tfstate
+terraform/**/*.tfstate.*
+terraform/**/terraform.tfvars
+terraform/**/.terraform.lock.hcl

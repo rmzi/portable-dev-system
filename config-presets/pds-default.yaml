@@ -1,0 +1,77 @@
+# pds-default preset — baseline permission rules shipped with PDS.
+#
+# Each entry is annotated for auditability. The `reason` field is the reason a
+# future-you will thank present-you for writing: why does this rule exist?
+#
+# Verbs: allow | ask | deny
+# Scopes: user | project | both
+
+name: pds-default
+description: |
+  Baseline rules for PDS users. Covers common read-only developer operations
+  (git status/log, filesystem listings, PDS skill reads) and denies the
+  handful of moves that lose work irrecoverably.
+
+entries:
+  # --- Reads Claude will do constantly; re-prompting is pure friction ---
+  - pattern: "Bash(git status:*)"
+    verb: allow
+    scope: user
+    reason: "Read-only. Asked on every session start — prompt fatigue vs zero risk."
+
+  - pattern: "Bash(git log:*)"
+    verb: allow
+    scope: user
+    reason: "Read-only. Constant need during code review / debugging."
+
+  - pattern: "Bash(git diff:*)"
+    verb: allow
+    scope: user
+    reason: "Read-only. Required for /pds:verify and every commit flow."
+
+  - pattern: "Bash(git branch:*)"
+    verb: allow
+    scope: user
+    reason: "Read-only listing; never mutates without explicit -D/-d."
+
+  - pattern: "Bash(ls:*)"
+    verb: allow
+    scope: user
+    reason: "Trivially safe. Re-prompting here is theater."
+
+  - pattern: "Bash(pwd)"
+    verb: allow
+    scope: user
+    reason: "Trivially safe."
+
+  - pattern: "Bash(cat:*)"
+    verb: allow
+    scope: user
+    reason: "Read-only. Claude should use Read tool but shell cat is common for piped ops."
+
+  # --- PDS-specific: the plugin's own skills should always be readable ---
+  - pattern: "Read(~/.claude/plugins/pds/**)"
+    verb: allow
+    scope: user
+    reason: "PDS skills/agents — the plugin reading its own files."
+
+  # --- Hard stops that would lose work irrecoverably ---
+  - pattern: "Bash(rm -rf /)"
+    verb: deny
+    scope: both
+    reason: "Catastrophic. Always deny; never an acceptable operation from Claude."
+
+  - pattern: "Bash(git push --force:*)"
+    verb: ask
+    scope: both
+    reason: "Force push can destroy upstream history. Require human confirmation."
+
+  - pattern: "Bash(git reset --hard:*)"
+    verb: ask
+    scope: both
+    reason: "Discards uncommitted work. Worth a confirm even if user is technical."
+
+  - pattern: "Bash(git clean -f:*)"
+    verb: ask
+    scope: both
+    reason: "Deletes untracked files; has bitten users who forgot about local work."

@@ -1,0 +1,7 @@
+# Copy to terraform.tfvars and fill in.
+#
+# bucket_suffix should be something globally unique but non-PII — a hash of
+# your email works well:
+#   printf '%s' your@email.tld | openssl dgst -sha256 -hex | cut -c1-8
+region        = "us-east-1"
+bucket_suffix = "CHANGE_ME"

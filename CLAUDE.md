@@ -54,6 +54,10 @@ agents/            — 9 agent definitions + shared-rules.md
 skills/            — 19 workflow skills (dir/SKILL.md format)
 hooks/             — Quality gates (SessionStart, Stop, TaskCompleted, TeammateIdle, SubagentStart, PreCompact, PostCompact, UserPromptSubmit, PostToolUse, WorktreeCreate, InstructionsLoaded)
 scripts/           — Utility scripts (telemetry-summary, detect-patterns)
+cli/               — Rust CLI (`pds sync`, `pds config get`, `pds archive`, `pds doctor`)
+config-presets/    — Shipped permission presets (pds-default, dev-tools) — referenced from pds.config.yaml
+examples/          — Example pds.config.yaml
+terraform/         — S3 + Deep Archive lifecycle module + one-command apply root
 .claude/           — Security settings (deny rules, sandbox config) — optional per-project
 .claude/swarm/     — Active swarm state (phase, tier, checkpoint.json, reports) — runtime only
 docs/              — Philosophy, whitepaper, team setup
@@ -88,15 +92,14 @@ Use `git worktree add` for branch isolation — never `git clone` (clones discon
 
 ### Protected Branches
 
-No branches are protected by default. To protect branches, add patterns below. `/pds:finish` will prompt for confirmation before pushing to a matching branch. GitHub branch protection rules are the server-side enforcement — this is the client-side "are you sure?" prompt.
+Protected branches are declared in `pds.config.yaml` under `worktree.protected_branches`. `/pds:finish` reads the list via `pds config get worktree.protected_branches` and prompts for confirmation before pushing to a matching branch. GitHub branch protection rules are the server-side enforcement — this is the client-side "are you sure?" prompt.
 
-To configure, ask PDS to set up protected branches — it will prompt for each one individually.
+To configure: edit `${XDG_CONFIG_HOME:-~/.config}/pds/config.yaml` and run `pds sync`.
 
-<!-- Uncomment and add patterns:
-- main
-- master
-- release/*
--->
+### User preferences (`pds.config.yaml`)
+
+Portable user preferences — permissions, health thresholds, plugin list, MCP servers, worktree cleanup policy — live in `${XDG_CONFIG_HOME:-~/.config}/pds/config.yaml`. Keep it in your personal dotfiles repo; `pds sync` fans it out to `~/.claude/settings.json`, `~/.claude.json`, global gitignore, and per-project seeds. See `docs/config.md` for the full schema.
+
 <!-- PDS:END -->
 
 ---
