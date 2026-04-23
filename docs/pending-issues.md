@@ -3,25 +3,8 @@
 File these after `gh auth login -h github.com`:
 
 ```bash
-# 1. Ledger integration tests + view/query UX
-gh issue create --title "Ledger integration tests + view/query UX" --label "enhancement" --body "## Context
-
-Pruned \`/pds:telemetry\` and \`/pds:inspect\` skills during consolidation (#131). Both pointed at functionality that should live in the ledger system, not as standalone PDS skills.
-
-## What's needed
-
-### Integration tests
-- Test that \`ledger hook\` integration works end-to-end with PDS hooks
-- Verify telemetry events flow from PDS → ledger daemon → SQLite
-
-### View/query UX
-- Expose a human-friendly way to query ledger data (replacement for old \`/inspect\` and \`/telemetry\` skills)
-- Consider: CLI subcommand (\`ledger query\`), TUI dashboard, or summary script
-- Should cover: session stats, agent spawn counts, skill invocations, error rates
-
-## Origin
-
-Skill consolidation review — user verdict: keep telemetry + inspect deleted, but file issue for ledger-based replacements."
+# 1. (RESOLVED) Ledger was cut from PDS entirely — PDS lives standalone with no federation deps.
+#    See commit removing ~/.ledger references from hooks; original issue was obsolete.
 
 # 2. Eval-driven trim skill redesign
 gh issue create --title "Eval-driven trim skill redesign" --label "enhancement" --body "## Context

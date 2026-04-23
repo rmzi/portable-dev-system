@@ -2,13 +2,13 @@
 
 Skills encode team knowledge and workflows. Claude reads and follows them automatically. PDS skills are namespaced with `pds:` prefix.
 
-## Plugin Skills (19)
+## Plugin Skills (21)
 
 | Skill | Purpose | When to Use |
 |-------|---------|-------------|
 | `/pds:swarm` | Multi-agent team workflow (6-phase Agentic SDLC, lite/med/heavy tiers, branch merging) | Launching multi-agent parallel work |
 | `/pds:team` | Agent roster, coordination, and dispatch modes | Agent roles, permissions, dispatch mode selection |
-| `/pds:grill` | Requirement interrogation | Before decomposition, ambiguous features |
+| `/pds:grill` | Requirement interrogation (number-pad-friendly: yes/no or 1-4 numbered AskUserQuestion defaults) | Before decomposition, ambiguous features |
 | `/pds:verify` | Completion self-check | Before declaring tasks done, creating PRs |
 | `/pds:finish` | Branch completion protocol (includes quick ship) | When branch needs preparation for merge, or quick ship |
 | `/pds:checkpoint` | Quick ship: bump, commit, push | Finish protocol overkill — just ship what's ready |
@@ -25,6 +25,8 @@ Skills encode team knowledge and workflows. Claude reads and follows them automa
 | `/pds:instinct` | Pattern lifecycle — record, validate, promote recurring patterns | Observed a pattern, post-swarm scout review, promotion threshold reached |
 | `/pds:export` | Export session to human-readable markdown | Saving, reviewing, or sharing a conversation transcript |
 | `/pds:explore` | Structural codebase queries via codebase-memory-mcp index | Orienting in a codebase — prefer over blind Grep when an index exists |
+| `/pds:voice` | Terse user-facing register (haro+caveman) for main session and orchestrator inline status | Applied automatically in top-level conversation; subagents except orchestrator opt out |
+| `/pds:ticket` | GitHub issue find-or-create, plan + acceptance-criteria checkboxes, progress tracking | Orchestrator owns this at Phase 1 of every swarm |
 
 ---
 

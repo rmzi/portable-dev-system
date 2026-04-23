@@ -90,7 +90,8 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
 
 2. Write the tier to state: `echo "<tier>" > .claude/swarm/tier`
 3. Synthesize grill output + researcher findings into acceptance criteria (see Phase 2 for format).
-4. **Spawn shepherd (med/heavy only, after grill).** After the grill completes and you know the tier is med or heavy, spawn the shepherd agent to walk the ticket alongside workers through Phases 2-6:
+4. **Find or create the GitHub ticket.** Run `/pds:ticket` to search for an existing issue matching this task; create one if none, resolve ambiguity via `AskUserQuestion` if multiple match. Write the issue number to `.claude/swarm/ticket`. Ticket body contains plan + acceptance criteria checklist. If `gh` is unavailable or there's no GitHub remote, warn and proceed without a ticket — note it in `scout-report.md` at Phase 6. See `/pds:ticket` for the full protocol.
+5. **Spawn shepherd (med/heavy only, after grill).** After the grill completes and you know the tier is med or heavy, spawn the shepherd agent to walk the ticket alongside workers through Phases 2-6:
    ```
    Task(shepherd, team_name=team_name, name="shepherd",
         model="opus",
@@ -100,7 +101,7 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
 
    The shepherd reads its reference corpus on spawn, notes its arrival to the orchestrator via SendMessage, and enters steady state. It is single-instance per swarm — if one is already active, skip this step.
 
-5. **If spawned as Phase 1 only** (plan prompt): Return the plan + criteria + tier. The parent handles human approval and spawns a Phase 2+ orchestrator.
+6. **If spawned as Phase 1 only** (plan prompt): Return the plan + criteria + tier. The parent handles human approval and spawns a Phase 2+ orchestrator.
    **If spawned with pre-approval** (full execution prompt): Proceed directly to Phase 2.
 
 ## Phase 2: Decompose
@@ -127,6 +128,8 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
    - **Contracts** — interface boundaries between zones (if any)
 
    This file bridges the context gap — workers read it on init to recover the orchestrator's reasoning without requiring fork-level context inheritance. Keep it concise (under 200 lines) and factual. The shepherd (if spawned) also reads this file to pick up the current swarm's plan.
+
+7. **Update the ticket** (if a ticket was newly created in Phase 1). Write the finalized acceptance-criteria checklist to the ticket body. For a reused ticket that already contains criteria, skip this step — don't duplicate. See `/pds:ticket` for the `gh issue edit` pattern.
 
 ## Phase 3: Dispatch
 
@@ -170,6 +173,7 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
    - **Health timeout**: default is 2x the task's estimated turns. On first timeout, send a warning via `SendMessage`. On second timeout, use `TaskStop` and reassign the task
    - If 3+ workers are idle simultaneously with blocked tasks, the bottleneck task may need decomposition or priority escalation
 6. **Shepherd is idle-resilient.** The shepherd spawned in Phase 1 continues to respond to SendMessage during Phase 3 and later. If the shepherd goes idle with no traffic, that's normal — proactive flagging is evidence-based, not scheduled. The shepherd will log observations as they accrue.
+7. **Comment on ticket** (if one exists). Post a short comment: *"Phase: dispatch. Tier: <tier>. Workers: <count>."* See `/pds:ticket`.
 
 **Hook note:** PDS hooks log `WorktreeCreate` and `WorktreeRemove` events as workers start and finish. These appear in the audit log for lifecycle traceability.
 
@@ -194,6 +198,7 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
    - Dispatch targeted workers to fix specific failures
    - Re-validate
 5. **Escalate to human after 2 failed validation cycles** — don't loop indefinitely
+6. **Flip ticket checkboxes** (if a ticket exists). For each `criteria_verdicts` entry with `status: "pass"`, flip the matching `- [ ]` to `- [x]` in the ticket body via `gh issue edit --body-file`. On overall `"needs_fixes"`, post a comment summarizing which criteria failed. See `/pds:ticket`.
 
 ## Phase 5: Consolidate
 
@@ -219,12 +224,13 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
    ExitPlanMode(plan="## Proposed Merge\n<diff summary>\n\n## Validation\n<key results from validation-report.md>\n\n## Review\n<key findings from review-report.md>")
    ```
    The parent responds with `plan_approval_response`. On approval, create PR. On rejection, return to earlier phases as directed.
-6. Create PR with full context:
+6. Create PR with full context. **Include `Closes #<ticket-num>`** in the PR body if a ticket exists (read from `.claude/swarm/ticket`):
    ```bash
-   gh pr create --title "feat: ..." --body "## Summary\n...\n## Acceptance Criteria\n...\n## Validation\n...\n## Issues\n..."
+   gh pr create --title "feat: ..." --body "## Summary\n...\n## Acceptance Criteria\n...\n## Validation\n...\n## Issues\n...\n\nCloses #<ticket-num>"
    ```
    **Note:** The PR gate blocks `gh pr create` unless phase is `consolidate`+ AND both `validation-report.md` and `review-report.md` exist.
-7. **Do not merge.** The PR is the human gate. The orchestrator creates the PR and reports it — the human merges after review.
+7. **Comment on ticket** (if one exists) linking the PR: `gh issue comment <ticket-num> --body "PR opened: <pr-url>"`. See `/pds:ticket`.
+8. **Do not merge.** The PR is the human gate. The orchestrator creates the PR and reports it — the human merges after review.
 
 ### Branch Merging
 
@@ -330,6 +336,7 @@ Landing approved PRs on the main branch:
     - **Artifact archival**: Copy `.claude/swarm/*.md` to `docs/swarm-reports/<YYYY-MM-DD-HHmm>/`
     - **State validation**: Verify all tasks have status `completed` and all branches are merged
     - **Branch cleanup**: Delete merged feature branches: `git branch -d <branch>`
+12. **Ticket completion comment** (if a ticket exists). Post a final comment summarizing the swarm outcome and linking the archive path: `gh issue comment <ticket-num> --body "Swarm complete. Archive: docs/swarm-reports/<YYYY-MM-DD-HHmm>/. PR: <pr-url>."` The ticket closes automatically when the PR merges (via `Closes #<num>`). See `/pds:ticket`.
 
 ## Phase Gates
 
@@ -359,12 +366,15 @@ All phase artifacts are written to `.claude/swarm/` (ephemeral, archived to `doc
 | `validation-report.md` | 4 | validator | PR gate, teardown gate |
 | `review-report.md` | 5 | reviewer (or orchestrator at lite tier) | PR gate, teardown gate |
 | `scout-report.md` | 6 | scout | Teardown gate |
+| `ticket` | 1 | orchestrator (via `/pds:ticket`) | All phases (ticket reference) |
 
 The shepherd's journal lives at `.claude/shepherd-journal.md` (project-level, not under `.claude/swarm/`). It persists across swarms and is gitignored by default. Scout compacts it in Phase 6.
 
 ## See Also
 
 - `/pds:grill` — Requirement interrogation (Phase 1)
+- `/pds:ticket` — GitHub issue find-or-create, plan + criteria tracking (Phase 1 + all phases)
 - `/pds:verify` — Completion self-check (Phase 4 worker exit)
 - `/pds:finish` — Branch completion protocol (Phase 5)
 - `/pds:team` — Agent roster, coordination tools, and protocols (including graph-vs-substance routing)
+- `/pds:voice` — Terse register for orchestrator-to-user inline status

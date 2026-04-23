@@ -82,6 +82,4 @@ docs/conversations/2026-03-31-source-analysis.md
 
 ## See Also
 
-- `/pds:telemetry` — Usage telemetry management
-- `/pds:inspect` — Real-time PDS state
 - `scripts/efficiency-chart.sh` — Value stream visualization from telemetry

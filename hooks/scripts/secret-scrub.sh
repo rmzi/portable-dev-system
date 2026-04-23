@@ -54,9 +54,6 @@ SED_ARGS="$SED_ARGS -e 's/^([A-Z_]*(SECRET|TOKEN|KEY|PASSWORD|CREDENTIAL)[A-Z_]*
 # and multi-line commands. 2>&1 ensures stderr (e.g. auth error messages) is also scrubbed.
 REWRITTEN="( ${COMMAND} 2>&1 ) | sed ${SED_ARGS}"
 
-# Log scrub event via ledger
-echo "$INPUT" | ~/.ledger/bin/ledger hook scrub 2>/dev/null || true
-
 # Return rewritten command — Claude Code will execute this instead of the original
 jq -n --arg cmd "$REWRITTEN" \
   '{"hookSpecificOutput":{"hookEventName":"PreToolUse","updatedInput":{"command":$cmd}}}'

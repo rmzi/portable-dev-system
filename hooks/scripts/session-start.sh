@@ -16,13 +16,6 @@ if [ -n "$CLAUDE_PLUGIN_ROOT" ] && [ -f "$CLAUDE_PLUGIN_ROOT/.claude-plugin/plug
   PDS_VERSION=$(python3 -c "import json; print(json.load(open('$CLAUDE_PLUGIN_ROOT/.claude-plugin/plugin.json')).get('version', 'unknown'))" 2>/dev/null || echo "unknown")
 fi
 
-# --- Require ledger daemon ---
-LEDGER_SOCK="$HOME/.ledger/ledger.sock"
-if [ ! -S "$LEDGER_SOCK" ]; then
-  echo "Ledger daemon not running. Install: ~/dev/ledger/install/install.sh" >&2
-  exit 2
-fi
-LEDGER_STATUS=" Ledger: running."
 
 # --- Detect worktree ---
 WORKTREE_INFO=""
@@ -92,8 +85,15 @@ if [ -f "$SCRIPT_DIR/codebase-context.sh" ]; then
   [ -n "$CODEBASE_CONTEXT" ] && CODEBASE_CONTEXT=" $CODEBASE_CONTEXT"
 fi
 
+# --- Voice directive (terse user-facing register) ---
+# Disable per-session by exporting PDS_VOICE_OFF=1 before launching claude.
+VOICE_CONTEXT=""
+if [ -z "${PDS_VOICE_OFF:-}" ]; then
+  VOICE_CONTEXT=" User-facing voice (main session only — subagents unaffected): terse, fragments, no pleasantries or hedging (no 'I think', 'I'd be happy to', 'basically', 'actually', 'let me'). One clause per sentence. Double the key phrase on state transitions: 'Done. Done.', 'Blocked. Blocked.', 'Found. Found.' — not for mid-task narration. Code, diffs, paths, commits, PR bodies, tool output: unchanged. Relax to full prose (still no hedging) for architecture explanation, post-mortem, or teaching. The user's primary input is a number pad + voice — default to AskUserQuestion with yes/no or 1-4 numbered options; freeform prompts only when rich info is genuinely needed. See /pds:voice for full directive."
+fi
+
 # --- Output additionalContext ---
-CONTEXT="PDS v${PDS_VERSION} active. Key skills: /pds:swarm (parallel work), /pds:grill (requirements), /pds:verify (completion check), /pds:bugfix (test-first fixes), /pds:checkpoint (ship work), /pds:finish (formal branch completion).${WORKTREE_INFO}${STALE_WARNING}${WORKTREE_WARNING}${LEDGER_STATUS}${CODEBASE_CONTEXT}"
+CONTEXT="PDS v${PDS_VERSION} active. Key skills: /pds:swarm (parallel work), /pds:grill (requirements), /pds:verify (completion check), /pds:bugfix (test-first fixes), /pds:checkpoint (ship work), /pds:finish (formal branch completion).${WORKTREE_INFO}${STALE_WARNING}${WORKTREE_WARNING}${CODEBASE_CONTEXT}${VOICE_CONTEXT}"
 
 # Use python3 for safe JSON encoding
 python3 -c "

@@ -18,9 +18,9 @@ Each skill can have a companion `EVAL.md` in its directory. Structure:
 
 ```markdown
 ---
-skill: skill-name
+skill: <skill-name>
 ---
-# Eval: /pds:skillname
+# Eval: /pds:<skill-name>
 
 ## Scenarios
 
@@ -58,7 +58,7 @@ Scout reads EVAL.md for skills exercised during the swarm. Grades against rubric
 Record in `.claude/eval-results.md`:
 
 ```markdown
-## [YYYY-MM-DD] /pds:skillname
+## [YYYY-MM-DD] /pds:<skill-name>
 
 | Scenario | Result | Notes |
 |----------|--------|-------|

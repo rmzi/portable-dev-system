@@ -18,7 +18,13 @@ PDS is a Claude Code plugin. Skills and agents are distributed via the plugin sy
 
 **Before performing ANY action, check if a skill exists for it. If a relevant skill exists, read it FIRST.**
 
-### Available Skills (19)
+### User-Facing Voice
+
+The top-level conversation with the user speaks with a **terse haro+caveman register** — fragments, no hedging, doubled state-transition phrases, no pleasantries. See `/pds:voice` for the full directive. The orchestrator applies the voice only when narrating inline status to the user; inter-agent `SendMessage` traffic stays normal. Shepherd, workers, validators, reviewers, documenters, scout, and auditor keep normal register.
+
+**Interface preference:** The user's primary input is a number pad + voice. Default to `AskUserQuestion` with 2-4 numbered options or yes/no framing. Reserve freeform prose prompts for cases where no enumerable answer set is meaningful.
+
+### Available Skills (21)
 
 | Skill | When to Use |
 |-------|-------------|
@@ -41,6 +47,8 @@ PDS is a Claude Code plugin. Skills and agents are distributed via the plugin sy
 | `/pds:instinct` | Pattern lifecycle — record, validate, promote recurring patterns |
 | `/pds:export` | Export session to human-readable markdown |
 | `/pds:explore` | Structural codebase queries via codebase-memory-mcp index (fallback to Grep) |
+| `/pds:voice` | Terse user-facing register (main session + orchestrator inline status) |
+| `/pds:ticket` | GitHub issue find-or-create, plan + criteria tracking (orchestrator responsibility) |
 
 See `/pds:team` for the 9-agent roster (orchestrator, researcher, worker, validator, reviewer, documenter, scout, auditor, shepherd). The **shepherd** is a persistent substantive advisor (opus) spawned after Phase 1 grill in med/heavy tiers — advisory-only, enforces the whitepaper/philosophy/ethos by citation.
 
@@ -51,8 +59,8 @@ See `/pds:team` for the 9-agent roster (orchestrator, researcher, worker, valida
 ```
 .claude-plugin/    — Plugin manifest (plugin.json)
 agents/            — 9 agent definitions + shared-rules.md
-skills/            — 19 workflow skills (dir/SKILL.md format)
-hooks/             — Quality gates (SessionStart, Stop, TaskCompleted, TeammateIdle, SubagentStart, PreCompact, PostCompact, UserPromptSubmit, PostToolUse, WorktreeCreate, InstructionsLoaded)
+skills/            — 21 workflow skills (dir/SKILL.md format)
+hooks/             — Quality gates (SessionStart, SessionEnd, Stop, TaskCompleted, TeammateIdle, SubagentStart, SubagentStop, PreCompact, PostCompact, UserPromptSubmit, PreToolUse, PostToolUse, WorktreeCreate)
 scripts/           — Utility scripts (telemetry-summary, detect-patterns)
 cli/               — Rust CLI (`pds sync`, `pds config get`, `pds archive`, `pds doctor`)
 config-presets/    — Shipped permission presets (pds-default, dev-tools) — referenced from pds.config.yaml

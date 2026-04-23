@@ -12,30 +12,38 @@ Grill is an interactive Q&A skill. In eval (non-interactive pipe mode), the agen
 **Prompt:** Interrogate this requirement before planning implementation.
 **Expected:**
 - [ ] Proposes a concrete restatement of the problem (not just echoing "make it faster")
-- [ ] Proposes a scope boundary and asks the human to confirm (which endpoints, what "faster" means)
+- [ ] Identifies the load-bearing word ("faster") and names two plausible interpretations (e.g., p99 latency vs throughput)
+- [ ] Proposes a scope boundary and asks the human to confirm (which endpoints, what "faster" means) — as a numbered `AskUserQuestion`
 - [ ] Proposes candidate acceptance criteria (e.g., "p99 < 200ms") — even as assumptions to validate
-- [ ] Lists assumptions and asks the human to challenge them
+- [ ] Lists assumptions and asks the human to challenge them one at a time (True / False / Unknown options)
 - [ ] Describes what to search for in a scope enumeration (which files, patterns, endpoints to investigate)
 **Anti-patterns:**
 - [ ] Accepts "make it faster" and starts profiling or implementing immediately
 - [ ] Only asks questions without proposing any concrete analysis
 - [ ] Produces criteria like "should be noticeably faster" (not verifiable)
 - [ ] Skips boundary definition — scope is unbounded
+- [ ] Uses hedge trailers ("does that sound right?", "anything else?")
+- [ ] Stacks 3+ questions in a single turn instead of asking the sharpest one
+- [ ] Flat confidence — treats all claims as equally uncertain instead of naming the load-bearing word
+- [ ] Uses freeform prose prompts when a yes/no or 2-4 numbered `AskUserQuestion` would cover the common answers
 
 ### Scenario: Feature with missing edge cases
 **Setup:** "Add a delete button to user profiles. Clicking it deletes the user." No mention of: confirmation dialog, admin vs self-delete, cascade behavior, undo.
 **Prompt:** Validate these requirements before implementation.
 **Expected:**
-- [ ] Identifies missing edge cases (confirmation, authorization, cascading) and asks the human about them
-- [ ] Asks about error states: what if deletion fails mid-cascade? What partial state? Recovery path?
-- [ ] Proposes in-scope/out-of-scope lists for human confirmation
-- [ ] Proposes priority ranking (must/should/could) and asks if it matches human priorities
+- [ ] Identifies missing edge cases (confirmation, authorization, cascading) and asks about them one at a time via `AskUserQuestion` (Now / Defer / Out of scope / Other)
+- [ ] Asks about recovery strategy as a numbered choice (Roll back / Mark partial / Idempotent retry / No recovery needed)
+- [ ] Proposes in-scope/out-of-scope lists; confirms ambiguous components via per-component yes/no
+- [ ] Proposes priority ranking and asks per-item bucket (Must/Should/Could/Skip) via `AskUserQuestion`
 - [ ] Does NOT start implementing — stays in analysis/question mode throughout
 **Anti-patterns:**
 - [ ] Implements the delete button without questioning the spec
 - [ ] Identifies gaps but doesn't propose verifiable acceptance criteria
 - [ ] Skips error-state analysis for the deletion operation
 - [ ] Produces analysis without asking any clarifying questions
+- [ ] Uses hedge trailers ("anything else?", "does that cover it?")
+- [ ] Stacks multiple risk or gap questions into a single turn
+- [ ] Uses freeform prose prompts when numbered options would cover the common answers
 
 ### Scenario: Tier selection for cross-module feature
 **Setup:** User says "add user notification preferences — a new preferences table, API endpoints for CRUD, and a settings page in the React frontend that reads/writes preferences." Express.js API with PostgreSQL, React frontend. 12 existing features follow this pattern (CRUD + UI).
@@ -45,11 +53,13 @@ Grill is an interactive Q&A skill. In eval (non-interactive pipe mode), the agen
 - [ ] Produces swarm recommendation (not no-swarm) — crosses module boundaries
 - [ ] Recommends a tier with rationale referencing boundary count and pattern analysis
 - [ ] Rationale is consistent with the skill's tier criteria
-- [ ] Asks confirming questions about existing patterns (e.g., "Do all 12 features follow the same CRUD + UI pattern?")
+- [ ] Asks confirming questions about existing patterns via yes/no `AskUserQuestion` (e.g., "Do all 12 features follow the same CRUD + UI pattern?")
+- [ ] Presents the final tier decision as an `AskUserQuestion` with 4 options (no-swarm / swarm:lite / swarm:med / swarm:heavy), not free-form `Recommendation:` text
 **Anti-patterns:**
 - [ ] Recommends no-swarm despite 3 architecture boundaries
 - [ ] Omits tier or rationale from swarm recommendation
 - [ ] Recommends heavy for pattern-following work
+- [ ] Emits tier as free-form text instead of `AskUserQuestion`
 
 ### Scenario: Tier selection for core abstraction refactor
 **Setup:** User says "replace our homegrown ORM with Prisma across the entire backend. Every model, every query, every migration needs to change. The API layer, background jobs, and test fixtures all depend on the current ORM's query builder interface." 40+ model files, 3 service layers (API, workers, cron), 200+ queries.
@@ -57,15 +67,16 @@ Grill is an interactive Q&A skill. In eval (non-interactive pipe mode), the agen
 **Expected:**
 - [ ] Identifies this as refactoring a core abstraction (ORM) that other code depends on
 - [ ] Identifies 3+ architecture boundaries (API, workers, cron, tests)
-- [ ] Produces swarm recommendation with tier: heavy
+- [ ] Presents the tier decision as an `AskUserQuestion` with 4 options, recommending `swarm:heavy`
 - [ ] Rationale references scope (40+ files), core dependency, cross-boundary impact
-- [ ] Describes scope enumeration approach (search for ORM imports, query builder calls, migration files)
-- [ ] Asks about error-state risks: what happens if migration fails partway through?
+- [ ] Describes scope enumeration approach; splits into high-confidence and lower-confidence buckets
+- [ ] Asks about recovery strategy as a numbered choice (Roll back / Mark partial / Idempotent retry / No recovery needed)
 **Anti-patterns:**
 - [ ] Recommends lite or no-swarm for a 40+ file core refactor
 - [ ] Fails to identify the ORM as a shared dependency
 - [ ] Skips risk assessment for a migration affecting all data access
 - [ ] Skips scope enumeration entirely (no mention of what to search for)
+- [ ] Emits tier as free-form text instead of `AskUserQuestion`
 
 ### Scenario: Plan mode enforcement
 **Setup:** User provides a clear, well-defined task: "Add input validation to the /api/users POST endpoint — reject requests missing email field with 400."

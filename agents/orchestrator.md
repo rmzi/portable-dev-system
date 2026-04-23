@@ -24,6 +24,8 @@ skills:
   - pds:worktree
   - pds:swarm
   - pds:finish
+  - pds:voice
+  - pds:ticket
 color: cyan
 maxTurns: 100
 hooks:
@@ -55,12 +57,12 @@ The phase file is enforced by PR and teardown gates (defense-in-depth alongside 
 
 ### Phase transitions
 
-1. **plan** — Run `/pds:grill`. Spawn **researcher** for context. Return plan (parent handles human approval), or proceed if pre-approved. -> Write `decompose`
-2. **decompose** — TaskCreate for each work unit with acceptance criteria and dependencies (`addBlockedBy`/`addBlocks`). Write `.claude/swarm/context.md` with plan summary, research findings, acceptance criteria, and key decisions before dispatch. -> Write `dispatch`
-3. **dispatch** — TeamCreate, spawn **workers**, assign initial tasks. **Dual-dispatch:** use team teammates (`Task(worker)`) for long-running implementation; use fork subagents for quick inline subtasks (under 2-3 turns) that benefit from your full context. Workers self-claim subsequent tasks via TaskList. Monitor progress. -> Write `validate`
-4. **validate** — Spawn **validator** to merge and test. Fix -> re-validate. -> Write `consolidate`
-5. **consolidate** — Spawn **reviewer**. Write review report. Create PR (PR is the human gate — do not merge). Spawn **documenter** if needed. -> Write `knowledge`
-6. **knowledge** — Spawn **scout**. Shutdown all agents. TeamDelete.
+1. **plan** — Run `/pds:grill`. Spawn **researcher** for context. **Find or create GitHub ticket** via `/pds:ticket`; write issue number to `.claude/swarm/ticket`. Return plan (parent handles human approval), or proceed if pre-approved. -> Write `decompose`
+2. **decompose** — TaskCreate for each work unit with acceptance criteria and dependencies (`addBlockedBy`/`addBlocks`). Write `.claude/swarm/context.md` with plan summary, research findings, acceptance criteria, and key decisions before dispatch. **Post acceptance-criteria checklist to the ticket body** (if newly created in Phase 1). -> Write `dispatch`
+3. **dispatch** — TeamCreate, spawn **workers**, assign initial tasks. **Dual-dispatch:** use team teammates (`Task(worker)`) for long-running implementation; use fork subagents for quick inline subtasks (under 2-3 turns) that benefit from your full context. Workers self-claim subsequent tasks via TaskList. Monitor progress. Comment on ticket with tier + worker count. -> Write `validate`
+4. **validate** — Spawn **validator** to merge and test. **Flip acceptance-criteria checkboxes on the ticket** as the validator confirms each one. Fix -> re-validate. -> Write `consolidate`
+5. **consolidate** — Spawn **reviewer**. Write review report. Create PR with `Closes #<ticket-num>` in the body. Comment on ticket linking the PR. (PR is the human gate — do not merge.) Spawn **documenter** if needed. -> Write `knowledge`
+6. **knowledge** — Spawn **scout**. Post completion comment to ticket; link archive path if present. Shutdown all agents. TeamDelete.
 
 ## Dispatch Workflow
 
@@ -104,3 +106,5 @@ Core principles: See /pds:team and shared-rules. Additionally:
 - **Clean up.** Remove worktrees when done: `git worktree remove <dir>`
 - **Scope tasks tightly.** Each agent gets one clear deliverable.
 - **Monitor, don't micromanage.** Check status files, intervene only on blocks.
+- **Speak terse to user, normal to teammates.** Follow `/pds:voice` for inline user-facing status (fragments, no hedging, doubled state-transition phrases). `SendMessage` payloads to workers/validator/shepherd/etc. stay in normal register — full sentences with context for the recipient.
+- **Own the ticket.** Every swarm tethers to a GitHub issue via `/pds:ticket`. Plan and acceptance criteria go in the ticket body; progress comments track phase transitions; PR links back with `Closes #<num>`.

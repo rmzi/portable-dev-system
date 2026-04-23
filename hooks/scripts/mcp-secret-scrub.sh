@@ -43,8 +43,5 @@ SCRUBBED=$(scrub "$TOOL_OUTPUT")
 # Parse back as JSON; fall back to string if the scrubbing broke JSON structure
 SCRUBBED_JSON=$(echo "$SCRUBBED" | jq '.' 2>/dev/null || echo "$SCRUBBED" | jq -Rs '.')
 
-# Log scrub event via ledger
-echo "$INPUT" | ~/.ledger/bin/ledger hook scrub 2>/dev/null || true
-
 jq -n --argjson output "$SCRUBBED_JSON" \
   '{"hookSpecificOutput":{"hookEventName":"PostToolUse","updatedMCPToolOutput":$output}}'

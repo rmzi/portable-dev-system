@@ -98,26 +98,6 @@
             "timeout": 10
           }
         ]
-      },
-      {
-        "matcher": "Skill|Agent",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/telemetry-log.sh",
-            "timeout": 5
-          }
-        ]
-      },
-      {
-        "matcher": "Write|Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/file-telemetry-log.sh",
-            "timeout": 5
-          }
-        ]
       }
     ],
     "SubagentStart": [
@@ -178,27 +158,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/worktree-telemetry.sh",
-            "timeout": 5
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/sync-worktree-permissions.sh",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "InstructionsLoaded": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/instructions-telemetry.sh",
             "timeout": 5
           }
         ]

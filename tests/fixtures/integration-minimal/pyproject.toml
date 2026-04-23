@@ -1,0 +1,8 @@
+[project]
+name = "todo-cli"
+version = "0.0.1"
+description = "Minimal todo CLI fixture for PDS integration tests"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
