@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.22.0] - 2026-04-23
+
+### Added
+- **`/pds:voice` skill — terse haro+caveman register for main session + orchestrator inline status.** User-facing voice only (subagents unaffected). Fragments, no pleasantries, no hedging ("I think", "basically", "let me"). Doubled key phrase on state transitions ("Done. Done.", "Blocked. Blocked.", "Found. Found."). Relaxes to full prose for architecture/post-mortem/teaching. Code, diffs, paths, commits, PR bodies, tool output: unchanged. Installed via `skills/voice/SKILL.md`; referenced from `CLAUDE.md`.
+- **`/pds:ticket` skill — GitHub issue find-or-create with plan + acceptance-criteria tracking.** Orchestrator responsibility. Falls back to a `<!-- pds:ticket -->` marker in-branch when no remote exists. Standardizes the criteria checklist format the swarm/finish pipeline already expects.
+- **Minimal Python integration fixture.** `tests/fixtures/integration-minimal/` plus `scripts/seed-integration.sh` provide a realistic, disposable repo for end-to-end PDS verification (voice, grill, ticket, swarm) outside the main codebase.
+
+### Changed
+- **`skills/grill/SKILL.md` — number-pad-first rewrite.** `AskUserQuestion` with yes/no or 2-4 numbered options is the default interaction. Mermaid diagram blocks removed (not legible on the number-pad + voice interface). Tier decision reframed as a structured question instead of a recommendation-with-override. `EVAL.md` updated to the new flow.
+- **Shepherd word-cap relaxed.** `agents/shepherd.md` drops the 200-word ceiling. Shepherd can now explain like a person while preserving citation rigor. Orchestrator consultation guidance in `agents/orchestrator.md` updated to match.
+- **`CLAUDE.md` interface preference.** Explicit note that the user's primary input is number-pad + voice; defaults for agent questions and orchestrator prompts follow from that.
+
+### Removed
+- **Ledger daemon coupling severed entirely.** PDS no longer has an external daemon dependency. Four pure-ledger hook stubs deleted, three scrub hooks stripped of `ledger log` calls, and `hooks/hooks.json` deregistrations cleaned up. PDS is now standalone — scrub-and-telemetry hooks still run locally but never call out to an external federation process. This is a breaking removal for any environment that relied on ledger-forwarded events from PDS hooks; nothing in the plugin itself depended on the forwarded data.
+
+### Notes
+- Voice + grill + ticket verified end-to-end in an isolated `--plugin-dir` session against `tests/fixtures/integration-minimal/`.
+- Shepherd warmth (post-word-cap-removal) not observable during verification — orchestrator never consulted it in the test swarm. Tracked as a follow-up.
+
 ## [4.21.0] - 2026-04-22T21:10:47-04:00
 
 ### Added
