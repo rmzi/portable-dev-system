@@ -20,3 +20,4 @@ terraform/**/*.tfstate
 terraform/**/*.tfstate.*
 terraform/**/terraform.tfvars
 terraform/**/.terraform.lock.hcl
+.issue-body.tmp.md
