@@ -8,7 +8,16 @@ version: 1
 
 # --- Permissions (row 1 in the plan) ---
 permissions:
-  presets: [pds-default, dev-tools]
+  # security-baseline is ON by default: it is the credential perimeter, and
+  # shipping it off-by-default is how every marketplace user ended up with an
+  # empty deny list. Nothing in it trades against velocity.
+  #
+  # Two groups inside it ARE opinionated and will false-positive on real work:
+  # outbound remote access, and production tripwires (a broad substring match on
+  # "prod"). If you do infrastructure work, drop the preset and copy the entries
+  # you want into `deny` below — read config-presets/security-baseline.yaml, the
+  # per-entry `reason` fields tell you what each rule is for.
+  presets: [pds-default, dev-tools, security-baseline]
   # Per-user additions. Merged on top of the presets above.
   allow: []
   ask: []
@@ -57,7 +66,10 @@ session:
 
 # --- Worktree + branch policy (row 10) ---
 worktree:
-  protected_branches: []
+  # /pds:finish reads this via `pds config get worktree.protected_branches` and
+  # prompts before pushing to a match. An empty list means NOTHING is protected
+  # and the prompt never fires — set your real trunk here.
+  protected_branches: [main]
   cleanup:
     enabled: true
     age_days: 30
