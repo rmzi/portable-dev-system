@@ -208,7 +208,7 @@ Tools can execute **in parallel during streaming** via `StreamingToolExecutor`. 
 |----------|-------|
 | **File I/O** | Read, Write (FileWrite), Edit (FileEdit), Glob, Grep |
 | **Execution** | Bash, PowerShell, REPL, NotebookEdit |
-| **Agent** | Agent, SendMessage, TaskCreate, TaskGet, TaskList, TaskUpdate, TaskStop, TaskOutput, TeamCreate, TeamDelete |
+| **Agent** | Agent, SendMessage, TaskCreate, TaskGet, TaskList, TaskUpdate, TaskStop, TaskOutput (TeamCreate/TeamDelete removed at v2.1.178 — teams are now implicit per-session) |
 | **Planning** | EnterPlanMode, ExitPlanMode, EnterWorktree, ExitWorktree |
 | **Knowledge** | Skill, ToolSearch, WebFetch, WebSearch |
 | **MCP** | MCPTool, ListMcpResources, ReadMcpResource, McpAuth |

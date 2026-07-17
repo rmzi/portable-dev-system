@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+- **Swarm/team coordination retrofitted onto implicit-team semantics.** Claude Code removed `TeamCreate`/`TeamDelete` at v2.1.178 — agent teams are now implicit per-session (one team, formed on the first spawn; `team_name` accepted-but-ignored, session-derived name). The orchestrator agent, `/pds:swarm`, `/pds:team`, the SessionStart context, and the whitepaper/architecture/teams/proposal docs no longer instruct agents to call the removed tools; teardown is now "shut every agent down, then the team dissolves at session end." Enduring docs state the durable guarantee only — migration notes live in code comments and the tracker (#159), not in the whitepaper.
+
+### Removed
+- **`TeamCreate`/`TeamDelete` references across the live surface** (agent, skills, hooks, settings, docs). The teardown gate (`orchestrator-teardown-gate.sh`) is stubbed pending a decision on where its checks re-home (Stop-based gate vs fold into the PR gate) — its completion checks are preserved, its dead `TeamDelete` PreToolUse trigger removed.
+
 ### Added
 - **`config-presets/security-baseline.yaml` — the credential perimeter, as a preset.** Denies reading, tampering with, and shelling into credential stores (cloud SDK configs, private keys, package-registry tokens), credential files (`.env`, `*.pem`, `id_rsa*`, `.git-credentials`), and process environments. 58 entries, `scope: both`, each annotated with a `reason`. **On by default in `examples/config.yaml`.** Until now these rules lived only in the repo's `.claude/settings.json`, which is applied exclusively by `install.sh` — so anyone who installed via the marketplace ran with an empty deny list and no perimeter at all. No shipped preset carried any of it, so `pds sync` did not deliver it either. Two groups inside the preset are opinionated and documented as such (outbound remote access; production tripwires) — they false-positive on real infrastructure work and are meant to be dropped by users who do it.
 

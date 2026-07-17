@@ -125,7 +125,7 @@ Events fire in this order during a session:
 | Event | Matcher | Script | Behavior | Blocks? |
 |-------|---------|--------|----------|---------|
 | `PreToolUse` | `Bash` | `orchestrator-pr-gate.sh` | Block `gh pr create` unless phase >= consolidate + reports exist | Yes |
-| `PreToolUse` | `TeamDelete` | `orchestrator-teardown-gate.sh` | Block cleanup unless phase = knowledge + all reports + worktrees clean | Yes |
+| `PreToolUse` | swarm cleanup (knowledge phase) | `orchestrator-teardown-gate.sh` | Verify phase = knowledge + all reports + worktrees clean before cleanup | Gate defined; trigger pending re-home |
 
 ---
 
@@ -298,7 +298,7 @@ Shell scripts enforce the state machine. Defined as `PreToolUse` hooks on the or
 - Falls through (allows) if no `.claude/swarm/` directory (non-swarm session)
 
 **Teardown Gate** (`orchestrator-teardown-gate.sh`)
-- Triggers on: `TeamDelete` tool call
+- Enforcement point: swarm cleanup at the `knowledge` phase, before the implicit team dissolves at session end (teams are implicit per-session since CC v2.1.178, when TeamCreate/TeamDelete were removed)
 - Blocks unless: phase = `knowledge` AND all 3 reports exist AND `.worktrees/` clean AND `docs/swarm-reports/` exists
 - Falls through if no `.claude/swarm/` directory
 
@@ -422,7 +422,7 @@ Orchestrator runs /pds:grill:
 ```
 .claude/swarm/phase → "dispatch"
 
-TeamCreate → ~/.claude/teams/<name>/config.json
+implicit per-session team → session-derived name (`session-<8char>`); no TeamCreate (removed at v2.1.178, `team_name` accepted-but-ignored)
 TaskCreate → ~/.claude/tasks/<name>/<id>.json (per task)
 
 Worker spawns:
@@ -489,13 +489,12 @@ Agents shutdown:
   SendMessage(type="shutdown_request") to each agent
 
 Team cleanup:
-  agents/orchestrator.md → PreToolUse (TeamDelete) → orchestrator-teardown-gate.sh
+  agents/orchestrator.md → PreToolUse (teardown gate) → orchestrator-teardown-gate.sh
     checks: phase = knowledge ✓
     checks: validation-report.md exists ✓
     checks: review-report.md exists ✓
     checks: scout-report.md exists ✓
     checks: .worktrees/ clean ✓
-    allows: TeamDelete
 
 Artifact archival:
   .claude/swarm/*.md → docs/swarm-reports/<YYYY-MM-DD-HHmm>/

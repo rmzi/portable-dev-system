@@ -140,7 +140,7 @@
       "Creating and switching branches",
       "Installing dependencies",
       "Spawning subagents via Task tool for parallel work",
-      "Creating and managing agent teams (TeamCreate, TeamDelete)",
+      "Coordinating an implicit per-session agent team (Task, SendMessage, TaskCreate)",
       "Creating and updating tasks (TaskCreate, TaskUpdate)",
       "Sending inter-agent messages (SendMessage)",
       "Worktree operations (create, remove, list)"

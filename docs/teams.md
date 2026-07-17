@@ -186,7 +186,7 @@ Lite = routine work (1-2 workers, orchestrator self-reviews). Med = serious work
 Agents coordinate via native Claude Code tools:
 - **TaskCreate/TaskUpdate** — Task definition, status tracking, and dependencies
 - **SendMessage** — Direct and broadcast communication between agents
-- **TeamCreate** — Team setup with shared task list
+- **Implicit team** — one team per session (no TeamCreate/TeamDelete since CC v2.1.178); the shared task list forms automatically on first spawn
 
 Agent spawning uses typed syntax — `Task(worker)`, `Task(validator)` — which restricts which agent definitions can fulfill the spawn. This prevents unauthorized agent escalation (e.g., a worker cannot spawn an orchestrator).
 
@@ -204,7 +204,7 @@ Claude Code provides 28 hook lifecycle events. PDS subscribes to the following:
 | **InstructionsLoaded** | Audit log rule file loading |
 | **PermissionRequest** | LLM-as-judge routing for subagent requests |
 
-Additionally, the orchestrator uses **PreToolUse** hooks for phase gates (blocking `gh pr create` and `TeamDelete` unless required artifacts exist).
+Additionally, the orchestrator uses **PreToolUse** hooks for phase gates: the PR gate blocks `gh pr create` unless required artifacts exist, and the teardown gate guards swarm cleanup at the `knowledge` phase. Teams are implicit per-session (TeamCreate/TeamDelete were removed at CC v2.1.178) and dissolve at session end.
 
 HTTP hooks (available since Claude Code 2.1.63) allow PDS quality gates to call external services for policy enforcement when needed.
 

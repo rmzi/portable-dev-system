@@ -30,7 +30,7 @@ Agent(subagent_type="pds:orchestrator", name="orchestrator",
 
 If no tier is specified, the Phase 1 orchestrator MUST run `/pds:grill` first to determine the tier. Grill is mandatory before any swarm — it validates requirements AND recommends a tier.
 
-The orchestrator has `TeamCreate`, `TaskCreate`, `Task(worker)`, `SendMessage`, and other coordination tools. The main conversation does not — delegation is required.
+The orchestrator has `TaskCreate`, `Task(worker)`, `SendMessage`, and other coordination tools. The main conversation does not — delegation is required. The team is implicit (one per session, formed on first spawn); there is no TeamCreate/TeamDelete (removed at CC v2.1.178).
 
 Everything below is written for the orchestrator.
 
@@ -133,10 +133,7 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
 
 ## Phase 3: Dispatch
 
-1. Create the team:
-   ```
-   TeamCreate(team_name="project-name", description="Working on feature X")
-   ```
+1. The team is implicit — it forms on the first `Task(...)` spawn; there is nothing to create. (`team_name` is accepted but ignored: one session-scoped team.)
 2. Read tier from `.claude/swarm/tier`. Spawn workers with tier-appropriate model overrides:
    ```
    # Lite — haiku workers
@@ -308,7 +305,7 @@ Landing approved PRs on the main branch:
    Task(auditor, team_name="project-name", name="auditor",
         prompt="Scan the codebase for tech debt, missing tests, and inconsistencies. File findings as GitHub issues. Send summary via SendMessage when done.")
    ```
-3. Scout writes report to `.claude/swarm/scout-report.md` **(required — TeamDelete gate checks for this file)**
+3. Scout writes report to `.claude/swarm/scout-report.md` **(required — the teardown gate checks for this file)**
 4. Scout updates observation counts, proposes new patterns, flags promotions (human-gated — new skill = new file = PR review). Scout also runs skill evals per `/pds:eval` and compacts `.claude/shepherd-journal.md`.
 5. **Memory distillation**: Before writing scout-report.md, scout distills key learnings into **1-2 auto-memory entries** (project or feedback type). Focus on:
    - Decisions that future sessions need (WHY option A was chosen over B)
@@ -317,7 +314,7 @@ Landing approved PRs on the main branch:
    - Skip anything derivable from code, git history, or existing CLAUDE.md
 6. **Telemetry analysis**: If `.claude/telemetry.jsonl` exists, scout runs `scripts/detect-patterns.sh` to detect usage patterns and proposes instinct entries for recurring patterns. Results appear in `### Telemetry-Detected Patterns` section of the scout report.
 7. **Permission audit**: Scout reads `.claude/settings.local.json` and `.claude/settings.json`. Identifies recurring allow patterns in local (e.g., `Bash(git add:*)`, `Bash(gh pr:*)`) that aren't already in project-level settings. Recommends promotions in a `### Permission Promotions` section of the scout report. One-off commands (specific file paths, session artifacts) are excluded. Only glob-style patterns (`Bash(git *:*)`, `Bash(gh *:*)`, tool names) qualify for promotion.
-8. **Shepherd teardown.** If a shepherd was spawned (med/heavy), send shutdown after scout completes and before `TeamDelete`:
+8. **Shepherd teardown.** If a shepherd was spawned (med/heavy), send shutdown after scout completes and before the team is shut down:
    ```
    SendMessage(type="shutdown_request", recipient="shepherd", content="Swarm complete, shutting down.")
    ```
@@ -329,9 +326,9 @@ Landing approved PRs on the main branch:
    # ... for each active agent
    ```
    Wait for `shutdown_response` from each agent before proceeding.
-10. Clean up: `TeamDelete`
-    **Note:** The teardown gate blocks `TeamDelete` unless phase is `knowledge` AND all 3 reports exist. TeamDelete also **fails if agents are still active** — always shut down first.
-11. **Cleanup sub-phase.** After TeamDelete:
+10. Clean up. There is no `TeamDelete` (removed at CC v2.1.178) — once every agent has returned a `shutdown_response`, the implicit team dissolves at session end. Always shut all agents down first (an agent left running keeps the session's team alive).
+    **Note:** the teardown gate's completion checks (phase = `knowledge` AND all 3 reports exist) are being re-homed onto a blockable event — see `orchestrator-teardown-gate.sh` (stubbed, TODO #159).
+11. **Cleanup sub-phase.** After all agents are shut down:
     - **Worktree deletion**: For each `.worktrees/` directory created during the swarm, run `git worktree remove <path>` (call `ExitWorktree` if the orchestrator is inside a worktree)
     - **Artifact archival**: Copy `.claude/swarm/*.md` to `docs/swarm-reports/<YYYY-MM-DD-HHmm>/`
     - **State validation**: Verify all tasks have status `completed` and all branches are merged
@@ -345,7 +342,7 @@ Mechanical enforcement of phase transitions via PreToolUse hooks on the orchestr
 | Gate | Hook Script | Trigger | Blocks Unless |
 |------|-------------|---------|---------------|
 | PR gate | `orchestrator-pr-gate.sh` | `gh pr create` in Bash | Phase >= `consolidate` + `validation-report.md` + `review-report.md` exist |
-| Teardown gate | `orchestrator-teardown-gate.sh` | `TeamDelete` | Phase = `knowledge` + all 3 reports exist |
+| Teardown gate | `orchestrator-teardown-gate.sh` | _unwired — re-homing (TODO #159)_ | Phase = `knowledge` + all 3 reports exist |
 | Validator stop | Prompt hook in validator.md | Validator Stop | Structured report written to `.claude/swarm/validation-report.md` |
 | Shepherd finalize | `shepherd-finalize.sh` (SubagentStop) | Shepherd subagent stops (graceful or abort) | Always runs — finalizes journal; never blocks |
 

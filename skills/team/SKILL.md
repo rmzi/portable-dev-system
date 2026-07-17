@@ -147,7 +147,7 @@ Is the task >3 turns with artifact output?
       (each spawned via Task tool with worktree isolation)
 ```
 
-Agents coordinate via Claude Code's native team tools — TeamCreate, TaskCreate/TaskUpdate/TaskList/TaskGet, SendMessage, TaskStop. See each agent's frontmatter `tools:` field for which tools it has access to. Claude Code's built-in tool documentation covers usage, protocols (shutdown, plan approval, idle state, messaging).
+Agents coordinate via Claude Code's native team tools — TaskCreate/TaskUpdate/TaskList/TaskGet, SendMessage, TaskStop (teams are implicit per-session; TeamCreate/TeamDelete were removed at CC v2.1.178). See each agent's frontmatter `tools:` field for which tools it has access to. Claude Code's built-in tool documentation covers usage, protocols (shutdown, plan approval, idle state, messaging).
 
 ## PDS Coordination Patterns
 
@@ -163,7 +163,7 @@ These patterns are PDS-specific — they layer on top of native Claude Code team
 
 These are Claude Code native behaviors, but agents that haven't seen them before will get stuck:
 
-- **Shutdown before TeamDelete**: `SendMessage(type="shutdown_request")` to each active agent -> wait for `shutdown_response` -> then `TeamDelete`. TeamDelete **fails if agents are still active**.
+- **Shut down before session end**: `SendMessage(type="shutdown_request")` to each active agent -> wait for `shutdown_response`. There is no `TeamDelete` (removed at CC v2.1.178); the implicit team dissolves at session end. Leaving an agent running keeps the team alive — always drain shutdowns first.
 - **Plan approval**: Agents in `plan` mode send `plan_approval_request` when they call `ExitPlanMode`. Orchestrator must respond with `SendMessage(type="plan_approval_response", approve=true)` — or `approve=false` with feedback. Without this response, the agent hangs.
 - **Plain text is invisible to teammates** — always use `SendMessage`. DM (`type="message"`) for targeted communication; broadcast (`type="broadcast"`) only for critical team-wide issues.
 
