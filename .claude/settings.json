@@ -34,7 +34,6 @@
       "WebFetch",
       "WebSearch",
       "Task",
-      "mcp__*",
       "Bash(git add:*)",
       "Bash(git branch:*)",
       "Bash(git checkout:*)",
@@ -107,15 +106,15 @@
       "Read(**/id_ed25519*)",
       "Read(**/*secret*key*)",
       "Read(**/*token*.json)",
-      "Write(**/.env*)",
-      "Write(**/secrets/**)",
-      "Write(**/*.pem)",
-      "Write(**/*credential*)",
-      "Write(**/.git-credentials)",
-      "Write(**/id_rsa*)",
-      "Write(**/id_ed25519*)",
-      "Write(**/*secret*key*)",
-      "Write(**/*token*.json)"
+      "Edit(**/.env*)",
+      "Edit(**/secrets/**)",
+      "Edit(**/*.pem)",
+      "Edit(**/*credential*)",
+      "Edit(**/.git-credentials)",
+      "Edit(**/id_rsa*)",
+      "Edit(**/id_ed25519*)",
+      "Edit(**/*secret*key*)",
+      "Edit(**/*token*.json)"
     ]
   },
   "spinnerTipsOverride": {
