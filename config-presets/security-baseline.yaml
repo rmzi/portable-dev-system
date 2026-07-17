@@ -1,0 +1,356 @@
+# security-baseline preset — the credential perimeter.
+#
+# WHY THIS EXISTS
+# PDS advertises a credential perimeter. Until now it lived ONLY in the repo's
+# .claude/settings.json, which reaches users exclusively via install.sh. The
+# marketplace plugin cannot ship settings (install.sh:377 — "can't be in
+# plugin"), so every marketplace-install user has had `deny: []` — no perimeter
+# at all. And no shipped preset carried these rules, so `pds sync` did not
+# deliver them either: pds-default has 3 denies (all rm -rf-class), dev-tools
+# has 0. Neither distribution path delivered the product. This preset closes
+# that gap for the `pds sync` path.
+#
+# Ported at parity with .claude/settings.json as of 912ec66. Deliberately NOT a
+# redesign — composition changes belong to #159, not to the port.
+#
+# EDIT(), NEVER WRITE(). Claude Code honours only Edit(path) for file permission
+# checks; Write(path) deny rules are silently skipped, with a warning printed to
+# stderr that nothing surfaces. All 9 file-tampering rules below were dead from
+# f4cd05a until 912ec66 — the perimeter blocked reading a credential and
+# permitted overwriting one. Enforcement is verified behaviourally (attempt a
+# write to a matching path and confirm it is blocked), never by counting entries.
+#
+# KNOWN OVER-BREADTH: Bash() patterns substring-match the whole command string,
+# so a command that merely *mentions* a guarded path is denied — including one
+# that documents it. This is safe-by-default and occasionally maddening. Same
+# tradeoff class as the production tripwires below. Flagged for #159.
+#
+# Verbs: allow | ask | deny
+# Scopes: user | project | both
+
+name: security-baseline
+description: |
+  The credential perimeter: blocks reading, tampering with, and shelling into
+  credential stores (cloud SDK configs, SSH/GPG keys, package-registry tokens),
+  credential files (.env, *.pem, id_rsa*, .git-credentials), and process
+  environments. Default-on candidate — nothing here trades against velocity;
+  none of it is something an agent should be doing unprompted.
+
+  Two groups are OPINIONATED and marked inline: production tripwires and
+  outbound remote access. They will false-positive for some users (Bash(ssh *)
+  blocks legitimate infra work; Bash(*prod.*) matches any command containing
+  "prod."). Included for parity with what install.sh users already receive. A
+  reviewer should decide whether they belong in a *baseline* or in a separate
+  `prod-guardrails` preset.
+
+entries:
+  # --- Credential stores via shell: tilde form ---
+  # These exist because shell access reads a credential store straight past the
+  # Read() guard — Read() governs the Read tool, not `cat` in a Bash command.
+  - pattern: "Bash(*~/.aws*)"
+    verb: deny
+    scope: both
+    reason: "Cloud credential store. Shell read bypasses the Read() guard entirely."
+
+  - pattern: "Bash(*~/.ssh*)"
+    verb: deny
+    scope: both
+    reason: "Private keys. Also the lateral-movement primitive — key theft compounds."
+
+  - pattern: "Bash(*~/.gnupg*)"
+    verb: deny
+    scope: both
+    reason: "GPG private keyring. Signing identity, not just secrets."
+
+  - pattern: "Bash(*~/.config/gcloud*)"
+    verb: deny
+    scope: both
+    reason: "Cloud SDK credential store."
+
+  - pattern: "Bash(*~/.databrickscfg*)"
+    verb: deny
+    scope: both
+    reason: "Workspace tokens in plaintext."
+
+  - pattern: "Bash(*~/.netrc*)"
+    verb: deny
+    scope: both
+    reason: "Plaintext machine credentials. Ancient format, still widely read by tooling."
+
+  - pattern: "Bash(*~/.kube*)"
+    verb: deny
+    scope: both
+    reason: "Cluster credentials. Often grants production access directly."
+
+  - pattern: "Bash(*~/.docker/config.json*)"
+    verb: deny
+    scope: both
+    reason: "Registry auth tokens."
+
+  - pattern: "Bash(*~/.npmrc*)"
+    verb: deny
+    scope: both
+    reason: "Publish tokens. Supply-chain risk: a stolen token ships malicious packages."
+
+  - pattern: "Bash(*~/.pypirc*)"
+    verb: deny
+    scope: both
+    reason: "Publish tokens. Same supply-chain exposure as npm."
+
+  - pattern: "Bash(*~/.gem/credentials*)"
+    verb: deny
+    scope: both
+    reason: "Publish tokens."
+
+  - pattern: "Bash(*~/.cargo/credentials*)"
+    verb: deny
+    scope: both
+    reason: "Publish tokens."
+
+  - pattern: "Bash(*~/.azure*)"
+    verb: deny
+    scope: both
+    reason: "Cloud credential store."
+
+  - pattern: "Bash(*~/.config/gh*)"
+    verb: deny
+    scope: both
+    reason: "GitHub CLI token. PDS allows Bash(gh ...) — the token itself stays off-limits."
+
+  - pattern: "Bash(*~/.config/hub*)"
+    verb: deny
+    scope: both
+    reason: "Legacy GitHub CLI token."
+
+  # --- Credential stores via shell: $HOME form ---
+  # Duplicated deliberately: the tilde patterns above do not match a command
+  # written with $HOME, and both spellings reach the same file.
+  - pattern: "Bash(*$HOME/.aws*)"
+    verb: deny
+    scope: both
+    reason: "$HOME spelling of the tilde rule above; tilde patterns do not match it."
+
+  - pattern: "Bash(*$HOME/.ssh*)"
+    verb: deny
+    scope: both
+    reason: "$HOME spelling of the tilde rule above."
+
+  - pattern: "Bash(*$HOME/.gnupg*)"
+    verb: deny
+    scope: both
+    reason: "$HOME spelling of the tilde rule above."
+
+  - pattern: "Bash(*$HOME/.config/gcloud*)"
+    verb: deny
+    scope: both
+    reason: "$HOME spelling of the tilde rule above."
+
+  - pattern: "Bash(*$HOME/.databrickscfg*)"
+    verb: deny
+    scope: both
+    reason: "$HOME spelling of the tilde rule above."
+
+  - pattern: "Bash(*$HOME/.netrc*)"
+    verb: deny
+    scope: both
+    reason: "$HOME spelling of the tilde rule above."
+
+  - pattern: "Bash(*$HOME/.kube*)"
+    verb: deny
+    scope: both
+    reason: "$HOME spelling of the tilde rule above."
+
+  - pattern: "Bash(*$HOME/.docker/config.json*)"
+    verb: deny
+    scope: both
+    reason: "$HOME spelling of the tilde rule above."
+
+  - pattern: "Bash(*$HOME/.npmrc*)"
+    verb: deny
+    scope: both
+    reason: "$HOME spelling of the tilde rule above."
+
+  - pattern: "Bash(*$HOME/.pypirc*)"
+    verb: deny
+    scope: both
+    reason: "$HOME spelling of the tilde rule above."
+
+  - pattern: "Bash(*$HOME/.gem/credentials*)"
+    verb: deny
+    scope: both
+    reason: "$HOME spelling of the tilde rule above."
+
+  - pattern: "Bash(*$HOME/.cargo/credentials*)"
+    verb: deny
+    scope: both
+    reason: "$HOME spelling of the tilde rule above."
+
+  - pattern: "Bash(*$HOME/.azure*)"
+    verb: deny
+    scope: both
+    reason: "$HOME spelling of the tilde rule above."
+
+  - pattern: "Bash(*$HOME/.config/gh*)"
+    verb: deny
+    scope: both
+    reason: "$HOME spelling of the tilde rule above."
+
+  - pattern: "Bash(*$HOME/.config/hub*)"
+    verb: deny
+    scope: both
+    reason: "$HOME spelling of the tilde rule above."
+
+  # --- Process environment ---
+  - pattern: "Bash(* /proc/*/environ*)"
+    verb: deny
+    scope: both
+    reason: "A process environment exposes every secret handed to that process."
+
+  - pattern: "Bash(*/proc/self/environ*)"
+    verb: deny
+    scope: both
+    reason: "Self-inspection variant. Reads the agent's own injected secrets."
+
+  # --- Credential files: exfiltration (Read tool) ---
+  - pattern: "Read(**/.env)"
+    verb: deny
+    scope: both
+    reason: "The single most common place a project keeps live secrets."
+
+  - pattern: "Read(**/.env.*)"
+    verb: deny
+    scope: both
+    reason: "Covers .env.local, .env.production, and friends."
+
+  - pattern: "Read(**/secrets/**)"
+    verb: deny
+    scope: both
+    reason: "Conventional secrets directory; if it's named this, treat it as such."
+
+  - pattern: "Read(**/*.pem)"
+    verb: deny
+    scope: both
+    reason: "Private keys and certificates."
+
+  - pattern: "Read(**/*credential*)"
+    verb: deny
+    scope: both
+    reason: "Broad by name. Cheap to over-match; expensive to miss."
+
+  - pattern: "Read(**/.git-credentials)"
+    verb: deny
+    scope: both
+    reason: "Plaintext git remote credentials."
+
+  - pattern: "Read(**/id_rsa*)"
+    verb: deny
+    scope: both
+    reason: "SSH private key, including the .pub sibling by glob."
+
+  - pattern: "Read(**/id_ed25519*)"
+    verb: deny
+    scope: both
+    reason: "SSH private key, modern algorithm."
+
+  - pattern: "Read(**/*secret*key*)"
+    verb: deny
+    scope: both
+    reason: "Name-based catch-all for key material."
+
+  - pattern: "Read(**/*token*.json)"
+    verb: deny
+    scope: both
+    reason: "OAuth/service-account token dumps."
+
+  # --- Credential files: tampering (Edit tool — NEVER Write) ---
+  # Each of these pairs with a Read() rule above. Read() blocks exfiltration;
+  # Edit() blocks tampering. Without the Edit() half an agent could overwrite an
+  # SSH key it was forbidden to read. All 9 were Write() and silently dead until
+  # 912ec66 — CC honours only Edit(path) for file permission checks.
+  - pattern: "Edit(**/.env*)"
+    verb: deny
+    scope: both
+    reason: "Pairs with Read(**/.env*). Blocks tampering. MUST be Edit() — Write() is silently skipped."
+
+  - pattern: "Edit(**/secrets/**)"
+    verb: deny
+    scope: both
+    reason: "Pairs with Read(**/secrets/**). MUST be Edit() — Write() is silently skipped."
+
+  - pattern: "Edit(**/*.pem)"
+    verb: deny
+    scope: both
+    reason: "Pairs with Read(**/*.pem). Overwriting a cert is a denial-of-service. MUST be Edit()."
+
+  - pattern: "Edit(**/*credential*)"
+    verb: deny
+    scope: both
+    reason: "Pairs with Read(**/*credential*). MUST be Edit() — Write() is silently skipped."
+
+  - pattern: "Edit(**/.git-credentials)"
+    verb: deny
+    scope: both
+    reason: "Pairs with Read(**/.git-credentials). MUST be Edit() — Write() is silently skipped."
+
+  - pattern: "Edit(**/id_rsa*)"
+    verb: deny
+    scope: both
+    reason: "Pairs with Read(**/id_rsa*). Overwriting locks the user out of their own hosts. MUST be Edit()."
+
+  - pattern: "Edit(**/id_ed25519*)"
+    verb: deny
+    scope: both
+    reason: "Pairs with Read(**/id_ed25519*). MUST be Edit() — Write() is silently skipped."
+
+  - pattern: "Edit(**/*secret*key*)"
+    verb: deny
+    scope: both
+    reason: "Pairs with Read(**/*secret*key*). MUST be Edit() — Write() is silently skipped."
+
+  - pattern: "Edit(**/*token*.json)"
+    verb: deny
+    scope: both
+    reason: "Pairs with Read(**/*token*.json). MUST be Edit() — Write() is silently skipped."
+
+  # --- Production tripwires (OPINIONATED — reviewer should decide) ---
+  # Deliberately over-broad. A false positive costs one prompt; a production
+  # incident costs considerably more. Strip these if they fight your naming
+  # conventions — Bash(*prod.*) will match "prod.js", "reprod.py", and prose.
+  - pattern: "Bash(* --profile prod*)"
+    verb: deny
+    scope: both
+    reason: "Named production credential profile. Agents must not act against prod unprompted."
+
+  - pattern: "Bash(* --profile=prod*)"
+    verb: deny
+    scope: both
+    reason: "Equals-form of the flag above; the space-form pattern does not match it."
+
+  - pattern: "Bash(*PROD*)"
+    verb: deny
+    scope: both
+    reason: "OPINIONATED. Broad tripwire on the uppercase convention. Over-broad by design."
+
+  - pattern: "Bash(*prod.*)"
+    verb: deny
+    scope: both
+    reason: "OPINIONATED. Substring-matches the whole command — will hit prod.js, reprod.py, and prose. Strip if it fights your naming."
+
+  # --- Outbound remote access (OPINIONATED — reviewer should decide) ---
+  # Blocks lateral movement from a compromised or merely confused agent. Also
+  # blocks legitimate infra work — this is the rule most likely to be wrong for
+  # a given user. A consultant on client infrastructure will want it gone.
+  - pattern: "Bash(ssh *)"
+    verb: deny
+    scope: both
+    reason: "OPINIONATED. Blocks lateral movement; also blocks legitimate infra work."
+
+  - pattern: "Bash(scp *)"
+    verb: deny
+    scope: both
+    reason: "OPINIONATED. Outbound file transfer — the exfiltration path once a file is read."
+
+  - pattern: "Bash(sftp *)"
+    verb: deny
+    scope: both
+    reason: "OPINIONATED. Same exfiltration path as scp."
