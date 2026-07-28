@@ -17,6 +17,8 @@ tools:
   - TaskGet
   - TaskStop
   - SendMessage
+  - AskUserQuestion
+  - EnterPlanMode
   - Task(researcher, worker, validator, reviewer, documenter, scout, auditor)
 permissionMode: default
 skills:
@@ -26,6 +28,7 @@ skills:
   - pds:finish
   - pds:voice
   - pds:ticket
+  - pds:grill
 color: cyan
 maxTurns: 100
 hooks:

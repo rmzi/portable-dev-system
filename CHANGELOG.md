@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+- **`config-presets/security-baseline.yaml` — the credential perimeter, as a preset.** Denies reading, tampering with, and shelling into credential stores (cloud SDK configs, private keys, package-registry tokens), credential files (`.env`, `*.pem`, `id_rsa*`, `.git-credentials`), and process environments. 58 entries, `scope: both`, each annotated with a `reason`. **On by default in `examples/config.yaml`.** Until now these rules lived only in the repo's `.claude/settings.json`, which is applied exclusively by `install.sh` — so anyone who installed via the marketplace ran with an empty deny list and no perimeter at all. No shipped preset carried any of it, so `pds sync` did not deliver it either. Two groups inside the preset are opinionated and documented as such (outbound remote access; production tripwires) — they false-positive on real infrastructure work and are meant to be dropped by users who do it.
+
+### Fixed
+- **Orchestrator couldn't run grill's Q&A protocol.** `skills/grill/SKILL.md` was rewritten in 4.22.0 to require `AskUserQuestion` (every step) and `EnterPlanMode` (its Mode section) — but `agents/orchestrator.md`'s `tools:` frontmatter never granted either, and `pds:grill` wasn't in its `skills:` list. Subagents only get tools explicitly listed in frontmatter, so orchestrator-driven Phase 1 grill (mandatory before every swarm) had no way to ask a structured question — silently degrading to prose or failing outright, with nothing to catch it. Direct `/pds:grill` from the main session was unaffected (the top-level session isn't gated by agent frontmatter). Added `AskUserQuestion`, `EnterPlanMode`, and `pds:grill` to the orchestrator's frontmatter.
+- **Nine credential deny rules were silently dead and are now enforced.** Claude Code honours only `Edit(path)` for file permission checks; `Write(path)` deny rules are skipped, with a warning printed to stderr that nothing surfaced. Every file-tampering rule in `.claude/settings.json` was a `Write(...)` and had been a no-op since `f4cd05a`. The effect was one-directional and in the wrong direction: reading a private key was blocked, **overwriting one was not**. Same for `.env`, `*.pem`, and `.git-credentials`. All nine rewritten to `Edit(...)`, which covers every file-editing tool, so the `Read(x)` + `Edit(x)` pairs finally close. Enforcement verified behaviourally — by attempting a write to a matching path and confirming the block — not by counting entries.
+- **`mcp__*` removed from `permissions.allow`.** Wildcard tool names are rejected in allow rules, so the entry was a no-op that emitted a startup warning. It was the visible instance of the same class as the nine above.
+- **`examples/config.yaml` shipped `protected_branches: []`.** `/pds:finish` reads this list and prompts before pushing to a match — an empty list meant nothing was protected and the prompt never fired, for anyone who copied the example as documented. Now `[main]`.
+
+### Documentation
+- **`docs/config.md` — shipped-presets table and a `security-baseline` section.** Documents what the preset does, which parts are opinionated, and how to drop it correctly. Also records three things that had no home: `pds sync` cannot manage the sandbox (no `sandbox` key in the schema); presets resolve from the installed plugin cache, not a repo checkout; and `pds doctor` reports "config parses: ok" for YAML that Claude Code then rejects rule-by-rule — it validates syntax, not semantic acceptance by the consumer.
+- Documented that `Bash(...)` deny patterns substring-match the entire command string, so a command that merely *mentions* a guarded path is denied — including one documenting the perimeter itself.
+
+### Notes
+- `security-baseline` is committed **unverified**. `pds sync` resolves presets from the installed plugin cache, not the repo, so it cannot be exercised until published. It parses; parsing is not enforcement — that exact distinction is what let nine dead rules ship for months. Verify behaviourally before trusting it.
+- Still open: the gap is **activation, not distribution**. The marketplace ships the whole tree — settings, presets, `install.sh`, CLI source — into every user's plugin cache, and nothing applies any of it. Claude Code auto-activates only skills, agents, hooks, and MCP servers, so a `SessionStart` perimeter check is the only mechanism that reaches a user who does not already know they are exposed. Not written. Tracked in #159.
+- The sandbox is not observably enforcing in the environment where this was found — writes outside CWD and non-allowlisted network both succeed. Cause undetermined; `docs/proposal.md:63` asserts confinement that could not be demonstrated. Tracked in #159.
+
 ## [4.22.0] - 2026-04-23
 
 ### Added
