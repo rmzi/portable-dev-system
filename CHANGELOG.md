@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [4.23.0] - 2026-07-27T22:25:08-04:00
+
 ### Added
 - **`config-presets/security-baseline.yaml` — the credential perimeter, as a preset.** Denies reading, tampering with, and shelling into credential stores (cloud SDK configs, private keys, package-registry tokens), credential files (`.env`, `*.pem`, `id_rsa*`, `.git-credentials`), and process environments. 58 entries, `scope: both`, each annotated with a `reason`. **On by default in `examples/config.yaml`.** Until now these rules lived only in the repo's `.claude/settings.json`, which is applied exclusively by `install.sh` — so anyone who installed via the marketplace ran with an empty deny list and no perimeter at all. No shipped preset carried any of it, so `pds sync` did not deliver it either. Two groups inside the preset are opinionated and documented as such (outbound remote access; production tripwires) — they false-positive on real infrastructure work and are meant to be dropped by users who do it.
 
@@ -21,6 +23,13 @@ All notable changes to this project will be documented in this file.
 - `security-baseline` is committed **unverified**. `pds sync` resolves presets from the installed plugin cache, not the repo, so it cannot be exercised until published. It parses; parsing is not enforcement — that exact distinction is what let nine dead rules ship for months. Verify behaviourally before trusting it.
 - Still open: the gap is **activation, not distribution**. The marketplace ships the whole tree — settings, presets, `install.sh`, CLI source — into every user's plugin cache, and nothing applies any of it. Claude Code auto-activates only skills, agents, hooks, and MCP servers, so a `SessionStart` perimeter check is the only mechanism that reaches a user who does not already know they are exposed. Not written. Tracked in #159.
 - The sandbox is not observably enforcing in the environment where this was found — writes outside CWD and non-allowlisted network both succeed. Cause undetermined; `docs/proposal.md:63` asserts confinement that could not be demonstrated. Tracked in #159.
+
+### Documentation
+- **`docs/whitepaper.md` bumped to v4.0 — a 12-week industry refresh plus a new strategic thesis.** Refreshes model pricing (Sonnet 5, Opus 5, Fable 5/Mythos 5), MCP ecosystem stats and the 2026-07-28 spec overhaul, and cites EARS notation as prior art for acceptance criteria. Adds "The Harness Layer: Where PDS Sits Today," naming PDS's current position as a config layer on Claude Code's generic harness and stating a directional next move toward owning more of the harness layer itself, grounded in 2026's harness-engineering discourse, Gartner's domain-specific-model projections, and Claude Cowork. Two platform-behavior gaps (background-default subagent backpressure, native auto-PR vs. the human gate) are flagged as known-but-unresolved rather than silently assumed away. See `docs/adr/0006-harness-layer-thesis.md`.
+- **`docs/competitive-analysis.md` — added the spec-driven-development landscape** (GitHub Spec Kit, BMAD-METHOD, AWS Kiro), previously unaddressed. BMAD's GitHub-issue-documented cost blowouts (80-100x token usage, no lightweight mode) are now cited as external validation of PDS's lite/med/heavy swarm tiers, not just an internally-reasoned optimization.
+
+### Notes
+- Filed four follow-up issues from this update, tracked separately rather than folded into this docs-only pass: #164 (EARS into `/pds:grill`), #165 (`TeammateIdle` backpressure vs. background-default subagents), #166 (PR gate vs. native auto-PR), #167 (refresh stale pricing/MCP facts in `docs/claude-code-source-analysis.md` / `docs/model-agnostic-research.md`).
 
 ## [4.22.0] - 2026-04-23
 
