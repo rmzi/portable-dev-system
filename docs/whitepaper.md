@@ -1,6 +1,6 @@
 # Agentic SDLC: A Technical Whitepaper
 
-**v3.0 | April 2026**
+**v4.0 | July 2026**
 
 ---
 
@@ -10,11 +10,11 @@ This whitepaper details a model for software development where AI agents operate
 
 PDS (Portable Development System) implements this model as a **Claude Code plugin** — distributing skills, agents, hooks, and security settings through the native plugin system. The methodology is encoded as configuration: install it once, and every Claude Code session gains the full agentic SDLC workflow.
 
-A key insight from deep source analysis of Claude Code's internals (March 2026): Claude Code is deeply coupled to Anthropic's API with no model abstraction layer. The "multi-provider" support (Bedrock, Vertex, Foundry) is multi-deployment of Claude, not multi-model. However, PDS's extension points — CLAUDE.md, skills, agents, hooks — are already expressed in model-agnostic markdown and JSON. PDS is more portable than the platform it runs on.
+A key insight from deep source analysis of Claude Code's internals, observed March 2026 and still holding as of this update: Claude Code is deeply coupled to Anthropic's API with no model abstraction layer. The "multi-provider" support (Bedrock, Vertex, Foundry) is multi-deployment of Claude, not multi-model. However, PDS's extension points — CLAUDE.md, skills, agents, hooks — are already expressed in model-agnostic markdown and JSON. PDS is more portable than the platform it runs on.
 
 The goal is amplification, not replacement. A single engineer orchestrates multiple agents working in parallel, each in isolated environments, producing work that flows through automated validation before human review. The human remains architect and final authority. The agents become a scalable workforce. This central orchestrator + specialist sub-agents pattern is emerging as the industry standard for agentic development [1][6].
 
-This document provides the technical depth required to implement this model: the conceptual framework, isolation architecture, tooling requirements, adoption path, and governance framework.
+This document provides the technical depth required to implement this model: the conceptual framework, isolation architecture, tooling requirements, adoption path, and governance framework. This update also names where PDS itself currently sits in the model-harness-methodology stack — see "The Harness Layer: Where PDS Sits Today" — and what it would mean to move a level lower.
 
 ---
 
@@ -52,6 +52,8 @@ The orchestrator may spawn a **researcher** agent to gather context: querying do
 
 The critical output is explicit acceptance criteria — unambiguous and mechanically verifiable. "The API should be fast" becomes "p99 latency for /users under 200ms with 1000 concurrent connections."
 
+A useful available syntax for this: EARS (Easy Approach to Requirements Syntax), developed by Alistair Mavin at Rolls-Royce for jet-engine airworthiness requirements and published at RE'09 [21], constrains a requirement to a single template — "While `<precondition>`, when `<trigger>`, the `<system>` shall `<response>`" — eliminating most ambiguity with no tooling and little training overhead. It has seen decades of adoption in safety-critical engineering (Airbus, NASA, Siemens, Honeywell), and AWS's Kiro uses it directly for `requirements.md` acceptance criteria [28]. PDS does not currently encode EARS into `/pds:grill` — this is prior art worth adopting, not yet a mechanical requirement.
+
 **Implemented:** Phase 1 now runs parallel tracks for Med/Heavy tiers. The **grill track** (sync, human-facing) runs `/pds:grill` to validate requirements and recommend a tier. The **research track** (async) spawns a researcher immediately — it explores the codebase while the human refines requirements with the orchestrator. Both tracks converge before Phase 2 decomposition. Instincts from `.claude/instincts.md` are loaded into grill context, so accumulated patterns from prior swarms inform requirement validation. Lite tier skips the researcher; the orchestrator self-researches after grill. See Phase 1 in `/pds:swarm`.
 
 ### Phase 2: Task Decomposition and Dispatch
@@ -76,6 +78,8 @@ Each worker produces a result artifact: code changes, summary, issues encountere
 
 **Implemented:** The orchestrator now monitors workers via `TeammateIdle` events with a tiered remediation protocol. On idle: check `TaskGet` first — if the agent awaits a blocked dependency, no action needed. If the agent has an unblocked task and is idle, send `SendMessage` to re-activate. Apply a **health timeout** (default 2× the task's estimated turns): on first timeout send a warning; on second timeout use `TaskStop` and reassign the task. If 3+ workers are simultaneously idle with blocked tasks, the bottleneck task is escalated for decomposition or priority adjustment. See Phase 3 in `/pds:swarm`.
 
+**Platform shift worth tracking:** Claude Code subagents now run in the background by default rather than synchronously, surfacing completion through `Notification`-hook events (`agent_needs_input` / `agent_completed`) instead of a foreground return. This complicates the idle-detection story above — a worker that hasn't yet responded may simply not have been scheduled to the foreground rather than being genuinely stuck, and PDS's `TeammateIdle` health-timeout protocol was designed against synchronous execution. This is a known gap, not yet resolved: PDS has not verified whether its backpressure protocol still distinguishes "not scheduled" from "stuck" correctly under background-default execution.
+
 ### Phase 4: Validation
 
 A validator agent examines all worker output by monitoring TaskUpdate status changes. The validator operates in its own worktree, merging worker branches and running comprehensive tests.
@@ -95,6 +99,8 @@ Once Phase 4 validation passes, the orchestrator consolidates worker branches us
 The orchestrator writes the reviewer's report to `.claude/swarm/review-report.md` — a required artifact. A PreToolUse gate on `gh pr create` blocks PR creation unless both the validation and review reports exist. The developer reviews with full context: requirements, plan, validation results, reviewer findings, issues encountered. The developer can request changes (flowing back through the orchestrator) or approve for merge. The reviewer's automated pre-review supplements but never replaces the human gate.
 
 **Implemented:** `/finish` now runs in **parallel** across all task branches simultaneously — each branch gets its own rebase, history cleanup, and post-rebase test run concurrently. The human approval gate is formalized using `ExitPlanMode` / `plan_approval_response`: the orchestrator presents the consolidated diff summary, validation results, and reviewer findings as a structured plan; the parent responds with approval or rejection. On rejection, the orchestrator returns to the indicated phase. This replaces the informal "create PR and wait" pattern with a structured handoff that the orchestrator can act on unambiguously. See Phase 5 in `/pds:swarm`.
+
+**Platform shift worth tracking:** Claude Code's background agents now auto-commit, push, and open a draft PR on worktree completion by default, rather than stopping to ask. PDS's PR gate (the PreToolUse hook blocking `gh pr create` without validation and review artifacts) should bind regardless of whether the caller is a human-directed flow or the platform's own auto-PR path — but this has not been mechanically verified since the platform behavior changed. Until verified, treat the human gate as documented intent, not confirmed enforcement, against this specific native behavior.
 
 ### Phase 6: Knowledge Capture
 
@@ -128,13 +134,13 @@ MCP is a standardized protocol for agents to interact with external systems. MCP
 
 The protocol uses JSON-RPC over stdio or SSE. Servers can be written in any language and wrap any API.
 
-**MCP Ecosystem Maturity**: The Docker MCP Catalog now provides 200+ verified, containerized MCP servers with:
+**MCP Ecosystem Maturity**: The ecosystem has scaled well past its early-2026 footprint — over 10,000 MCP servers now run in production, with 19,831+ indexed on the Glama registry and 97 million monthly SDK downloads. The Docker MCP Catalog remains one entry point among several, providing verified, containerized servers with:
 - Digital signatures and provenance verification
 - SBOM metadata for supply chain transparency
 - MCP Gateway for centralized access control and OAuth automation
 - Pre-built integrations for common services (Jira, Slack, databases)
 
-This ecosystem reduces the barrier to agent integration significantly.
+**The 2026-07-28 spec revision** is the largest change in MCP's history [18]: a stateless protocol core that scales on ordinary HTTP infrastructure without sticky sessions, an Extensions framework for shipping new capabilities as opt-in before (or instead of) core-spec stabilization, a **Tasks extension** for long-running work (directly relevant to PDS's Headless Agents model — see below), MCP Apps for server-rendered UI, authorization hardening aligned with OAuth/OIDC, and a formal 12-month deprecation policy for the first time. This ecosystem reduces the barrier to agent integration significantly.
 
 ### Plugin Architecture
 
@@ -201,6 +207,8 @@ PDS is already more model-agnostic than Claude Code itself. The methodology (six
 4. **Context window management** — Claude Code's compact/microcompact/reactive-compact system (61k `compact.ts`) is sophisticated. Any alternative runtime would need equivalent compression.
 
 This is a vision-forward strategy. Today, PDS runs on Claude Code and benefits from its deep Claude integration. The portable markdown/JSON layer means PDS could migrate to another runtime without rewriting its methodology — only the runtime adapter would change.
+
+This section is about portability — running the same methodology on a different generic harness. That's a distinct question from how much of the harness itself PDS should own; see "The Harness Layer: Where PDS Sits Today," below.
 
 ### Agent Isolation
 
@@ -418,6 +426,22 @@ This grounds PDS's self-improvement cycle in quantitative evidence rather than s
 
 ---
 
+## The Harness Layer: Where PDS Sits Today
+
+Strip away the terminology and PDS's architecture is a stack: a raw model (Claude) sits beneath a generic harness (Claude Code — the tool loop, context management, permissions, worktree provisioning), which sits beneath PDS itself, a configuration layer of markdown and JSON (skills, agents, hooks) that encodes the agentic SDLC on top of that generic harness. Put plainly: PDS today is a harness on a harness. It does not run its own tool-execution loop, its own context-compaction system, or its own permission model — it configures Claude Code's.
+
+This is not a criticism of the design — "LLM Independence," above, explains why riding a generic harness has been the right call so far: it gets PDS context compression, IDE integration, and model access for free. But it's worth naming honestly, because 2026 gave this observation real external vocabulary. Early this year, an OpenAI internal-infrastructure writeup prompted Mitchell Hashimoto (creator of Terraform and Ghostty) to coin a formula that stuck [19]: *Agent = Model + Harness* — everything that turns latent model capability into reliable, auditable software-engineering behavior lives in the harness, not the model. Martin Fowler and Birgitta Böckeler extended this into a "guides and sensors" taxonomy for harness components [20] — the same author whose context-engineering work PDS already cites [3], now describing the layer directly above it.
+
+Two independent signals suggest generic-harness-plus-config is not where this settles. Analyst-side: Gartner projects more than half of enterprise GenAI models will be domain-specific by 2027, up from 1% in 2024, with organizations using small, task-specific models at three times the volume of general-purpose LLMs by the same year [23]. Vendor-side: Anthropic itself now ships two harnesses, not one — Claude Code for engineering work and Claude Cowork for general knowledge work, expanded to mobile and web in July 2026, with Anthropic reporting over 90% of Cowork usage isn't software-related at all. Even the platform vendor is betting that one generic harness doesn't fit every domain.
+
+This matters specifically for PDS because of where its opinions come from. The agentic SDLC's phase model, its swarm tiers, its defense-in-depth enforcement — these aren't generic best practices drawn from Claude Code's documentation; they're informed by DevOps judgment about how autonomous agents should actually move through a software lifecycle, judgment that today is expressed entirely as configuration riding on someone else's tool loop. A generic harness's config surface can only carry so much of that opinion before it wants to become the harness itself — validating inputs before they reach the model, enforcing phase transitions at the execution layer rather than through hook approximations, shaping tool definitions around the SDLC directly rather than layering role prompts over generic tools.
+
+**The directional bet, stated plainly and without overclaiming:** PDS's next horizon is to own more of the harness layer itself — not just be portable across generic harnesses (that's "LLM Independence"'s job), but to encode more of its domain opinion below the configuration layer, where a generic harness currently draws the line. Domain-specific models, purpose-tuned for SDLC-shaped work rather than general coding, are a longer-horizon bet in the same direction — the vertical-model trend above suggests PDS wouldn't be alone in making it.
+
+**What this section does not claim:** there is no custom PDS harness today, no timeline for one, and no domain-specific model in development. Claude Code remains PDS's substrate, exactly as described everywhere else in this whitepaper. This is a direction, stated now because the whitepaper is a living document and this is where the evidence pointed this quarter — not an architecture, and not a departure from what's described elsewhere here.
+
+---
+
 ## Platform Positioning
 
 Understanding where PDS leads and where the platform leads is essential for strategic investment. Source analysis of Claude Code's internals reveals a clear competitive split:
@@ -426,7 +450,7 @@ Understanding where PDS leads and where the platform leads is essential for stra
 - **Structured agent workflows** — PDS's 6-phase SDLC with role-specific agents (orchestrator, researcher, worker, validator, reviewer, documenter, scout, auditor) is more opinionated and more structured than Claude Code's generic coordinator mode. The coordinator provides the platform; PDS provides the methodology.
 - **Workflow enforcement** — PDS's grill → implement → verify → finish pipeline has no Claude Code equivalent. Phase gates, artifact requirements, and the forward-only state machine are PDS innovations.
 - **Quality gates** — PDS hooks enforce SDLC stages mechanically; Claude Code's hooks are general-purpose event handlers without workflow semantics.
-- **Swarm tiers** — Cost-aware model selection per agent role. Claude Code provides the model override mechanism; PDS provides the tier abstraction that makes it usable.
+- **Swarm tiers** — Cost-aware model selection per agent role. Claude Code provides the model override mechanism; PDS provides the tier abstraction that makes it usable. This is no longer just an internal cost optimization — it's now externally validated. BMAD-METHOD, the closest analog to PDS's multi-agent-role model in the broader spec-driven-development space, has no lightweight mode: it always runs its full 12-agent ceremony, and its own GitHub issues document the result — 80-100x the token usage of not using it, users hitting Claude Max plan rate limits daily, and as much as 86% of context consumed by a single agent's knowledge base before any work starts [26]. PDS's lite/med/heavy tiers exist precisely to avoid that failure mode; see `docs/competitive-analysis.md` for the full landscape comparison.
 
 **Where Anthropic leads:**
 - **Context management** — 61k lines of compaction code across 5 modes (auto-compact, micro-compact, reactive compact, context collapse, history snip) vs. PDS's zero investment. PDS gets this for free as a platform benefit.
@@ -435,6 +459,8 @@ Understanding where PDS leads and where the platform leads is essential for stra
 - **Memory extraction** — Auto-memory extraction from conversations (`EXTRACT_MEMORIES`). PDS's instinct system has similar goals but is currently unused. Anthropic's implementation is automatic; PDS requires explicit `/instinct` invocation.
 
 **The synergy:** PDS methodology + Claude Code platform creates a stack that neither provides alone. Claude Code handles the hard engineering problems (context compression, caching, IDE integration, model API). PDS handles the hard methodology problems (SDLC enforcement, agent specialization, human gates, quality assurance). Feature flags like `COORDINATOR_MODE`, `AGENT_TRIGGERS`, and `WORKFLOW_SCRIPTS` signal that Anthropic is investing in PDS-adjacent territory — but with generic primitives, not opinionated methodology. PDS remains the methodology layer.
+
+**The wider landscape (2026):** Generic multi-agent orchestration substrates matured fast this year — Microsoft merged AutoGen and Semantic Kernel into Agent Framework 1.0 (GA April 2026), alongside OpenAI's Agents SDK and Google's ADK. None of these are SDLC methodologies; they're infrastructure, in the same category as claude-flow relative to PDS. Separately, "agentic SDLC" itself became a genericized industry term in 2026, with GitHub Spec Kit [25], BMAD-METHOD [26], and AWS Kiro [28] each formalizing their own version of spec-driven, multi-phase agentic development. See `docs/competitive-analysis.md` for the full comparison; the short version is that PDS's tiered cost model remains its clearest differentiator against all of them.
 
 ---
 
@@ -470,7 +496,7 @@ Each worktree needs dependencies. Prefer tools that make environment creation fa
 
 Claude Code requires:
 - **Claude model access**: API key or organization account with Anthropic, Bedrock, Vertex, or Foundry
-- **MCP servers**: Configured per agent type with appropriate permissions. The Docker MCP Catalog provides 200+ verified servers for common integrations.
+- **MCP servers**: Configured per agent type with appropriate permissions. The ecosystem now runs 10,000+ servers in production (19,831+ indexed on Glama, 97M monthly SDK downloads); the Docker MCP Catalog remains one curated entry point among several.
 
 Terminal tools (tmux, yazi, neovim) are optional enhancements for the developer's workflow — they are not required for agent operation.
 
@@ -518,6 +544,8 @@ Agents run in isolated cloud environments. Implement governance framework with I
 
 **Partially achievable today.** Claude Code runs locally, but headless agent primitives (`CronCreate`, `run_in_background`, SessionStart/Stop hooks) enable a subset of Phase 3 capabilities without cloud infrastructure: scheduled local agents for overnight audits, preflight validation at session start, and background telemetry analysis. Full cloud execution (agents in persistent pods, remote monitoring) requires infrastructure that does not yet exist in the Claude Code ecosystem. The primitives are there (agent spawning, task coordination, hook-based governance), but the deployment model is local-first. Teams pursuing full Phase 3 would need custom infrastructure around Claude Code's CLI.
 
+One specific gap closed this year: `--max-budget-usd` now correctly halts background subagents once exceeded, rather than allowing overrun — a real, previously-open risk for unsupervised overnight execution.
+
 ### Phase 4: Full Autonomy
 
 Agents execute complete tasks from requirements to PR. Human attention focuses on review and architecture.
@@ -558,11 +586,17 @@ PDS's plugin architecture positions it well for enterprise environments, but thr
 
 **Path forward:** For enterprise deployments, PDS should provide a managed-settings overlay that IT administrators can merge into their `managed-settings.json`. This preserves the full PDS hook lifecycle while satisfying enterprise lockdown requirements.
 
+### Regulatory Context
+
+The EU AI Act begins enforcement in August 2026, requiring lineage-backed auditability and documented human oversight for high-risk AI systems, with penalties up to €35M or 7% of global annual turnover. PDS's audit trail (commits, agent logs, token usage) and human gate were designed before this deadline existed but map directly onto what it requires. That said, regulation is arriving into a field that isn't ready for it: Deloitte's 2026 research found only about 20% of organizations have a mature AI governance model, and Gartner projects 40% of agentic AI projects will be canceled by the end of 2027, largely from integration complexity and governance gaps [24]. PDS's phase gates and artifact requirements exist to be the kind of mechanical governance this data suggests most organizations don't yet have.
+
 ### Runtime Security
 
 - **Secret blocking**: Agents cannot access or transmit secrets
 - **Call logging**: All agent actions logged for audit
 - **Interceptors**: Custom policies for organization-specific requirements
+
+**Why this matters, concretely:** In July 2026, Sysdig documented the first fully agentic ransomware attack it could identify — an autonomous LLM agent (dubbed JADEPUFFER) that gained initial access through a known Langflow RCE, enumerated the environment, escalated to a production database, and ran a full extortion playbook end to end, self-correcting and redeploying a fixed payload 31 seconds after hitting an error, unsupervised [22]. No PDS-specific finding here — the lesson is general: the skill threshold for running a complete, adaptive attack drops sharply once an agent can test, fail, and correct on its own. Defense-in-depth (sandboxing, deny rules, hook gates, permission tiers, the human gate) is the direct answer to exactly this capability, not a hypothetical one.
 
 ### Audit Trail
 
@@ -588,22 +622,27 @@ Token costs vary dramatically by model tier. Real per-model pricing (per million
 
 | Model | Input | Output | Typical Role |
 |-------|-------|--------|-------------|
-| Haiku 3.5 | $0.80 | $4.00 | Lite-tier workers, scout |
-| Haiku 4.5 | $1.00 | $5.00 | Lite-tier workers |
-| Sonnet | $3.00 | $15.00 | Med-tier workers, validator, reviewer |
-| Opus 4 / 4.1 | $15.00 | $75.00 | Orchestrator (med/heavy), researcher (heavy) |
-| Opus 4.5 | $5.00 | $25.00 | Cost-effective reasoning |
-| Opus 4.6 fast | $30.00 | $150.00 | Maximum capability orchestrator |
+| Haiku 4.5 | $1.00 | $5.00 | Lite-tier workers, scout |
+| Sonnet 5 | $2.00* | $10.00* | Med-tier workers, validator, reviewer |
+| Opus 5 | $5.00 | $25.00 | Orchestrator (med/heavy), researcher (heavy) |
+| Opus 5 (fast mode) | $10.00 | $50.00 | Maximum capability orchestrator |
+| Fable 5 / Mythos 5 | $10.00 | $50.00 | Heaviest reasoning, limited/frontier use |
 
-**Cost examples by swarm tier:**
+*Sonnet 5 launch pricing through Aug 31, 2026; standard pricing is $3.00 / $15.00 thereafter [16]. Opus 5 batch API pricing is $2.50 / $12.50; cached reads are $0.50 per Mtok. Fable 5 and Mythos 5 pricing per [17]; Mythos 5 is a limited release (Project Glasswing) without Fable 5's safety classifiers.
 
-- **Lite swarm** (haiku workers, sonnet orchestrator): A 2-worker swarm with ~50k turns total. Workers at haiku ($0.80/$4 per Mtok) plus orchestrator at sonnet ($3/$15 per Mtok). Estimated: $5-15 for a routine task.
-- **Med swarm** (sonnet workers, opus orchestrator): A 3-worker swarm with ~100k turns total. Workers at sonnet ($3/$15) plus orchestrator at opus ($15/$75). Estimated: $20-60 for a substantial task.
-- **Heavy swarm** (sonnet workers, opus orchestrator, full specialists): A 4-worker swarm with full specialist roster. Estimated: $50-150 for a complex multi-boundary refactor.
+**Cost examples by swarm tier** (updated for current pricing — Sonnet 5's launch pricing is notably cheaper input-side than the model it replaced):
+
+- **Lite swarm** (haiku workers, sonnet orchestrator): A 2-worker swarm with ~50k turns total. Workers at Haiku 4.5 ($1/$5 per Mtok) plus orchestrator at Sonnet 5 ($2/$10 launch pricing). Estimated: $5-15 for a routine task.
+- **Med swarm** (sonnet workers, opus orchestrator): A 3-worker swarm with ~100k turns total. Workers at Sonnet 5 ($2/$10) plus orchestrator at Opus 5 ($5/$25). Estimated: $15-50 for a substantial task — somewhat cheaper than the prior generation at equivalent turn counts.
+- **Heavy swarm** (sonnet workers, opus/fable orchestrator, full specialists): A 4-worker swarm with full specialist roster, orchestrator at Opus 5 or Fable 5 for the hardest reasoning roles. Estimated: $50-150 for a complex multi-boundary refactor.
 
 **Swarm tiers** provide cost control at the architectural level. A lite tier swarm using haiku workers costs roughly 10-20x less than a heavy tier swarm for the same number of turns. The grill protocol recommends the appropriate tier based on problem complexity, preventing over-spending on routine tasks while ensuring complex work gets adequate model capability.
 
-Token budgets provide control — tasks pause and request intervention when exhausted.
+Token budgets provide control — tasks pause and request intervention when exhausted. This is no longer just a design intent: `--max-budget-usd` now correctly halts background subagents once the cap is reached (a prior gap where overrun was possible has been fixed), and new spawns are denied once the budget is hit.
+
+### Subscription vs. Credits
+
+Claude Code usage today runs through subscription plans (Pro/Max/Team/Enterprise) — the pricing and cost examples above assume this. But the boundary between "interactive Claude Code usage" and "programmatic agent usage" is actively being renegotiated by Anthropic, and PDS's agent-heavy swarms sit closer to the programmatic side than a single chat session does. Anthropic announced on May 13, 2026 that Agent SDK and headless (`claude -p`) usage would move off subscription pools onto a separate monthly credit allowance starting June 15 — then paused the change on the day it was due to take effect, with no replacement program announced as of this writing [27]. Nothing about PDS's cost model changes today as a result, but teams running large or frequent swarms should treat this as unresolved, not settled: a future change to how programmatic usage is metered could shift PDS's real-world cost profile without any change to PDS itself.
 
 ### Prompt Cache Economics
 
@@ -810,6 +849,10 @@ This is a living document. The model evolves with implementation experience, imp
 
 **Plugin**: A Claude Code extension unit that bundles skills, agents, hooks, and MCP server configurations. Installed once at the user level, available across all projects. PDS distributes as a plugin.
 
+**Harness**: Everything surrounding a foundation model that turns latent capability into reliable, auditable behavior — the tool loop, context management, permissions, memory. Formalized in 2026 as *Agent = Model + Harness*. Claude Code is PDS's harness; PDS itself is currently a configuration layer riding on top of it. See "The Harness Layer: Where PDS Sits Today."
+
+**Harness Engineering**: The 2026-named discipline of designing that layer deliberately — treating the model as a frozen utility and pushing orchestration, safety, memory, and verification into the surrounding application. See "The Harness Layer: Where PDS Sits Today."
+
 **Hook**: A lifecycle event handler that fires automatically at specific points in the agent lifecycle. Claude Code provides 28 hook events. PDS uses hooks for quality gates, audit logging, and permission routing.
 
 **Settings Hierarchy**: Claude Code's 4-layer settings merge system: policy settings (enterprise admin, highest priority) > user settings (`~/.claude/settings.json`) > project settings (`.claude/settings.json`) > local settings (`.claude/settings.local.json`). Deny rules are additive — lower layers cannot remove higher-layer denies.
@@ -823,6 +866,8 @@ This is a living document. The model evolves with implementation experience, imp
 **Instinct**: A structured observation of a recurring pattern — lighter than a skill, with confidence levels and an automated lifecycle managed by scout.
 
 **Acceptance Criteria**: Specific, mechanically verifiable conditions defining task completion.
+
+**EARS (Easy Approach to Requirements Syntax)**: A constrained natural-language requirements template — "While `<precondition>`, when `<trigger>`, the `<system>` shall `<response>`" — developed by Alistair Mavin at Rolls-Royce and published at RE'09 [21]. Available prior art for writing PDS acceptance criteria; not currently encoded into `/pds:grill`.
 
 **Phase Gate**: A mechanical enforcement point (PreToolUse hook or prompt evaluator) that blocks phase transitions unless required artifacts exist. Prevents SDLC phases from being skipped.
 
@@ -885,6 +930,32 @@ This is a living document. The model evolves with implementation experience, imp
 14. Beck, K. (2004). *Extreme Programming Explained: Embrace Change.* 2nd ed. Addison-Wesley. — Feedback loops, eliminate waste, simplicity, sustainable pace. XP's waste elimination principle applied to software development predates but aligns with lean software thinking.
 
 15. Poppendieck, M. & T. (2003). *Lean Software Development: An Agile Toolkit.* Addison-Wesley. — Bridges Toyota Production System to software: eliminate waste, amplify learning, deliver fast, empower the team. Maps manufacturing waste categories to software development equivalents.
+
+16. Anthropic. (2026). "Claude Sonnet 5." *Anthropic News.* https://www.anthropic.com/news/claude-sonnet-5 — Launch pricing and positioning as "the most agentic Sonnet so far."
+
+17. Anthropic. (2026). "Claude Fable 5 and Claude Mythos 5." *Anthropic News.* https://www.anthropic.com/news/claude-fable-5-mythos-5 — New Mythos tier above Opus; Fable 5 ships with safety classifiers, Mythos 5 (limited release, Project Glasswing) does not.
+
+18. Model Context Protocol. (2026). "The 2026 MCP Roadmap" and "The 2026-07-28 MCP Specification Release Candidate." *MCP Blog.* https://blog.modelcontextprotocol.io/ — Stateless protocol core, Extensions framework, Tasks extension, MCP Apps, OAuth/OIDC-aligned auth hardening, formal deprecation policy. Described by maintainers as the largest revision in MCP's history.
+
+19. Hashimoto, M. (2026). Blog post coining "Agent = Model + Harness," following an OpenAI internal-infrastructure writeup by engineer Ryan Lopopolo. Early February 2026.
+
+20. Böckeler, B. & Fowler, M. (2026). "Harness Engineering for Coding Agent Users." *martinfowler.com.* https://martinfowler.com/articles/harness-engineering.html — Extends the Model + Harness formula into a "guides and sensors" taxonomy for harness components.
+
+21. Mavin, A., Wilkinson, P., et al. (2009). "Easy Approach to Requirements Syntax (EARS)." *RE'09, IEEE International Requirements Engineering Conference.* Also: https://alistairmavin.com/ears/ — Constrained requirements template developed at Rolls-Royce for jet-engine airworthiness requirements; adopted by Airbus, NASA, Siemens, Honeywell. AWS's Kiro uses EARS for `requirements.md` acceptance criteria.
+
+22. Sysdig. (2026). "JADEPUFFER: Agentic Ransomware for Automated Database Extortion." *Sysdig Blog.* https://www.sysdig.com/blog/jadepuffer-agentic-ransomware-for-automated-database-extortion — First documented fully agentic ransomware attack: autonomous LLM agent chained initial access, lateral movement, and extortion end to end, self-correcting mid-attack.
+
+23. Gartner. (2025). "Gartner Predicts by 2027, Organizations Will Use Small, Task-Specific AI Models Three Times More Than General-Purpose Large Language Models." Press release, April 9, 2025. — More than half of enterprise GenAI models will be domain-specific by 2027, up from 1% in 2024.
+
+24. Gartner. (2025). "Gartner Predicts 40% of Enterprise Apps Will Feature Task-Specific AI Agents by 2026, Up from Less Than 5% in 2025." Press release, August 26, 2025. — Also source for Gartner's prediction that 40% of agentic AI projects will be canceled by end of 2027 due to integration complexity and governance gaps.
+
+25. GitHub. Delimarsky, D. (2025). Spec Kit launch post. *GitHub Blog,* September 2, 2025. https://github.com/github/spec-kit — Specs-as-source-of-truth workflow (constitution → specify → plan → tasks → implement); 120k+ stars, fastest-growing GitHub dev tool June-July 2026.
+
+26. BMAD-METHOD. GitHub issues #511, #1235, #1343, #1188. https://github.com/bmad-code-org/BMAD-METHOD — Documented token-cost and context-consumption problems: 80-100x token usage vs. not using BMAD, daily rate-limit exhaustion on the $100/mo Max plan, up to 86% of context consumed by a single agent's knowledge base on activation.
+
+27. The New Stack. (2026). "Anthropic pauses Claude Agent SDK subscription change on day it was due to take effect." https://thenewstack.io/anthropic-pauses-claude-agent-sdk-subscription-change/ — Agent SDK credits split announced May 13, 2026 for a June 15 effective date; paused the day it was to take effect, no replacement program announced.
+
+28. AWS. (2026). Kiro — spec-first agentic IDE, GA since March 2026. Requirements.md uses EARS notation for acceptance criteria; design.md and tasks.md complete the spec-first workflow. Reception mixed; an August 2025 metering bug caused billing shock for early adopters before AWS paused the affected charges. See `docs/competitive-analysis.md` for fuller comparison.
 
 ---
 
@@ -977,3 +1048,15 @@ Per-model pricing as defined in `modelCost.ts` (per million tokens):
 | Opus 4.6 fast | $30.00 | $150.00 | $37.50 | $3.00 |
 
 Prompt caching significantly reduces effective cost for PDS workflows — the CLAUDE.md content, skills table, and system prompt sections are cached across turns. In a typical multi-turn agent session, 60-80% of input tokens may hit the cache at 10% of the base input price.
+
+### Update — Observed 2026-07-27
+
+Four months after the snapshot above, several platform behaviors have changed enough to warrant a note without rewriting the March observations in place:
+
+- **Subagents run in the background by default** now, rather than synchronously. Completion surfaces via `Notification`-hook events (`agent_needs_input`, `agent_completed`) instead of a foreground return.
+- **Background agents auto-commit, push, and open draft PRs** on worktree completion by default, instead of stopping to ask.
+- **The built-in Explore agent inherits the main session's model** (capped at Opus), not Haiku as previously observed.
+- **Subagents and context compaction inherit the session's extended-thinking configuration**, where previously this wasn't guaranteed.
+- **`--max-budget-usd` now correctly halts background subagents** once exceeded; new spawns are denied once the cap is hit. This was previously a gap.
+
+The pricing table above (Cost Model Internals) is left as originally observed on March 31, 2026 — see Cost Considerations, in the main body, for current pricing. This appendix remains a point-in-time snapshot, not a maintained reference.
