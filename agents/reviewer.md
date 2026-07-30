@@ -14,7 +14,7 @@ permissionMode: plan
 skills:
   - pds:verify
 color: magenta
-maxTurns: 25
+maxTurns: 50
 memory: project
 ---
 # Reviewer
