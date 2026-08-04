@@ -694,6 +694,21 @@ run_tests() {
   assert "settings has spinnerTips"    python3 -c "import json; d=json.load(open('$SRC_DIR/.claude/settings.json')); assert 'spinnerTipsOverride' in d"
   assert "settings has attribution"    python3 -c "import json; d=json.load(open('$SRC_DIR/.claude/settings.json')); assert 'attribution' in d"
 
+  # #181 regression guard: the orchestrator's Task(...) spawn allowlist must use
+  # pds:-namespaced agent names and cover every spawnable agent on disk. A bare
+  # name matches nothing, which empties the entire roster and breaks all dispatch.
+  assert "orchestrator spawn roster valid" python3 "$SRC_DIR/scripts/check-agent-roster.py" "$SRC_DIR"
+
+  # #170/#182 regression guard: a WorktreeCreate hook takes ownership of
+  # worktree creation from Claude Code. If it doesn't create one and print its
+  # path, every worktree-isolated agent (pds:worker) fails to spawn.
+  assert "worktree hooks honor contract" bash "$SRC_DIR/hooks/tests/test-worktree-hooks.sh"
+  assert "roster-check hook namespaced" bash "$SRC_DIR/hooks/tests/test-roster-check.sh"
+
+  # A malformed workflow file skips every CI job while reporting only
+  # "workflow file issue" — the suite looks green because it never ran.
+  assert "CI workflows are valid" python3 "$SRC_DIR/scripts/check-workflows.py" "$SRC_DIR"
+
   echo ""
 
   # --- Test 2: Skill namespace ---

@@ -87,7 +87,7 @@ Claude Code uses a 4-layer settings system:
 | Component | Mechanism | PDS Uses? |
 |-----------|-----------|-----------|
 | Skills | skills/ directory with SKILL.md files | Yes — 23 skills |
-| Agents | agents/ directory with .md files | Yes — 8 agents |
+| Agents | agents/ directory with .md files | Yes — 9 agents |
 | Hooks | hooks.json in plugin root | Yes — 11 events in hooks.json (+1 PreToolUse in orchestrator agent) |
 | MCP servers | MCP config in plugin manifest | No |
 | Settings overlay | Plugin-scoped settings | Partially — env vars |

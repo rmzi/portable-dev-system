@@ -17,6 +17,31 @@ jobs:
         run: bash hooks/tests/test-orchestrator-pr-gate.sh
       - name: orchestrator-teardown-gate tests
         run: bash hooks/tests/test-orchestrator-teardown-gate.sh
+      - name: worktree hook tests
+        run: bash hooks/tests/test-worktree-hooks.sh
+      - name: roster-check hook tests
+        run: bash hooks/tests/test-roster-check.sh
+
+  dispatch-contract:
+    # Static guards for the two bugs that have each, on their own, made every
+    # swarm undispatchable while the rest of the suite stayed green:
+    #   #181 — orchestrator Task(...) allowlist used bare, un-namespaced names
+    #   #170/#182 — WorktreeCreate hook returned no worktree path
+    # These run offline. The live end-to-end proof is scripts/smoke-dispatch.sh,
+    # which needs an authenticated `claude` and therefore cannot run here.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: "workflow files are valid YAML"
+        run: python3 scripts/check-workflows.py .
+      - name: "orchestrator spawn roster is namespaced and complete"
+        run: python3 scripts/check-agent-roster.py .
+      - name: WorktreeCreate hook returns a path
+        run: bash hooks/tests/test-worktree-hooks.sh
+      - name: "SubagentStart roster check handles the pds namespace"
+        run: bash hooks/tests/test-roster-check.sh
+      - name: install.sh static suite
+        run: bash install.sh --test
 
   cli:
     runs-on: ubuntu-latest

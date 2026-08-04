@@ -105,7 +105,7 @@ make install    # symlinks this checkout as the plugin
 ```
 portable-dev-system/
 ├── .claude-plugin/plugin.json     # Plugin manifest
-├── agents/                        # 8 agent definitions + shared-rules.md
+├── agents/                        # 9 agent definitions + shared-rules.md
 ├── skills/                        # 15 skills (dir/SKILL.md format)
 │   ├── swarm/SKILL.md
 │   ├── team/SKILL.md

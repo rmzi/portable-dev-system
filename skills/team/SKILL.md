@@ -99,11 +99,11 @@ Three dispatch modes for spawning agents. Choose based on task characteristics.
 Default for all swarm work units. Long-running, tracked, role-specialized.
 
 ```
-worker = Task(worker, team_name="project",
+worker = Task(pds:worker, team_name="project",
      prompt="Implement auth module per task description.")
 ```
 
-No `name=` — the orchestrator spawning this is itself a named teammate and cannot spawn further named teammates ("the team roster is flat," confirmed via #171). Capture `worker.agent_id` for direct addressing; prefer task-mediated coordination (contract in the task description, self-claim via `TaskList`) for routine coordination.
+Note the `pds:` prefix — PDS agents ship in a plugin and register as `pds:<name>`; a bare `Task(worker)` matches nothing and empties the whole roster (#181). No `name=` — the orchestrator spawning this is itself a named teammate and cannot spawn further named teammates ("the team roster is flat," confirmed via #171). Capture `worker.agent_id` for direct addressing; prefer task-mediated coordination (contract in the task description, self-claim via `TaskList`) for routine coordination.
 
 **When to use:** Implementation tasks, validation, review, documentation — anything that produces artifacts, needs a worktree, or should appear in TaskList.
 
@@ -129,7 +129,7 @@ Background or scheduled execution without an interactive session.
 
 ```
 Is the task >3 turns with artifact output?
-  YES -> Team teammate (Task(worker))
+  YES -> Team teammate (Task(pds:worker))
   NO -> Does the task need the parent's full context?
     YES -> Fork subagent
     NO -> Does the task need an interactive session?

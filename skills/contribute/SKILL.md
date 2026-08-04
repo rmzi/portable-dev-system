@@ -20,6 +20,16 @@ Read `docs/whitepaper.md` before changing workflow. The whitepaper is the source
 ### 2. Make your changes
 Implement the feature, fix, or improvement.
 
+**If you touched `agents/`, `hooks/`, or spawn syntax in `skills/`, prove dispatch still works before going further:**
+
+```bash
+python3 scripts/check-agent-roster.py .   # static: allowlist namespaced + complete
+bash hooks/tests/test-worktree-hooks.sh   # static: WorktreeCreate returns a path
+scripts/smoke-dispatch.sh                 # live: actually spawn agents
+```
+
+Dispatch is the load-bearing wall. If the orchestrator cannot spawn agents, every skill in PDS still reads correctly and nothing works. This has shipped twice (#170, #181) with a fully green test suite, because both failures were violations of Claude Code's contract rather than PDS's own. Treat a green static suite as necessary, never sufficient.
+
 ### 3. Update the whitepaper if needed
 If your change affects any of these, update `docs/whitepaper.md`:
 - **SDLC phases** — phase descriptions, inputs, outputs, transitions

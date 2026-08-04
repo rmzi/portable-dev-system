@@ -4,7 +4,7 @@
     "name": "rmzi"
   },
   "metadata": {
-    "description": "Portable Development System — AI-assisted development methodology"
+    "description": "Portable Development System \u2014 AI-assisted development methodology"
   },
   "plugins": [
     {
@@ -14,13 +14,18 @@
         "repo": "rmzi/portable-dev-system",
         "ref": "main"
       },
-      "description": "Portable Development System — skills for consistency, agents for scale.",
-      "version": "5.1.0",
+      "description": "Portable Development System \u2014 skills for consistency, agents for scale.",
+      "version": "5.1.1",
       "author": {
         "name": "rmzi"
       },
       "repository": "https://github.com/rmzi/portable-dev-system",
-      "keywords": ["sdlc", "agents", "skills", "development"],
+      "keywords": [
+        "sdlc",
+        "agents",
+        "skills",
+        "development"
+      ],
       "category": "productivity"
     }
   ]

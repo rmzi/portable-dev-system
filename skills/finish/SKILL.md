@@ -62,6 +62,15 @@ npm test    # or equivalent
 
 Rebasing can introduce subtle breakage — verify.
 
+**If the branch touched `agents/`, `hooks/`, or any spawn syntax in `skills/`, also run the live dispatch smoke test:**
+
+```bash
+scripts/smoke-dispatch.sh          # researcher + worker (covers both spawn paths)
+scripts/smoke-dispatch.sh --all    # every spawnable agent type
+```
+
+This is not optional paranoia. PDS has twice shipped a release in which the orchestrator could not spawn a single agent — #170 and #181 — and the full static suite was green both times, because the contract being violated was Claude Code's, not PDS's. The static guards (`install.sh --test`) catch the two *known* shapes; only an actual spawn proves dispatch still works. It needs an authenticated `claude`, so CI cannot run it — a human must, before shipping.
+
 ### 5. Permission Audit
 
 Review `.claude/settings.local.json` for permission patterns that should be promoted to `.claude/settings.json`:
