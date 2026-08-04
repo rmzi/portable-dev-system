@@ -34,22 +34,22 @@ fi
 KNOWN_PHASES="plan decompose dispatch validate consolidate knowledge"
 if [ -f "$SWARM_DIR/phase" ]; then
   PHASE=$(tr -d '[:space:]' < "$SWARM_DIR/phase" 2>/dev/null) || {
-    printf "BLOCKED: Cannot read .claude/swarm/phase — check file permissions." >&2
+    printf "[PDS GATE] BLOCKED: Cannot read .claude/swarm/phase — check file permissions." >&2
     exit 2
   }
   if [ -z "$PHASE" ]; then
-    printf "BLOCKED: .claude/swarm/phase is empty. Write the current phase name and retry." >&2
+    printf "[PDS GATE] BLOCKED: .claude/swarm/phase is empty. Write the current phase name and retry." >&2
     exit 2
   fi
   if ! echo "$KNOWN_PHASES" | grep -qw "$PHASE"; then
-    printf "BLOCKED: Unrecognized phase '%s' in .claude/swarm/phase.\nValid phases: %s" "$PHASE" "$KNOWN_PHASES" >&2
+    printf "[PDS GATE] BLOCKED: Unrecognized phase '%s' in .claude/swarm/phase.\nValid phases: %s" "$PHASE" "$KNOWN_PHASES" >&2
     exit 2
   fi
   if [[ "$PHASE" != "knowledge" ]]; then
     exit 0
   fi
 else
-  printf "WARNING: .claude/swarm/phase missing — phase gate bypassed, falling through to artifact checks.\n" >&2
+  printf "[PDS GATE] WARNING: .claude/swarm/phase missing — phase gate bypassed, falling through to artifact checks.\n" >&2
 fi
 
 # From here on, phase is "knowledge" (or the phase file is missing entirely) — this
@@ -70,13 +70,13 @@ if [ ! -f "$SWARM_DIR/scout-report.md" ]; then
 fi
 
 if [ -n "$MISSING" ]; then
-  printf "BLOCKED: Cannot end swarm — missing required phase artifacts:\n%b\nComplete all phases before stopping." "$MISSING" >&2
+  printf "[PDS GATE] BLOCKED: Cannot end swarm — missing required phase artifacts:\n%b\nComplete all phases before stopping." "$MISSING" >&2
   exit 2
 fi
 
 # Worktree cleanup check (#106) — all swarm worktrees must be removed before teardown
 if [ -d "$CWD/.worktrees" ] && [ -n "$(ls -A "$CWD/.worktrees" 2>/dev/null)" ]; then
-  printf "BLOCKED: Cannot end swarm — worktrees still exist in .worktrees/:\n" >&2
+  printf "[PDS GATE] BLOCKED: Cannot end swarm — worktrees still exist in .worktrees/:\n" >&2
   ls "$CWD/.worktrees" | sed 's/^/  - /' >&2
   printf "Remove each worktree with: git worktree remove .worktrees/<name>" >&2
   exit 2
@@ -84,7 +84,7 @@ fi
 
 # Artifact archival check (#106) — docs/swarm-reports/ must exist before teardown
 if [ ! -d "$CWD/docs/swarm-reports" ]; then
-  printf "BLOCKED: Cannot end swarm — docs/swarm-reports/ does not exist.\nArchive phase artifacts there before cleanup." >&2
+  printf "[PDS GATE] BLOCKED: Cannot end swarm — docs/swarm-reports/ does not exist.\nArchive phase artifacts there before cleanup." >&2
   exit 2
 fi
 
