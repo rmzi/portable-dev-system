@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  hook-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: secret-scrub hook tests
+        run: bash scripts/test-hooks.sh
+      - name: orchestrator-pr-gate tests
+        run: bash hooks/tests/test-orchestrator-pr-gate.sh
+      - name: orchestrator-teardown-gate tests
+        run: bash hooks/tests/test-orchestrator-teardown-gate.sh
+
+  cli:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cli
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: cargo build
+        run: cargo build --verbose
+      - name: cargo test
+        run: cargo test --verbose
+
+  plugin-manifest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: validate plugin.json / marketplace.json parse
+        run: |
+          python3 -c "import json; json.load(open('.claude-plugin/plugin.json'))"
+          python3 -c "import json; json.load(open('.claude-plugin/marketplace.json'))"
+      - name: VERSION matches plugin.json/marketplace.json
+        run: |
+          VERSION=$(cat VERSION)
+          PLUGIN_VERSION=$(python3 -c "import json; print(json.load(open('.claude-plugin/plugin.json'))['version'])")
+          MARKETPLACE_VERSION=$(python3 -c "import json; print(json.load(open('.claude-plugin/marketplace.json'))['plugins'][0]['version'])")
+          if [ "$VERSION" != "$PLUGIN_VERSION" ] || [ "$VERSION" != "$MARKETPLACE_VERSION" ]; then
+            echo "Version mismatch: VERSION=$VERSION plugin.json=$PLUGIN_VERSION marketplace.json=$MARKETPLACE_VERSION"
+            exit 1
+          fi
