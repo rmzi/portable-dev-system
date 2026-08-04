@@ -8,7 +8,7 @@ All notable changes to this project will be documented in this file.
 - **Swarm/team coordination retrofitted onto implicit-team semantics.** Claude Code removed `TeamCreate`/`TeamDelete` at v2.1.178 — agent teams are now implicit per-session (one team, formed on the first spawn; `team_name` accepted-but-ignored, session-derived name). The orchestrator agent, `/pds:swarm`, `/pds:team`, the SessionStart context, and the whitepaper/architecture/teams/proposal docs no longer instruct agents to call the removed tools; teardown is now "shut every agent down, then the team dissolves at session end." Enduring docs state the durable guarantee only — migration notes live in code comments and the tracker (#159), not in the whitepaper.
 
 ### Removed
-- **`TeamCreate`/`TeamDelete` references across the live surface** (agent, skills, hooks, settings, docs). The teardown gate (`orchestrator-teardown-gate.sh`) is stubbed pending a decision on where its checks re-home (Stop-based gate vs fold into the PR gate) — its completion checks are preserved, its dead `TeamDelete` PreToolUse trigger removed.
+- **`TeamCreate`/`TeamDelete` references across the live surface** (agent, skills, hooks, settings, docs). The teardown gate's dead `TeamDelete` `PreToolUse` trigger was removed; its completion checks are preserved and now run as an orchestrator-scoped `Stop` hook (`orchestrator-teardown-gate.sh`) — see the `[4.24.0]` entry above and `docs/adr/0007` for the resolved re-home decision (Stop-based gate).
 
 ## [4.24.0] - 2026-08-03
 

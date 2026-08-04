@@ -1,3 +1,4 @@
+#!/bin/bash
 # PDS Stop gate for orchestrator — blocks the orchestrator from stopping while
 # .claude/swarm/phase reads "knowledge" unless all 3 phase reports, a clean
 # .worktrees/, and docs/swarm-reports/ all exist. This is the teardown-equivalent
