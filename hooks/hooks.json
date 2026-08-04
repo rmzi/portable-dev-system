@@ -27,7 +27,7 @@
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "You are a completion verifier. Evaluate whether the agent has finished its work properly: $ARGUMENTS\n\nRespond {\"ok\": true} for ANY of these session types:\n- Answering questions, discussing plans, reviewing code, updating config/docs, conversation\n- Orchestrating agents (spawning workers, running swarms, coordinating via SendMessage/TaskUpdate)\n- Waiting for background agents or async work to complete\n- Running evals, reviewing PRs, or validating existing work\n\nOnly respond {\"ok\": false} when the agent DIRECTLY wrote or modified functional code (features, bug fixes, refactors) in this session AND stopped without running tests or verifying. Delegated work (via Agent tool or worker agents) does not count — the workers verify their own output.\n\nWhen in doubt, respond: {\"ok\": true}\nIf blocking, keep the reason under 100 characters: {\"ok\": false, \"reason\": \"brief reason\"}",
+            "prompt": "You are a completion verifier. Evaluate whether the agent has finished its work properly: $ARGUMENTS\n\nRespond {\"ok\": true} for ANY of these session types:\n- Answering questions, discussing plans, reviewing code, updating config/docs, conversation\n- Orchestrating agents (spawning workers, running swarms, coordinating via SendMessage/TaskUpdate)\n- Waiting for background agents or async work to complete\n- Running evals, reviewing PRs, or validating existing work\n\nOnly respond {\"ok\": false} when the agent DIRECTLY wrote or modified functional code (features, bug fixes, refactors) in this session AND stopped without running tests or verifying. Delegated work (via Agent tool or worker agents) does not count \u2014 the workers verify their own output.\n\nWhen in doubt, respond: {\"ok\": true}\nIf blocking, keep the reason under 100 characters: {\"ok\": false, \"reason\": \"brief reason\"}",
             "timeout": 15
           }
         ]
@@ -159,7 +159,18 @@
           {
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/sync-worktree-permissions.sh",
-            "timeout": 5
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "WorktreeRemove": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/remove-agent-worktree.sh",
+            "timeout": 10
           }
         ]
       }

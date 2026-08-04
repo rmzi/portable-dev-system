@@ -34,7 +34,7 @@ pds/
 
 Claude Code loads the plugin from `~/.claude/plugins/pds/`. On load:
 - `hooks/hooks.json` registers event handlers
-- `agents/*.md` become available for `Task(agent-type)` spawning
+- `agents/*.md` become available for `Task(pds:agent-type)` spawning — plugin agents are namespaced under the plugin name (`pds:worker`, `pds:validator`, …); only project-scope agents in `.claude/agents/` resolve bare
 - `skills/*/SKILL.md` become available as `/pds:<name>` commands
 - `.claude/settings.json` is merged into the session's settings
 
@@ -137,14 +137,15 @@ Agents are markdown files with YAML frontmatter. Claude Code reads the frontmatt
 
 ```yaml
 ---
-name: agent-name            # Used in Task(agent-name) and SendMessage(to=)
+name: agent-name            # Registers as pds:agent-name (plugin scope); used in Task(pds:agent-name)
 description: one-liner      # Shown in /help and agent selection
 inherits: shared-rules      # Behavioral rules (all agents inherit this)
 model: opus|sonnet|haiku    # Default model (overridable at spawn via model= param)
 tools:                      # Allowed tools (explicit allowlist)
   - Read
   - Write
-  - Task(worker, validator) # Typed spawn — can only create these agent types
+  - Task(pds:worker, pds:validator) # Typed spawn — allowlist MUST use pds:-prefixed names (#181);
+                            # bare names match nothing and empty the entire roster
   - SendMessage
 permissionMode: default|acceptEdits|plan  # How tool permissions are handled
 skills:                     # Available /pds:<name> commands

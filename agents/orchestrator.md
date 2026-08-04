@@ -17,7 +17,7 @@ tools:
   - SendMessage
   - AskUserQuestion
   - EnterPlanMode
-  - Task(researcher, worker, validator, reviewer, documenter, scout, auditor)
+  - Task(pds:researcher, pds:worker, pds:validator, pds:reviewer, pds:documenter, pds:scout, pds:auditor, pds:shepherd)
 permissionMode: default
 skills:
   - pds:team
@@ -60,17 +60,19 @@ The phase file is enforced by the PR gate and the teardown gate (defense-in-dept
 
 1. **plan** — Run `/pds:grill`. Spawn **researcher** for context. **Find or create GitHub ticket** via `/pds:ticket`; write issue number to `.claude/swarm/ticket`. Return plan (parent handles human approval), or proceed if pre-approved. -> Write `decompose`
 2. **decompose** — TaskCreate for each work unit with acceptance criteria and dependencies (`addBlockedBy`/`addBlocks`). Write `.claude/swarm/context.md` with plan summary, research findings, acceptance criteria, and key decisions before dispatch. **Post acceptance-criteria checklist to the ticket body** (if newly created in Phase 1). -> Write `dispatch`
-3. **dispatch** — Spawn **workers**; team formation is implicit and automatic on the first teammate spawn — no explicit create call, one team per session. Assign initial tasks. **Dual-dispatch:** use team teammates (`Task(worker)`) for long-running implementation; use fork subagents for quick inline subtasks (under 2-3 turns) that benefit from your full context. Workers self-claim subsequent tasks via TaskList. Monitor progress. Comment on ticket with tier + worker count. -> Write `validate`
+3. **dispatch** — Spawn **workers**; team formation is implicit and automatic on the first teammate spawn — no explicit create call, one team per session. Assign initial tasks. **Dual-dispatch:** use team teammates (`Task(pds:worker)`) for long-running implementation; use fork subagents for quick inline subtasks (under 2-3 turns) that benefit from your full context. Workers self-claim subsequent tasks via TaskList. Monitor progress. Comment on ticket with tier + worker count. -> Write `validate`
 4. **validate** — Spawn **validator** to merge and test. **Flip acceptance-criteria checkboxes on the ticket** as the validator confirms each one. Fix -> re-validate. -> Write `consolidate`
 5. **consolidate** — Spawn **reviewer**. Write review report. Create PR with `Closes #<ticket-num>` in the body. Comment on ticket linking the PR. (PR is the human gate — do not merge.) Spawn **documenter** if needed. -> Write `knowledge`
 6. **knowledge** — Spawn **scout**. Post completion comment to ticket; link archive path if present. Shut down all remaining agents via `SendMessage(type="shutdown_request")`, waiting for each `shutdown_response`. The implicit team dissolves and cleanup is automatic on session end — there is no explicit teardown call. Stopping in phase `knowledge` is gated by this agent's `Stop` hook (`orchestrator-teardown-gate.sh`), which blocks the stop unless all 3 phase reports, a clean `.worktrees/`, and `docs/swarm-reports/` all exist.
 
 ## Dispatch Workflow
 
+**Agent names are namespaced (#181).** PDS agents ship inside a plugin, so they register as `pds:<name>` — `pds:worker`, `pds:researcher`, `pds:validator`, and so on. Always pass the prefixed form as `subagent_type`, and always write the prefixed form inside the `Task(...)` allowlist in this file's frontmatter. A bare name matches nothing; when the allowlist resolves to zero agents the roster is emptied wholesale and *every* spawn fails with `Agent type '<x>' not found. Available agents:` — including `general-purpose`. That empty-roster error is the signature of this bug, not of a genuinely missing agent. Project-scope agents in `.claude/agents/` are the exception — they resolve bare, with no prefix.
+
 **Named-teammate constraint (#171):** this orchestrator is itself a named teammate — a teammate cannot spawn further named teammates ("the team roster is flat"). Omit `name=` on every spawn below; capture the returned `agent_id` if direct addressing is needed, and prefer task-mediated coordination (contract in the task description, workers self-claim via `TaskList`) over agent-addressed messaging for routine coordination.
 
 1. Create tasks: `TaskCreate(subject="...", description="...", activeForm="...")`
-2. Spawn workers: `worker_1 = Task(worker, team_name="...", prompt="...")` — the team forms automatically on this first spawn. `team_name` is accepted but ignored (one implicit team per session, session-derived name).
+2. Spawn workers: `worker_1 = Task(pds:worker, team_name="...", prompt="...")` — the team forms automatically on this first spawn. `team_name` is accepted but ignored (one implicit team per session, session-derived name).
 3. Assign initial tasks: `TaskUpdate(taskId="1", owner=worker_1.agent_id, status="in_progress")`
 4. Workers self-claim unblocked tasks after completing each one
 5. Monitor: `TaskList` for progress

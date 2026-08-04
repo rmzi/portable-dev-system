@@ -1,54 +1,104 @@
 #!/bin/sh
-# PDS — WorktreeCreate hook. Symlinks settings.local.json from repo root into
-# the new worktree's .claude/, then reports the worktree path.
+# PDS — WorktreeCreate hook. Creates the agent's git worktree, symlinks
+# settings.local.json into it, and prints the worktree path to stdout.
 #
-# Per Claude Code's documented WorktreeCreate contract, a command hook must
-# print the worktree path to stdout on exit 0 — Claude Code reads this as the
-# worktree's location, not just a notification that one was created. This
-# hook previously exited silently on every path (no stdout), which satisfies
-# no output at all — the exact shape of the "hook succeeded but returned no
-# worktree path" failure reported in #170. Fixed by printing $WT_ROOT (the
-# CWD Claude Code already switched into before firing this hook) on every
-# code path that represents a genuine worktree context, not just the ones
-# that also do symlink work.
+# CONTRACT (verified empirically against Claude Code 2.1.221, see #182):
 #
-# Safe to run from main repo (no-op, no path printed) or any worktree.
+#   Registering a WorktreeCreate hook REPLACES Claude Code's native worktree
+#   creation. The hook is not a notification that a worktree was made — it is
+#   the thing that makes it. Claude Code fires this hook with CWD set to the
+#   MAIN REPO (no worktree exists yet), passes a JSON payload on stdin, and
+#   reads the created worktree's absolute path from stdout on exit 0.
+#
+#   stdin payload:
+#     {"session_id":"...","transcript_path":"...","cwd":"<main repo>",
+#      "prompt_id":"...","agent_type":"pds:worker",
+#      "hook_event_name":"WorktreeCreate","name":"agent-<id>"}
+#
+#   `name` is the worktree/branch name Claude Code expects. `cwd` is the repo
+#   the agent was spawned from.
+#
+# HISTORY: #170 reported "hook succeeded but returned no worktree path" and
+# was closed in v5.0.0 by printing `pwd`, on the assumption that Claude Code
+# creates the worktree and chdirs into it before firing. It does not — CWD is
+# the main repo, so the old guard (`git rev-parse --git-dir` must contain
+# "worktrees") never matched, the script exited 0 silently, and every
+# `pds:worker` spawn failed. That made the entire worker tier unspawnable and
+# `/pds:swarm` unable to dispatch. Reopened and fixed properly here.
+#
+# Worktrees are created inside the repo at .worktrees/<name>, per the worktree
+# hygiene rule in CLAUDE.md — never /tmp, never a ../ sibling.
 
 set -e
 
-# Detect if we're inside a worktree — if not, this isn't a real
-# WorktreeCreate firing; stay silent and exit clean.
-GIT_DIR=$(git rev-parse --git-dir 2>/dev/null) || exit 0
-echo "$GIT_DIR" | grep -q "worktrees" || exit 0
+PAYLOAD=$(cat 2>/dev/null || true)
 
-# From here on we're genuinely inside a worktree — report the path
-# regardless of which branch below actually runs.
-WT_ROOT="$(pwd)"
+# No payload means this isn't a real WorktreeCreate firing (e.g. someone ran
+# the script by hand). Stay silent and exit clean.
+[ -n "$PAYLOAD" ] || exit 0
+
+read_field() {
+  printf '%s' "$PAYLOAD" | python3 -c "
+import json, sys
+try:
+    print(json.load(sys.stdin).get('$1', '') or '')
+except Exception:
+    print('')
+" 2>/dev/null || printf ''
+}
+
+WT_NAME=$(read_field name)
+SPAWN_CWD=$(read_field cwd)
+
+[ -n "$WT_NAME" ] || exit 0
+[ -n "$SPAWN_CWD" ] && cd "$SPAWN_CWD" 2>/dev/null || true
+
+# Resolve the true repo root. --git-common-dir (not --show-toplevel) so this
+# still resolves correctly if the spawning agent is itself inside a worktree.
+REPO_ROOT="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null | sed 's|/\.git$||')"
+
+# Not a git repo — we cannot create a worktree. Exit non-zero so Claude Code
+# reports a real failure rather than the confusing "returned no path" message.
+if [ -z "$REPO_ROOT" ] || [ ! -d "$REPO_ROOT" ]; then
+  echo "[PDS] WorktreeCreate: not a git repository (cwd=$SPAWN_CWD)" >&2
+  exit 1
+fi
+
+WT_ROOT="$REPO_ROOT/.worktrees/$WT_NAME"
+
+if [ ! -d "$WT_ROOT" ]; then
+  mkdir -p "$REPO_ROOT/.worktrees"
+  # Prefer a named branch so the agent's commits are addressable. Fall back to
+  # a detached checkout if the branch name is already taken.
+  if ! git -C "$REPO_ROOT" worktree add --quiet -b "$WT_NAME" "$WT_ROOT" HEAD 2>/dev/null; then
+    if ! git -C "$REPO_ROOT" worktree add --quiet --detach "$WT_ROOT" HEAD 2>/dev/null; then
+      echo "[PDS] WorktreeCreate: git worktree add failed for $WT_ROOT" >&2
+      exit 1
+    fi
+  fi
+fi
+
+# --- Report the path. Must happen before any optional work below can exit. ---
 echo "$WT_ROOT"
 
-# Resolve repo root (works from both main repo and worktrees)
-REPO_ROOT="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null | sed 's|/.git$||')"
-
+# --- Optional: mirror the repo's local permission overrides into the worktree.
+# Best-effort only; never fail the spawn over a symlink.
 ROOT_LOCAL="$REPO_ROOT/.claude/settings.local.json"
 WT_CLAUDE="$WT_ROOT/.claude"
 WT_LOCAL="$WT_CLAUDE/settings.local.json"
 
-# Nothing to link if root has no settings.local.json
 [ -f "$ROOT_LOCAL" ] || exit 0
 
-# Already a symlink pointing to the right place — done
 if [ -L "$WT_LOCAL" ]; then
   LINK_TARGET=$(readlink "$WT_LOCAL" 2>/dev/null || true)
   [ "$LINK_TARGET" = "$ROOT_LOCAL" ] && exit 0
 fi
 
-# If worktree has its own regular file, back it up (shouldn't happen often)
 if [ -f "$WT_LOCAL" ] && [ ! -L "$WT_LOCAL" ]; then
-  mv "$WT_LOCAL" "$WT_LOCAL.bak"
+  mv "$WT_LOCAL" "$WT_LOCAL.bak" 2>/dev/null || true
 fi
 
-# Ensure .claude/ dir exists
-mkdir -p "$WT_CLAUDE"
+mkdir -p "$WT_CLAUDE" 2>/dev/null || exit 0
+ln -sf "$ROOT_LOCAL" "$WT_LOCAL" 2>/dev/null || true
 
-# Create symlink
-ln -sf "$ROOT_LOCAL" "$WT_LOCAL"
+exit 0

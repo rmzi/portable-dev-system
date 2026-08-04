@@ -99,6 +99,22 @@ Use `git worktree add` for branch isolation — never `git clone` (clones discon
 
 **Create or update a PR after pushing.** Don't wait to be asked.
 
+### Dispatch Is Load-Bearing
+
+If the orchestrator cannot spawn agents, every skill still reads correctly and nothing actually runs. PDS has shipped this exact state twice — #170 and #181 — with a fully green test suite each time, because the broken contract was Claude Code's, not PDS's.
+
+After touching `agents/`, `hooks/`, or any spawn syntax in `skills/`:
+
+```bash
+python3 scripts/check-agent-roster.py .   # allowlist is pds:-namespaced and complete
+bash hooks/tests/test-worktree-hooks.sh   # WorktreeCreate actually returns a path
+scripts/smoke-dispatch.sh                 # live spawn — needs an authenticated `claude`
+```
+
+The first two run in CI. The third cannot, and is the only one that proves dispatch works.
+
+**Agent names are namespaced.** Plugin-provided agents register as `pds:<name>` — `pds:worker`, `pds:researcher`. Bare names match nothing, and a `Task(...)` allowlist that matches nothing empties the entire spawn roster, so *every* spawn then fails with `Agent type '<x>' not found. Available agents:` and nothing after the colon. An empty roster in that error means a namespacing bug, not a missing agent. Only project-scope agents in `.claude/agents/` resolve bare.
+
 ### Protected Branches
 
 Protected branches are declared in `pds.config.yaml` under `worktree.protected_branches`. `/pds:finish` reads the list via `pds config get worktree.protected_branches` and prompts for confirmation before pushing to a matching branch. GitHub branch protection rules are the server-side enforcement — this is the client-side "are you sure?" prompt.

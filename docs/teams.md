@@ -37,7 +37,7 @@ Skills are loaded on demand when the user or agent invokes them, keeping context
 
 An **agent** is a specialized role definition. Each agent has a model (which Claude version to use), a permission mode (what tools it can access), declared skills, and behavioral constraints defined in markdown. PDS provides 8 agents spanning core roles (orchestrator, researcher, worker, validator) and specialist roles (reviewer, documenter, scout, auditor).
 
-Agents are spawned via the Task tool with type restrictions — `Task(worker)`, `Task(validator)` — preventing unauthorized agent escalation.
+Agents are spawned via the Task tool with type restrictions — `Task(pds:worker)`, `Task(pds:validator)` — preventing unauthorized agent escalation. PDS agents ship in a plugin, so they register under the `pds:` namespace and the prefix is mandatory in both the allowlist and the spawn call.
 
 ### Hook
 
@@ -188,7 +188,9 @@ Agents coordinate via native Claude Code tools:
 - **SendMessage** — Direct and broadcast communication between agents
 - **Implicit team** — one team per session; forms automatically with a shared task list on the first teammate spawn, no explicit `TeamCreate`/`TeamDelete` call (both removed as Claude Code tools in v2.1.178+)
 
-Agent spawning uses typed syntax — `Task(worker)`, `Task(validator)` — which restricts which agent definitions can fulfill the spawn. This prevents unauthorized agent escalation (e.g., a worker cannot spawn an orchestrator).
+Agent spawning uses typed syntax — `Task(pds:worker)`, `Task(pds:validator)` — which restricts which agent definitions can fulfill the spawn. This prevents unauthorized agent escalation (e.g., a worker cannot spawn an orchestrator).
+
+**Namespacing is load-bearing (#181).** Plugin-provided agents register as `pds:<name>`; only project-scope agents under `.claude/agents/` resolve bare. If a `Task(...)` allowlist names agents without the prefix it matches zero agents, and Claude Code responds by emptying the roster entirely — every subsequent spawn, `general-purpose` included, fails with `Agent type '<x>' not found. Available agents:` and nothing after the colon. Treat an empty roster in that error as a namespacing defect, never as a missing agent.
 
 ### Hook Events
 
