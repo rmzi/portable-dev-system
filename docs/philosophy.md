@@ -73,7 +73,7 @@ PDS has a shepherd agent that walks each swarm from Phase 1 through Phase 6. It 
 
 This is consistent with the first principle: the shepherd exists so agents and users can understand before they act. It is consistent with the fourth principle: by citing sources, it makes implicit conventions explicit. And it absorbs capacity that would otherwise sit idle — the orchestrator coordinates; the shepherd thinks about principles — without removing the human as final arbiter.
 
-Routing: graph questions (dispatch, dependencies, phase state) go to the orchestrator. Substance questions (design, trade-offs, principle-checks) go to the shepherd. In lite swarms, the shepherd is skipped to keep the tier cheap — workers invoke `advisor_consult` directly when needed.
+Routing: graph questions (dispatch, dependencies, phase state) go to the orchestrator. Substance questions (design, trade-offs, principle-checks) go to the shepherd. In lite swarms, the shepherd is skipped to keep the tier cheap — workers self-consult by reading the whitepaper/philosophy/ethos docs directly when needed.
 
 ---
 

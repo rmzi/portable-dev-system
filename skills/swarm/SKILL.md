@@ -52,7 +52,7 @@ Three tiers control model selection and specialist inclusion. The tier is set du
 | **auditor** | _(skip)_ | _(skip)_ | sonnet |
 | **shepherd** | _(skip)_ | opus | opus |
 
-- **Lite**: Daily driver. Crosses 2 modules, follows existing patterns. Haiku workers, sonnet orchestrator. 1-2 workers. Orchestrator self-researches and self-reviews. **No shepherd** — workers invoke `advisor_consult` directly for substance questions. Cheapest effective configuration.
+- **Lite**: Daily driver. Crosses 2 modules, follows existing patterns. Haiku workers, sonnet orchestrator. 1-2 workers. Orchestrator self-researches and self-reviews. **No shepherd** — workers self-consult by reading the whitepaper/philosophy/ethos docs directly for substance questions. Cheapest effective configuration.
 - **Med**: Serious work. Crosses 2-3 boundaries, some design decisions. Current defaults — no model overrides needed. 2-3 workers. Full specialist roster as needed. **Shepherd spawned** after Phase 1 grill to walk the ticket alongside workers.
 - **Heavy**: Maximum capability. 3+ boundaries, new interfaces, or core abstraction refactors. Opus for reasoning-heavy roles. 3-4 workers. Full specialist roster including auditor. **Shepherd spawned** after Phase 1 grill.
 
@@ -101,7 +101,7 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
    ```
    No `name=` — the orchestrator is itself a named teammate and cannot spawn further named teammates (see the constraint note near the top of this skill). Record `shepherd.agent_id` in `.claude/swarm/checkpoint.json` so later phases can address it.
 
-   **Do NOT spawn shepherd at lite tier** — keeps lite cheap. Workers at lite tier invoke `advisor_consult` directly for substance questions.
+   **Do NOT spawn shepherd at lite tier** — keeps lite cheap. Workers at lite tier self-consult by reading the whitepaper/philosophy/ethos docs directly for substance questions.
 
    The shepherd reads its reference corpus on spawn, notes its arrival to the orchestrator via SendMessage, and enters steady state. It is single-instance per swarm — if one is already active, skip this step.
 
@@ -165,7 +165,7 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
    - Read task via `TaskGet` for requirements and acceptance criteria
    - Implement, commit frequently
    - Use `SendMessage(agent_id=...)` for genuine blockers only — not routine coordination, which the task description + `TaskList` already carries
-   - For **substance questions** (design, trade-offs, principle-checks), `SendMessage` the **shepherd**'s `agent_id` (med/heavy) or invoke `advisor_consult` directly (lite tier, or med/heavy when the shepherd is unavailable — not spawned, idle past its health timeout, or already shut down)
+   - For **substance questions** (design, trade-offs, principle-checks), `SendMessage` the **shepherd**'s `agent_id` (med/heavy) or self-consult by reading the whitepaper/philosophy/ethos docs directly (lite tier, or med/heavy when the shepherd is unavailable — not spawned, idle past its health timeout, or already shut down)
    - For **graph questions** (dispatch, dependencies, phase state), `SendMessage` the **orchestrator**'s `agent_id`
    - Run `/pds:verify` before declaring done
    - Mark task completed: `TaskUpdate(taskId="1", status="completed")`

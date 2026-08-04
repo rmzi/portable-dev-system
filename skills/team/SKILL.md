@@ -48,7 +48,7 @@ Model overrides applied at spawn time via the `model` parameter. Agent definitio
 | auditor | _(skip)_ | _(skip)_ | sonnet |
 | shepherd | _(skip)_ | opus | opus |
 
-- **Lite**: 2 modules, existing patterns. 1-2 workers, no reviewer/documenter/auditor/shepherd. Orchestrator self-researches and self-reviews. Workers use `advisor_consult` directly if a substantive consult is needed.
+- **Lite**: 2 modules, existing patterns. 1-2 workers, no reviewer/documenter/auditor/shepherd. Orchestrator self-researches and self-reviews. Workers self-consult by reading the whitepaper/philosophy/ethos docs directly if a substantive consult is needed.
 - **Med**: 2-3 boundaries, some design decisions. 2-3 workers, full specialist roster as needed, **shepherd spawned** after Phase 1 grill. Current defaults.
 - **Heavy**: 3+ boundaries, new interfaces, or core refactors. 3-4 workers, all specialists including auditor, **shepherd spawned** after Phase 1 grill. Opus for reasoning.
 
@@ -63,7 +63,7 @@ Two kinds of questions arise during swarm execution. Route by kind:
 | **Graph** | "Which task comes next?" "Who is blocked on what?" "Has Phase 4 started?" "Who owns task #7?" "When do I run `/pds:verify`?" | **orchestrator** (via SendMessage) |
 | **Substance** | "Should this module own retry logic?" "Is squashing these commits before PR the right call?" "Which layering convention applies here?" "Does the whitepaper mandate X?" "What trade-off does choosing Y over Z make?" | **shepherd** (via SendMessage) |
 
-The orchestrator handles coordination. The shepherd handles principles. When a teammate receives a question off-lane, reply with a one-line redirect ("Graph question — ask the orchestrator" / "Substance question — ask the shepherd") rather than answering out of scope. If no shepherd is active (lite tier), substance questions route to the orchestrator which either answers itself or delegates to `advisor_consult`.
+The orchestrator handles coordination. The shepherd handles principles. When a teammate receives a question off-lane, reply with a one-line redirect ("Graph question — ask the orchestrator" / "Substance question — ask the shepherd") rather than answering out of scope. If no shepherd is active (lite tier), substance questions route to the orchestrator which either answers itself or self-consults by reading the whitepaper/philosophy/ethos docs directly.
 
 ## Permission Modes
 
@@ -159,7 +159,7 @@ These patterns are PDS-specific — they layer on top of native Claude Code team
 - **Results delivery**: Agents send reports via `SendMessage`. Orchestrator writes to `.claude/swarm/` artifacts (required by phase gates).
 - **Task discovery**: Workers create new tasks via `TaskCreate` when they discover additional work during implementation.
 - **Blocker escalation**: Agents commit progress, update task status, `SendMessage` to orchestrator with details.
-- **Substantive consultation**: For design, trade-offs, or principle-checks, agents consult the shepherd via `SendMessage` (med/heavy) or `advisor_consult` directly (lite or degraded). See `agents/shared-rules.md` for the protocol.
+- **Substantive consultation**: For design, trade-offs, or principle-checks, agents consult the shepherd via `SendMessage` (med/heavy) or self-consult by reading the whitepaper/philosophy/ethos docs directly (lite or degraded). See `agents/shared-rules.md` for the protocol.
 
 ## Native Behaviors Worth Knowing
 
