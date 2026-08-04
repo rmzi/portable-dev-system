@@ -113,3 +113,12 @@ Persistent engineering patterns observed during work. Lighter than skills — ob
 - **Pattern**: An install script that auto-installs "recommended" tools via package managers silently widens the dependency surface beyond what the project's stated contract advertises. The failure mode is asymmetric: if the user already has the tool, nothing is logged; if the user lacks it AND lacks the package manager, a warn fires but install continues — so the cost is invisible in normal operation. Distinct from instinct "Portability contract violations land silently without structural invariants in install.sh" — that one is about source artifacts (a Rust crate in the tree); this one is about install-script *behavior* (a function that calls brew/go for the user).
 - **Action**: At every install.sh review and at every new "optional tool integration" proposal, audit for `command -v X || (brew install X | go install X)` patterns. The portability rule: PDS uses tool X if present; PDS does not install tool X. Users who want tool X install it themselves through their preferred method. Document optional tools in README under "Optional integrations" with install hints, but never invoke a package manager from `install.sh`.
 - **Status**: active
+
+### Mirror, don't invent
+- **Observed**: 2026-04-20
+- **Times seen**: 3
+- **Confidence**: medium
+- **Context**: Triaged from `/insights` 2026-04-20 (issue #149) — three independent sessions (courted-dbx MLS providers, federation branch-tone x2) where Claude invented a new pattern (test scaffolding, PR workflow, provider grouping) instead of mirroring an existing one already present in the repo, requiring the user to redirect each time.
+- **Pattern**: When a codebase already has a pattern for something, Claude often invents a new one anyway — missing nearby examples, creating abstractions that don't match the repo's shape. This applies to test style, config files, migration scripts, provider/handler registrations, CLI subcommands, hook scripts, notebook cells.
+- **Action**: Before writing new code for something that plausibly already exists in this repo: (1) grep for 2-3 existing examples of the nearest pattern (similar file shape, similar goal), (2) show the user the examples found and what's planned to mirror, (3) change only what must change to fit the new case — don't introduce a new abstraction unless the existing pattern demonstrably cannot express the new case, and in that situation propose the abstraction explicitly before writing it.
+- **Status**: active
