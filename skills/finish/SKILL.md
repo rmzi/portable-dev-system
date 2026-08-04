@@ -144,22 +144,32 @@ Follow `/pds:bump` protocol:
 
 ```bash
 git push origin HEAD
-gh pr create --fill    # Create if none exists
-gh pr view             # Show existing PR
+```
+
+**If the branch encodes a tracking issue** (`<type>/<issue>-<slug>` — same pattern 7e uses), create the PR from the slim template (`skills/ticket/templates/pr-body.md`) instead of `--fill`, per `docs/adr/0009-evolving-body-issue-and-slim-pr-format.md`: the issue is the source of truth, the PR just links to it — don't duplicate a TL;DR/AC/plan the issue already carries.
+
+```bash
+ISSUE="$(echo "$(git branch --show-current)" | sed -nE 's|^[a-z]+/([0-9]+)-.*|\1|p')"
+if [ -n "$ISSUE" ]; then
+  sed "s/{{ISSUE}}/$ISSUE/g; s/{{CONVERSATION_LINK}}//" \
+    "$CLAUDE_PLUGIN_ROOT/skills/ticket/templates/pr-body.md" > /tmp/pr-body.md
+  gh pr create --body-file /tmp/pr-body.md --title "<type>(<scope>): <subject>" 2>/dev/null \
+    || gh pr view
+else
+  gh pr create --fill 2>/dev/null || gh pr view    # No issue encoded — fall back to --fill
+fi
 ```
 
 Work commit is separate from bump commit — clean git history.
 
 #### 7e. Resolve Tracking Issue
 
-> **Experimental — off by default.** Steps 7e and 7f only run when `PDS_DIARY=1` (or `PDS_DIARY=on`) is set in the environment. Without the flag, skip straight to Cleanup — the diary pipeline will not fire and legacy branches will not be prompted for renames. Enable per-invocation with `PDS_DIARY=1 /pds:finish ...`, or export in your shell rc to keep it on.
->
-> **Also fires automatically at session end.** When `PDS_DIARY=1` is set, a `SessionEnd` hook (`hooks/scripts/diary-session-end.sh`) posts the diary for you using the canonical `transcript_path` handed down by Claude Code. Manual invocation from `/pds:finish` remains supported for ship-time diaries — both paths end up editing the same canonical comment keyed off the `<!-- pds:diary -->` marker, so re-fires are idempotent.
+> **Both pipelines below are experimental, off by default, and mutually exclusive — enable one, not both.** `PDS_DIARY=1` posts a diary as an issue *comment* (unchanged, original behavior). `PDS_EVOLVING_BODY=1` rewrites the issue *body* into a populated finish-writeup, preserving the prior body as a comment first (#154/#156 — see `docs/adr/0009-evolving-body-issue-and-slim-pr-format.md`). The evolving-body pipeline internally reuses the diary pipeline's data-gathering, so running both would post the same dev-diary content twice, once as a standalone comment and once inside the rewritten body. Prefer `PDS_EVOLVING_BODY=1` for issues created via the current `/pds:ticket` (7-section template) — `PDS_DIARY=1` remains for issues that predate that format and don't have sections to carry forward. Without either flag, skip straight to Cleanup.
 
 ```bash
-case "${PDS_DIARY:-}" in
-  1|on|true|yes) ;;
-  *) echo "dev-diary disabled (set PDS_DIARY=1 to enable)"; exit 0 ;;
+case "${PDS_DIARY:-}${PDS_EVOLVING_BODY:-}" in
+  *1*|*on*|*true*|*yes*) ;;
+  *) echo "dev-diary and evolving-body both disabled (set PDS_DIARY=1 or PDS_EVOLVING_BODY=1)"; exit 0 ;;
 esac
 ```
 
@@ -180,11 +190,11 @@ ISSUE="$(echo "$BRANCH" | sed -nE 's|^[a-z]+/([0-9]+)-.*|\1|p')"
    git push origin -u "$NEW_BRANCH" :"$BRANCH" 2>/dev/null || git push origin -u "$NEW_BRANCH"
    BRANCH="$NEW_BRANCH"; ISSUE="<N>"
    ```
-3. If they say `skip`, proceed to 7f with an empty `$ISSUE`; the diary step will be skipped with a note.
+3. If they say `skip`, proceed with an empty `$ISSUE`; both steps below are skipped with a note.
 
-#### 7f. Post Dev Diary
+#### 7f. Post Dev Diary (`PDS_DIARY=1` only)
 
-If `$ISSUE` is set, invoke the diary assembler:
+If `$ISSUE` is set and `PDS_DIARY=1`, invoke the diary assembler:
 
 ```bash
 BRANCH="$BRANCH" ISSUE="$ISSUE" MODE=post bash "$CLAUDE_PLUGIN_ROOT/scripts/assemble-diary.sh"
@@ -195,6 +205,23 @@ The script:
 - Wraps the full `export-session.sh` output inside a collapsed `<details>` block.
 - Looks up an existing diary comment on the issue by a stable `<!-- pds:diary -->` marker. If found, edits in place; otherwise posts a new comment (single canonical comment per issue).
 - On `gh` failure, writes the assembled document to `$TMPDIR/pds-diary-<issue>-<ts>.md` and surfaces the path. Never silently swallows.
+
+If `$ISSUE` is empty (user chose `skip`), skip this step and report it plainly.
+
+#### 7g. Rewrite Evolving Body (`PDS_EVOLVING_BODY=1` only)
+
+If `$ISSUE` is set and `PDS_EVOLVING_BODY=1`, invoke the finish-writeup assembler:
+
+```bash
+BRANCH="$BRANCH" ISSUE="$ISSUE" MODE=post bash "$CLAUDE_PLUGIN_ROOT/scripts/assemble-finish-writeup.sh"
+```
+
+The script:
+- Fetches the issue's current body and posts it as a comment first — `### Kickoff (preserved)` the first time this issue goes through a rewrite, `### Snapshot (preserved) — <date>` on every rewrite after that. **Never overwrites the body without preserving what was there.**
+- Carries forward Decisions, Risks, Acceptance Criteria, and Full Plan verbatim from the old body — these may already reflect mid-flight edits (checkbox flips, appended risks) per `/pds:ticket` section 3, and this step must not clobber that.
+- Recomputes TL;DR as the final-outcome summary (not the kickoff intent) and populates Dev Diary + Full Conversation for the first time, reusing `assemble-diary.sh`'s data-gathering internally (dry-run, no side effects from that inner call).
+- If the assembled transcript exceeds ~60k chars, commits it to `docs/conversations/<date>-<issue>-<slug>.md` and links it instead of embedding inline.
+- On `gh` failure, writes the assembled writeup to `$TMPDIR/pds-finish-writeup-<issue>-<ts>.md` and surfaces the path. If the preserve-comment post itself fails, stops before touching the body — the old content is never lost.
 
 If `$ISSUE` is empty (user chose `skip`), skip this step and report it plainly.
 
@@ -225,3 +252,5 @@ After shipping, consider running `/pds:pause` — shipping is a natural break po
 - `/pds:bump` — version bump details
 - `/pds:verify` — completion self-check (step 1)
 - `/pds:pause` — save session state before stepping away
+- `/pds:ticket` — owns the kickoff body this skill rewrites at ship time (step 7g)
+- `docs/adr/0009-evolving-body-issue-and-slim-pr-format.md` — why the issue body gets rewritten and the PR stays slim
