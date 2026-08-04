@@ -17,6 +17,22 @@ if [ -n "$CLAUDE_PLUGIN_ROOT" ] && [ -f "$CLAUDE_PLUGIN_ROOT/.claude-plugin/plug
 fi
 
 
+# --- Detect SSH-based git remote (sandbox network proxy is HTTP(S)-only) ---
+# `excludedCommands` (git, gh, docker) exempts these tools from the sandbox's
+# filesystem confinement, but the sandbox's network proxy only tunnels HTTP(S)
+# to allowedDomains — it does not pass through raw SSH, even to an allowed
+# domain. An SSH remote (git@github.com:...) will fail network operations
+# (fetch/push/pull) under the sandbox regardless of excludedCommands.
+SSH_REMOTE_WARNING=""
+if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  _origin_url=$(git remote get-url origin 2>/dev/null)
+  case "$_origin_url" in
+    git@*|ssh://*)
+      SSH_REMOTE_WARNING=" SSH GIT REMOTE UNDER SANDBOX: origin uses SSH ($_origin_url). The sandbox's network proxy is HTTP(S)-only, so git fetch/push/pull may fail here with connection or auth-negotiation errors even though git is an excludedCommand. Workaround: switch origin to HTTPS with a credential helper (git remote set-url origin https://github.com/<org>/<repo>.git; gh auth setup-git), or disable the sandbox for that specific command."
+      ;;
+  esac
+fi
+
 # --- Detect worktree ---
 WORKTREE_INFO=""
 if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
@@ -93,7 +109,7 @@ if [ -z "${PDS_VOICE_OFF:-}" ]; then
 fi
 
 # --- Output additionalContext ---
-CONTEXT="PDS v${PDS_VERSION} active. Key skills: /pds:swarm (parallel work), /pds:grill (requirements), /pds:verify (completion check), /pds:bugfix (test-first fixes), /pds:checkpoint (ship work), /pds:finish (formal branch completion).${WORKTREE_INFO}${STALE_WARNING}${WORKTREE_WARNING}${CODEBASE_CONTEXT}${VOICE_CONTEXT}"
+CONTEXT="PDS v${PDS_VERSION} active. Key skills: /pds:swarm (parallel work), /pds:grill (requirements), /pds:verify (completion check), /pds:bugfix (test-first fixes), /pds:checkpoint (ship work), /pds:finish (formal branch completion).${WORKTREE_INFO}${STALE_WARNING}${WORKTREE_WARNING}${SSH_REMOTE_WARNING}${CODEBASE_CONTEXT}${VOICE_CONTEXT}"
 
 # Use python3 for safe JSON encoding
 python3 -c "

@@ -313,7 +313,7 @@ PDS enables Claude Code's native OS-level sandbox for all Bash commands. The san
 
 **Key behaviors:**
 - Sandboxed Bash commands auto-approve without permission prompts (`autoAllowBashIfSandboxed: true`)
-- `git` and `docker` are excluded from the sandbox — they go through normal deny rules and permission prompts
+- `git`, `gh`, and `docker` are excluded from the sandbox's filesystem confinement via `excludedCommands` — they go through normal deny rules and permission prompts instead. **Caveat, not fully documented by Claude Code itself:** the sandbox's network proxy is HTTP(S)-only and does not tunnel raw SSH, even to an allowed domain — an SSH git remote (`git@github.com:...`) can still fail fetch/push/pull under the sandbox despite `git` being excluded. `SessionStart` (`session-start.sh`) warns once if `origin` is SSH-based. Workaround: switch to an HTTPS remote with a credential helper, or disable the sandbox for that specific command.
 - Workers are OS-confined to their worktree directory for writes
 - Cross-worktree reads work via Bash on absolute paths (sandbox allows broad reads)
 
