@@ -17,18 +17,28 @@ if [ -n "$CLAUDE_PLUGIN_ROOT" ] && [ -f "$CLAUDE_PLUGIN_ROOT/.claude-plugin/plug
 fi
 
 
-# --- Detect SSH-based git remote (sandbox network proxy is HTTP(S)-only) ---
+# --- Detect SSH-based git remote (deterministically broken under the sandbox) ---
 # `excludedCommands` (git, gh, docker) exempts these tools from the sandbox's
-# filesystem confinement, but the sandbox's network proxy only tunnels HTTP(S)
-# to allowedDomains — it does not pass through raw SSH, even to an allowed
-# domain. An SSH remote (git@github.com:...) will fail network operations
-# (fetch/push/pull) under the sandbox regardless of excludedCommands.
+# filesystem confinement, but empirically does NOT fully exempt their network
+# traffic. Two confirmed, distinct failure modes, verified by direct testing
+# (identical command, sandboxed vs. --dangerously-skip-sandbox):
+#   1. SSH remotes (git@github.com:...) ALWAYS fail — the sandbox's network
+#      proxy is HTTP(S)-only and cannot tunnel raw SSH, even to an allowed
+#      domain. Categorical, not intermittent.
+#   2. Even after switching to an HTTPS remote, `git fetch` of substantial
+#      pack data can still fail under the sandbox ("did not send all
+#      necessary objects") while small pushes and `ls-remote` succeed fine —
+#      an apparent proxy-level truncation/corruption issue with git's binary
+#      smart-HTTP transfer, independent of the SSH issue above. HTTPS is
+#      strictly better than SSH (which never works) but is not a full fix.
+# The only fully reliable workaround found for either: run the git/gh network
+# command with the sandbox explicitly bypassed for that one invocation.
 SSH_REMOTE_WARNING=""
 if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   _origin_url=$(git remote get-url origin 2>/dev/null)
   case "$_origin_url" in
     git@*|ssh://*)
-      SSH_REMOTE_WARNING=" SSH GIT REMOTE UNDER SANDBOX: origin uses SSH ($_origin_url). The sandbox's network proxy is HTTP(S)-only, so git fetch/push/pull may fail here with connection or auth-negotiation errors even though git is an excludedCommand. Workaround: switch origin to HTTPS with a credential helper (git remote set-url origin https://github.com/<org>/<repo>.git; gh auth setup-git), or disable the sandbox for that specific command."
+      SSH_REMOTE_WARNING=" SSH GIT REMOTE UNDER SANDBOX: origin uses SSH ($_origin_url) — this will fail under the sandbox (HTTP(S)-only proxy, cannot tunnel SSH). Switch to HTTPS with a credential helper (git remote set-url origin https://github.com/<org>/<repo>.git; gh auth setup-git) — but note this mitigates, not eliminates, sandboxed git failures: substantial fetches can still fail intermittently over HTTPS too. If a git/gh network command fails under the sandbox, retry it with the sandbox explicitly disabled for that command."
       ;;
   esac
 fi

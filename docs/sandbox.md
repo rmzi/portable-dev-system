@@ -159,7 +159,14 @@ If a legitimate command fails with "Operation not permitted" or similar:
 
 ### Excluded commands
 
-`git` and `docker` bypass the sandbox entirely. They go through the normal permission flow (deny rules + active permission mode). This is by design — git needs arbitrary network access for remotes, and docker needs host filesystem access.
+`git`, `gh`, and `docker` are meant to bypass the sandbox entirely and go through the normal permission flow (deny rules + active permission mode) instead. This is by design — git needs arbitrary network access for remotes, gh needs Keychain/TLS access the sandbox blocks for Go binaries, and docker needs host filesystem access.
+
+**Confirmed gap, by direct testing (identical command, sandboxed vs. `--dangerously-skip-sandbox`), not yet resolved:** `excludedCommands` does not reliably deliver this in every environment. Two concrete failure modes observed with `git`/`gh` already in `excludedCommands`:
+
+1. An SSH git remote (`git@github.com:...`) fails deterministically under the sandbox — the sandbox's network proxy is HTTP(S)-only and cannot tunnel raw SSH, even to an allowed domain. Switching to an HTTPS remote with a credential helper (`gh auth setup-git`) avoids this specific failure.
+2. Even over HTTPS, `git fetch` of substantial pack data can fail intermittently under the sandbox (`did not send all necessary objects`) while small pushes and `git ls-remote` succeed — an apparent proxy-level issue with git's binary smart-HTTP transfer. Standalone `gh` network calls (`gh api`, `gh pr list`, `gh auth status`) showed the same TLS/keychain symptoms `excludedCommands` was added in v4.14.0 specifically to fix.
+
+Neither failure produced a permission prompt — both ran silently through what behaved like the sandboxed path, contradicting "bypass the sandbox entirely" above. Whether this is a Claude Code regression, an environment-specific harness difference, or a gap in how `excludedCommands` interacts with network/credential isolation specifically is not yet determined — see the tracking issue linked from `CHANGELOG.md`. **The one workaround confirmed to work reliably for both failure modes**: run the specific git/gh network command with the sandbox explicitly disabled for that invocation, rather than relying on `excludedCommands` alone.
 
 ### Missing Linux dependencies
 
