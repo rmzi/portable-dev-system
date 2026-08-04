@@ -133,8 +133,7 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
 
 ## Phase 3: Dispatch
 
-1. The team is implicit — it forms on the first `Task(...)` spawn; there is nothing to create. (`team_name` is accepted but ignored: one session-scoped team.)
-2. Read tier from `.claude/swarm/tier`. Spawn workers with tier-appropriate model overrides:
+1. Read tier from `.claude/swarm/tier`. Spawn workers with tier-appropriate model overrides — the team is implicit and forms on the first `Task(...)` spawn below, nothing to create (`team_name` is accepted but ignored: one session-scoped team):
    ```
    # Lite — haiku workers
    Task(worker, team_name="project-name", name="worker-auth",
@@ -150,11 +149,11 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
    Use `Task(validator)` for validation tasks, `Task(researcher)` for research, etc. The typed syntax restricts which agent definitions can fulfill the spawn. Always pass the tier-appropriate `model` override — see the Swarm Tiers table above.
 
    **Worktree isolation:** If workers will edit overlapping files, spawn them with `isolation: "worktree"` so each gets an isolated copy of the repo. If workers touch non-overlapping files (different modules/skills), they can share the current worktree — but document the boundary in each worker's prompt to prevent collisions.
-3. Assign initial tasks to workers:
+2. Assign initial tasks to workers:
    ```
    TaskUpdate(taskId="1", owner="worker-auth", status="in_progress")
    ```
-4. Workers implement autonomously using a **pull model**:
+3. Workers implement autonomously using a **pull model**:
    - Read task via `TaskGet` for requirements and acceptance criteria
    - Implement, commit frequently
    - Use `SendMessage` for cross-agent coordination or to report blockers
@@ -164,13 +163,13 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
    - Mark task completed: `TaskUpdate(taskId="1", status="completed")`
    - Check `TaskList` and **self-claim** next unblocked task (prefer lowest ID)
    - Create new tasks via `TaskCreate` if they discover additional work
-5. **Monitor and backpressure.** Check progress via `TaskList`. On `TeammateIdle` events:
+4. **Monitor and backpressure.** Check progress via `TaskList`. On `TeammateIdle` events:
    - Check `TaskGet` first — if the agent awaits a blocked dependency, no action needed
    - If the agent has an unblocked task and is idle, send a `SendMessage` to re-activate
    - **Health timeout**: default is 2x the task's estimated turns. On first timeout, send a warning via `SendMessage`. On second timeout, use `TaskStop` and reassign the task
    - If 3+ workers are idle simultaneously with blocked tasks, the bottleneck task may need decomposition or priority escalation
-6. **Shepherd is idle-resilient.** The shepherd spawned in Phase 1 continues to respond to SendMessage during Phase 3 and later. If the shepherd goes idle with no traffic, that's normal — proactive flagging is evidence-based, not scheduled. The shepherd will log observations as they accrue.
-7. **Comment on ticket** (if one exists). Post a short comment: *"Phase: dispatch. Tier: <tier>. Workers: <count>."* See `/pds:ticket`.
+5. **Shepherd is idle-resilient.** The shepherd spawned in Phase 1 continues to respond to SendMessage during Phase 3 and later. If the shepherd goes idle with no traffic, that's normal — proactive flagging is evidence-based, not scheduled. The shepherd will log observations as they accrue.
+6. **Comment on ticket** (if one exists). Post a short comment: *"Phase: dispatch. Tier: <tier>. Workers: <count>."* See `/pds:ticket`.
 
 **Hook note:** PDS hooks log `WorktreeCreate` and `WorktreeRemove` events as workers start and finish. These appear in the audit log for lifecycle traceability.
 
@@ -314,7 +313,7 @@ Landing approved PRs on the main branch:
    - Skip anything derivable from code, git history, or existing CLAUDE.md
 6. **Telemetry analysis**: If `.claude/telemetry.jsonl` exists, scout runs `scripts/detect-patterns.sh` to detect usage patterns and proposes instinct entries for recurring patterns. Results appear in `### Telemetry-Detected Patterns` section of the scout report.
 7. **Permission audit**: Scout reads `.claude/settings.local.json` and `.claude/settings.json`. Identifies recurring allow patterns in local (e.g., `Bash(git add:*)`, `Bash(gh pr:*)`) that aren't already in project-level settings. Recommends promotions in a `### Permission Promotions` section of the scout report. One-off commands (specific file paths, session artifacts) are excluded. Only glob-style patterns (`Bash(git *:*)`, `Bash(gh *:*)`, tool names) qualify for promotion.
-8. **Shepherd teardown.** If a shepherd was spawned (med/heavy), send shutdown after scout completes and before the team is shut down:
+8. **Shepherd teardown.** If a shepherd was spawned (med/heavy), send shutdown after scout completes and before ending the swarm:
    ```
    SendMessage(type="shutdown_request", recipient="shepherd", content="Swarm complete, shutting down.")
    ```
@@ -325,10 +324,9 @@ Landing approved PRs on the main branch:
    SendMessage(type="shutdown_request", recipient="validator", content="Work complete, shutting down.")
    # ... for each active agent
    ```
-   Wait for `shutdown_response` from each agent before proceeding.
-10. Clean up. There is no `TeamDelete` (removed at CC v2.1.178) — once every agent has returned a `shutdown_response`, the implicit team dissolves at session end. Always shut all agents down first (an agent left running keeps the session's team alive).
-    **Note:** the teardown gate's completion checks (phase = `knowledge` AND all 3 reports exist) are being re-homed onto a blockable event — see `orchestrator-teardown-gate.sh` (stubbed, TODO #159).
-11. **Cleanup sub-phase.** After all agents are shut down:
+   Wait for `shutdown_response` from each agent before proceeding. **This is now the only safeguard against tearing down while agents are still active** — team cleanup is automatic on session end, so there is no `TeamDelete` call left to mechanically fail if a shutdown was skipped. Do not skip this step because it "used to be enforced" by the tool; it is the enforcement now.
+10. **Complete the swarm.** There is no explicit teardown call — team cleanup happens automatically when this session ends. This agent's `Stop` hook (`orchestrator-teardown-gate.sh`) gates the stop itself: it blocks with a reason (and this agent's turn continues, unblocked, to address it) unless phase is `knowledge` AND all 3 reports exist AND `.worktrees/` is clean AND `docs/swarm-reports/` exists. Finish the cleanup sub-phase below, then let this turn end normally.
+11. **Cleanup sub-phase.** Before ending the turn:
     - **Worktree deletion**: For each `.worktrees/` directory created during the swarm, run `git worktree remove <path>` (call `ExitWorktree` if the orchestrator is inside a worktree)
     - **Artifact archival**: Copy `.claude/swarm/*.md` to `docs/swarm-reports/<YYYY-MM-DD-HHmm>/`
     - **State validation**: Verify all tasks have status `completed` and all branches are merged
@@ -342,9 +340,11 @@ Mechanical enforcement of phase transitions via PreToolUse hooks on the orchestr
 | Gate | Hook Script | Trigger | Blocks Unless |
 |------|-------------|---------|---------------|
 | PR gate | `orchestrator-pr-gate.sh` | `gh pr create` in Bash | Phase >= `consolidate` + `validation-report.md` + `review-report.md` exist |
-| Teardown gate | `orchestrator-teardown-gate.sh` | _unwired — re-homing (TODO #159)_ | Phase = `knowledge` + all 3 reports exist |
+| Teardown gate | `orchestrator-teardown-gate.sh` | Orchestrator `Stop` | Phase != `knowledge`: always allowed (not a teardown attempt). Phase = `knowledge`: all 3 reports + clean `.worktrees/` + `docs/swarm-reports/` exist |
 | Validator stop | Prompt hook in validator.md | Validator Stop | Structured report written to `.claude/swarm/validation-report.md` |
 | Shepherd finalize | `shepherd-finalize.sh` (SubagentStop) | Shepherd subagent stops (graceful or abort) | Always runs — finalizes journal; never blocks |
+
+**Note on the teardown gate:** it fires on every orchestrator turn-end, not just intended teardown — since `TeamCreate`/`TeamDelete` were removed as tools (Claude Code v2.1.178, team lifecycle now automatic), there is no explicit teardown call left to gate. The phase check above is what keeps this safe: an orchestrator instance stopping mid-swarm (e.g. the Phase-1-only orchestrator returning a plan for human approval) is a normal handoff, not a teardown attempt, and passes through unconditionally. Only a stop while phase = `knowledge` is treated as "the swarm claims to be done" and gets the full artifact check. See `docs/adr/0007-teardown-gate-migration-from-teamdelete-to-stop.md`.
 
 All gates are no-ops when `.claude/swarm/` doesn't exist (non-swarm tasks pass through). Phase checks are defense-in-depth — if the phase file is absent, gates fall through to artifact-only checks.
 

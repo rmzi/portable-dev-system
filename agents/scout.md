@@ -21,7 +21,7 @@ skills:
   - pds:ethos
   - pds:instinct
 color: red
-maxTurns: 15
+maxTurns: 40
 memory: project
 ---
 # Scout

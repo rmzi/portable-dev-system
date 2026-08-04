@@ -36,13 +36,11 @@ hooks:
         - type: command
           command: "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/orchestrator-pr-gate.sh"
           timeout: 10
-    # NOTE (v5.0.0 retrofit): the teardown gate previously fired on the removed
-    # TeamDelete tool (gone at CC v2.1.178). Implicit teams have no blockable
-    # teardown moment — they dissolve at SessionEnd, which cannot block. The
-    # gate's checks (phase=knowledge + 3 reports + worktrees removed + archived)
-    # need re-homing onto a blockable event (Stop-based gate, or fold into the
-    # PR gate). Trigger intentionally left unwired pending that decision — see
-    # hooks/scripts/orchestrator-teardown-gate.sh (stubbed). TODO(#159, Zone 1).
+  Stop:
+    - hooks:
+        - type: command
+          command: "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/orchestrator-teardown-gate.sh"
+          timeout: 10
 ---
 # Orchestrator
 
@@ -56,21 +54,21 @@ Track the current phase in `.claude/swarm/phase`. Write the phase name at each t
 mkdir -p .claude/swarm && echo "plan" > .claude/swarm/phase
 ```
 
-The phase file is enforced by the PR gate (defense-in-depth alongside artifact checks). The teardown gate is being re-homed for implicit-team semantics — see the frontmatter note.
+The phase file is enforced by the PR gate and the teardown gate (defense-in-depth alongside artifact checks). The teardown gate is a `Stop` hook, not a tool-call gate — see the frontmatter and `docs/adr/0007`.
 
 ### Phase transitions
 
 1. **plan** — Run `/pds:grill`. Spawn **researcher** for context. **Find or create GitHub ticket** via `/pds:ticket`; write issue number to `.claude/swarm/ticket`. Return plan (parent handles human approval), or proceed if pre-approved. -> Write `decompose`
 2. **decompose** — TaskCreate for each work unit with acceptance criteria and dependencies (`addBlockedBy`/`addBlocks`). Write `.claude/swarm/context.md` with plan summary, research findings, acceptance criteria, and key decisions before dispatch. **Post acceptance-criteria checklist to the ticket body** (if newly created in Phase 1). -> Write `dispatch`
-3. **dispatch** — Spawn **workers**, assign initial tasks. The team is implicit — it exists per-session (no explicit creation); spawning the first named teammate is all that's needed. **Dual-dispatch:** use team teammates (`Task(worker)`) for long-running implementation; use fork subagents for quick inline subtasks (under 2-3 turns) that benefit from your full context. Workers self-claim subsequent tasks via TaskList. Monitor progress. Comment on ticket with tier + worker count. -> Write `validate`
+3. **dispatch** — Spawn **workers**; team formation is implicit and automatic on the first teammate spawn — no explicit create call, one team per session. Assign initial tasks. **Dual-dispatch:** use team teammates (`Task(worker)`) for long-running implementation; use fork subagents for quick inline subtasks (under 2-3 turns) that benefit from your full context. Workers self-claim subsequent tasks via TaskList. Monitor progress. Comment on ticket with tier + worker count. -> Write `validate`
 4. **validate** — Spawn **validator** to merge and test. **Flip acceptance-criteria checkboxes on the ticket** as the validator confirms each one. Fix -> re-validate. -> Write `consolidate`
 5. **consolidate** — Spawn **reviewer**. Write review report. Create PR with `Closes #<ticket-num>` in the body. Comment on ticket linking the PR. (PR is the human gate — do not merge.) Spawn **documenter** if needed. -> Write `knowledge`
-6. **knowledge** — Spawn **scout**. Post completion comment to ticket; link archive path if present. Shut down all agents (`SendMessage` shutdown_request -> wait for shutdown_response). The implicit team dissolves at session end — there is no teardown tool to call.
+6. **knowledge** — Spawn **scout**. Post completion comment to ticket; link archive path if present. Shut down all remaining agents via `SendMessage(type="shutdown_request")`, waiting for each `shutdown_response`. The implicit team dissolves and cleanup is automatic on session end — there is no explicit teardown call. Stopping in phase `knowledge` is gated by this agent's `Stop` hook (`orchestrator-teardown-gate.sh`), which blocks the stop unless all 3 phase reports, a clean `.worktrees/`, and `docs/swarm-reports/` all exist.
 
 ## Dispatch Workflow
 
 1. Create tasks: `TaskCreate(subject="...", description="...", activeForm="...")`
-2. Spawn workers: `Task(worker, name="worker-1", prompt="...")` — the team forms implicitly on first spawn. `team_name` is accepted but ignored (one implicit team per session, session-derived name).
+2. Spawn workers: `Task(worker, name="worker-1", prompt="...")` — the team forms automatically on this first spawn. `team_name` is accepted but ignored (one implicit team per session, session-derived name).
 3. Assign initial tasks: `TaskUpdate(taskId="1", owner="worker-1", status="in_progress")`
 4. Workers self-claim unblocked tasks after completing each one
 5. Monitor: `TaskList` for progress

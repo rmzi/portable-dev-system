@@ -2,7 +2,7 @@
 
 Skills encode team knowledge and workflows. Claude reads and follows them automatically. PDS skills are namespaced with `pds:` prefix.
 
-## Plugin Skills (21)
+## Plugin Skills (22)
 
 | Skill | Purpose | When to Use |
 |-------|---------|-------------|
@@ -20,6 +20,7 @@ Skills encode team knowledge and workflows. Claude reads and follows them automa
 | `/pds:rebase` | Focused branch rebase | Updating feature branch with upstream changes |
 | `/pds:pr-review` | Address PR review comments | PR has review feedback to resolve |
 | `/pds:pause` | Save session state, WIP commit, resume later | Stopping work mid-session, context preservation |
+| `/pds:resume` | Reconstruct swarm state from local checkpoint, ticket comment thread, or archived swarm report | Starting a session that should continue prior swarm work — same machine, cross-machine, or cross-person |
 | `/pds:triage` | Triage insights into GitHub issues across repos | After running /insights, converting analysis into tracked work |
 | `/pds:ethos` | Core development principles — grounding ritual | Starting significant work, feeling stuck, needing clarity |
 | `/pds:instinct` | Pattern lifecycle — record, validate, promote recurring patterns | Observed a pattern, post-swarm scout review, promotion threshold reached |
