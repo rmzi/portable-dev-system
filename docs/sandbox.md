@@ -30,14 +30,17 @@ Per-agent differentiation relies on layers 2-6. The sandbox (layer 1) is a share
 
 ## Default Configuration
 
+This is `install.sh`'s actual source of truth: it copies the `sandbox` key straight out of PDS's own `.claude/settings.json` into the target project. Kept in sync with that file, not maintained as a separate example — if they drift, `.claude/settings.json` is canonical.
+
 ```json
 {
   "sandbox": {
     "enabled": true,
     "autoAllowBashIfSandboxed": true,
-    "excludedCommands": ["docker", "git"],
-    "allowUnsandboxedCommands": false,
+    "excludedCommands": ["docker", "git", "gh"],
+    "allowUnsandboxedCommands": true,
     "enableWeakerNestedSandbox": false,
+    "additionalWritePaths": ["/private/tmp/tmux-*"],
     "network": {
       "allowedDomains": [
         "github.com",
@@ -46,10 +49,7 @@ Per-agent differentiation relies on layers 2-6. The sandbox (layer 1) is a share
         "*.npmjs.org",
         "registry.npmjs.org",
         "pypi.org",
-        "files.pythonhosted.org",
-        "crates.io",
-        "index.crates.io",
-        "static.crates.io"
+        "files.pythonhosted.org"
       ],
       "allowAllUnixSockets": false,
       "allowLocalBinding": false
@@ -63,8 +63,8 @@ Per-agent differentiation relies on layers 2-6. The sandbox (layer 1) is a share
 | Setting | Value | Why |
 |---------|-------|-----|
 | `autoAllowBashIfSandboxed` | `true` | Sandboxed Bash runs without permission prompts — velocity |
-| `excludedCommands` | `["docker", "git"]` | Git needs network for push/pull; docker needs host filesystem. Both guarded by deny rules. |
-| `allowUnsandboxedCommands` | `false` | Blocks sandbox bypass entirely. On block, expand config or send command to terminal pane. |
+| `excludedCommands` | `["docker", "git", "gh"]` | Git needs network for push/pull; gh needs Keychain/TLS access the sandbox blocks for Go binaries (see the confirmed gap below — this doesn't fully deliver on either, in practice); docker needs host filesystem. All three guarded by deny rules regardless. |
+| `allowUnsandboxedCommands` | `true` | Permits sandbox bypass (e.g. `dangerouslyDisableSandbox`, or a command routed outside the sandbox) rather than hard-blocking it. |
 | `allowAllUnixSockets` | `false` | Blocks Docker socket and other local services by default |
 | `allowLocalBinding` | `false` | Prevents Bash from binding to local ports |
 
@@ -134,10 +134,10 @@ With these in place, `cargo build`, `cargo test`, `cargo install`, `cargo clippy
 **When the sandbox blocks a command:**
 
 1. Is it a network issue? → Add the domain to `sandbox.network.allowedDomains`
-2. Is it a filesystem write issue? → Add the path via `/pds:allow <path>` (checks for credential paths before allowing)
-3. Can't be fixed by config? → Report the block to the pilot and send the command to the terminal pane for manual execution
+2. Is it a filesystem write issue? → Add the path to `sandbox.filesystem.allowWrite` directly in `.claude/settings.json` (`/pds:allow` was pruned during skill consolidation — see #131 / `docs/pending-issues.md` #3; a credential-path safety guardrail for this was never rebuilt, so check the path by hand before adding it)
+3. Can't be fixed by config? → Report the block to the pilot and send the command to the terminal pane for manual execution. **Exception**: git/gh network operations are a confirmed case where config expansion doesn't help at all — see "Excluded commands" below.
 
-`dangerouslyDisableSandbox` is never used. `allowUnsandboxedCommands` is `false`.
+For most blocks, `dangerouslyDisableSandbox` is not the answer — expand config instead. The one confirmed exception is the git/gh network gap documented below, where it's the only thing that reliably works.
 
 ## Platform Support
 
@@ -155,7 +155,7 @@ The SessionStart hook and `install.sh` both check for Linux dependencies and war
 If a legitimate command fails with "Operation not permitted" or similar:
 1. Check if the command needs network access — add the domain to `allowedDomains`
 2. Check if the command needs to write outside CWD — consider if this is really necessary
-3. If the command cannot be accommodated by expanding the sandbox config, report it to the pilot and send it to the terminal pane for manual execution. Never use `dangerouslyDisableSandbox`.
+3. If the command cannot be accommodated by expanding the sandbox config, report it to the pilot and send it to the terminal pane for manual execution. Don't reach for `dangerouslyDisableSandbox` as a default escape hatch — the one confirmed exception is git/gh network operations (see "Excluded commands" below), where expanding config doesn't help at all.
 
 ### Excluded commands
 
