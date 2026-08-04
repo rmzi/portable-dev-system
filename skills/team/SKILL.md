@@ -99,9 +99,11 @@ Three dispatch modes for spawning agents. Choose based on task characteristics.
 Default for all swarm work units. Long-running, tracked, role-specialized.
 
 ```
-Task(worker, team_name="project", name="worker-auth",
+worker = Task(worker, team_name="project",
      prompt="Implement auth module per task description.")
 ```
+
+No `name=` — the orchestrator spawning this is itself a named teammate and cannot spawn further named teammates ("the team roster is flat," confirmed via #171). Capture `worker.agent_id` for direct addressing; prefer task-mediated coordination (contract in the task description, self-claim via `TaskList`) for routine coordination.
 
 **When to use:** Implementation tasks, validation, review, documentation — anything that produces artifacts, needs a worktree, or should appear in TaskList.
 
