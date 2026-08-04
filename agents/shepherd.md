@@ -10,7 +10,6 @@ tools:
   - Write
   - TaskGet
   - SendMessage
-  - mcp__pds-advisor__advisor_consult
 permissionMode: acceptEdits
 skills:
   - pds:ethos

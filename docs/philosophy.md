@@ -45,7 +45,7 @@ It has, before. The orchestrator's tool grants have silently lagged behind what 
 
 The principle: **detect the runtime's capabilities before relying on them, and degrade gracefully when one is missing.** A missing tool, agent type, or state path should narrow what an agent does, not crash it silently. This is graceful in the same sense as [ethos](ethos.md) principle 6 ("fail fast, recover gracefully") — the failure should be loud and legible, not a quiet no-op — but the emphasis here is upstream of that: notice the gap before you're relying on it, not after.
 
-Where this shows up concretely: the shepherd's advisor MCP tool falls back to plain Opus if the advisor beta is unreachable, and returns a structured degraded response if `ANTHROPIC_API_KEY` is unset, rather than failing the whole consultation (see `docs/whitepaper.md`, "The Shepherd"). That's the pattern generalized — one runtime-capability check, one explicit fallback, documented at the point of use. PDS does not yet have a single session-start capability probe that surfaces every gap at once; each instance above was found and fixed individually, after breaking. Naming the principle is what turns "fixed after it broke" into something contributors check for before shipping.
+Where this shows up concretely: when the shepherd is unavailable — lite tier skips it, or the agent is down — workers fall back to **self-consult**: read `docs/whitepaper.md`, `docs/philosophy.md`, and `docs/ethos.md` directly and reason from citations, noting the gap in the next status update so the human sees it (see `agents/worker.md`, "Fallback: self-consult"). That's the pattern this principle asks for — detect the capability is missing, degrade to a documented fallback, surface the gap rather than hiding it. An earlier version of this same fallback routed through an MCP server (`mcp/advisor`) instead of reading the docs directly; it was removed after a marketplace install turned up unable to ever spawn it — `plugin.json` pointed at a build artifact `install.sh` never produced (`docs/adr/0010`). The replacement needs nothing external to work, which is the more honest shape of this principle. PDS does not yet have a single session-start capability probe that surfaces every gap at once; each instance above was found and fixed individually, after breaking. Naming the principle is what turns "fixed after it broke" into something contributors check for before shipping.
 
 ---
 
@@ -88,7 +88,7 @@ PDS has a shepherd agent that walks each swarm from Phase 1 through Phase 6. It 
 
 This is consistent with the first principle: the shepherd exists so agents and users can understand before they act. It is consistent with the fourth principle: by citing sources, it makes implicit conventions explicit. And it absorbs capacity that would otherwise sit idle — the orchestrator coordinates; the shepherd thinks about principles — without removing the human as final arbiter.
 
-Routing: graph questions (dispatch, dependencies, phase state) go to the orchestrator. Substance questions (design, trade-offs, principle-checks) go to the shepherd. In lite swarms, the shepherd is skipped to keep the tier cheap — workers invoke `advisor_consult` directly when needed.
+Routing: graph questions (dispatch, dependencies, phase state) go to the orchestrator. Substance questions (design, trade-offs, principle-checks) go to the shepherd. In lite swarms, the shepherd is skipped to keep the tier cheap — workers self-consult by reading the whitepaper/philosophy/ethos docs directly when needed.
 
 ---
 
