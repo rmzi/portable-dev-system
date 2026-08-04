@@ -17,6 +17,33 @@ if [ -n "$CLAUDE_PLUGIN_ROOT" ] && [ -f "$CLAUDE_PLUGIN_ROOT/.claude-plugin/plug
 fi
 
 
+# --- Detect SSH-based git remote (deterministically broken under the sandbox) ---
+# `excludedCommands` (git, gh, docker) exempts these tools from the sandbox's
+# filesystem confinement, but empirically does NOT fully exempt their network
+# traffic. Two confirmed, distinct failure modes, verified by direct testing
+# (identical command, sandboxed vs. --dangerously-skip-sandbox):
+#   1. SSH remotes (git@github.com:...) ALWAYS fail — the sandbox's network
+#      proxy is HTTP(S)-only and cannot tunnel raw SSH, even to an allowed
+#      domain. Categorical, not intermittent.
+#   2. Even after switching to an HTTPS remote, `git fetch` of substantial
+#      pack data can still fail under the sandbox ("did not send all
+#      necessary objects") while small pushes and `ls-remote` succeed fine —
+#      an apparent proxy-level truncation/corruption issue with git's binary
+#      smart-HTTP transfer, independent of the SSH issue above. HTTPS is
+#      strictly better than SSH (which never works) but is not a full fix.
+# The only fully reliable workaround found for either: run the git/gh network
+# command with the sandbox explicitly bypassed for that one invocation.
+SSH_REMOTE_WARNING=""
+if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  _origin_url=$(git remote get-url origin 2>/dev/null)
+  case "$_origin_url" in
+    git@*|ssh://*)
+      _https_url=$(echo "$_origin_url" | sed -E 's#^git@([^:]+):#https://\1/#; s#^ssh://git@#https://#')
+      SSH_REMOTE_WARNING=" ACTION NEEDED — SSH GIT REMOTE UNDER SANDBOX: origin uses SSH ($_origin_url), which fails deterministically under the sandbox (HTTP(S)-only proxy, cannot tunnel SSH — confirmed by direct testing, see docs/sandbox.md and issue #174). At the start of this session, ask the user via AskUserQuestion whether to fix it now: git remote set-url origin $_https_url && gh auth setup-git. This fully resolves the SSH failure. Note in the same prompt that a separate, rarer issue can still affect large HTTPS fetches under the sandbox (see docs/sandbox.md) — HTTPS is strictly better, not a complete guarantee. If the user declines, don't ask again this session."
+      ;;
+  esac
+fi
+
 # --- Detect worktree ---
 WORKTREE_INFO=""
 if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
@@ -93,7 +120,7 @@ if [ -z "${PDS_VOICE_OFF:-}" ]; then
 fi
 
 # --- Output additionalContext ---
-CONTEXT="PDS v${PDS_VERSION} active. Key skills: /pds:swarm (parallel work), /pds:grill (requirements), /pds:verify (completion check), /pds:bugfix (test-first fixes), /pds:checkpoint (ship work), /pds:finish (formal branch completion).${WORKTREE_INFO}${STALE_WARNING}${WORKTREE_WARNING}${CODEBASE_CONTEXT}${VOICE_CONTEXT}"
+CONTEXT="PDS v${PDS_VERSION} active. Key skills: /pds:swarm (parallel work), /pds:grill (requirements), /pds:verify (completion check), /pds:bugfix (test-first fixes), /pds:checkpoint (ship work), /pds:finish (formal branch completion).${WORKTREE_INFO}${STALE_WARNING}${WORKTREE_WARNING}${SSH_REMOTE_WARNING}${CODEBASE_CONTEXT}${VOICE_CONTEXT}"
 
 # Use python3 for safe JSON encoding
 python3 -c "

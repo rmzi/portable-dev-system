@@ -689,4 +689,16 @@ Per-model pricing from `utils/modelCost.ts` (per million tokens):
 
 ---
 
-*Last updated: 2026-03-31. Point-in-time snapshot from compiled source. Internal implementation may have changed since this analysis.*
+## Update — Observed 2026-08-03
+
+Consistent with this document's own stated practice (a point-in-time snapshot, not a living reference — see "How We Got Here"), the March 31 tables above are left as-is. This addendum records what's changed since, confirmed against current official Claude Code documentation rather than re-inferred from source:
+
+- **`TeamCreate` and `TeamDelete` no longer exist as tools** — removed as of Claude Code v2.1.178. Team formation and cleanup are now automatic: a team forms on the first teammate spawn, and tears down when the session ends. The Tool System table above (`Agent` category) still lists both under the March snapshot; that entry is now stale. See `docs/adr/0007-teardown-gate-migration-from-teamdelete-to-stop.md` for how PDS adapted its `TeamDelete`-gated teardown check to this removal.
+- **Team and task state paths confirmed**: team config lives at `~/.claude/teams/session-<id>/config.json` (removed automatically at session end); task state lives at `~/.claude/tasks/session-<id>/` and persists after the session ends — but neither directory syncs across machines or users. Team names follow the pattern `session-` + the first 8 characters of the session ID.
+- **`Stop` hook payload confirmed to include `cwd`**, identical to `PreToolUse` — a command-type `Stop` hook receives the same JSON-stdin shape (`session_id`, `prompt_id`, `transcript_path`, `cwd`, `permission_mode`, `hook_event_name`, plus a `last_assistant_message` field specific to `Stop`) rather than the `$ARGUMENTS`-only surface PDS's one prior `Stop` hook (a prompt-type hook in `validator.md`) used. Command-type `Stop` hooks support the same exit-code-2 blocking that `PreToolUse` hooks do.
+- **Multiple `Stop` hooks compose as AND**: all matching hooks run in parallel; a block from any one of them blocks the stop, and none silently overrides another. This was confirmed directly rather than inferred from the general hook-execution model.
+- **`SessionEnd` is advisory-only and cannot block** — exit code 2 shows a message to the user but does not prevent the session from ending, and JSON output on `SessionEnd` is ignored entirely. This is why PDS's teardown-gate migration targets `Stop`, not `SessionEnd`, despite `SessionEnd`'s name reading like the more obvious fit.
+
+---
+
+*Last updated: 2026-03-31, addendum 2026-08-03. Point-in-time snapshot from compiled source. Internal implementation may have changed since this analysis.*

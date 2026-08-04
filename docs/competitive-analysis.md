@@ -1,6 +1,6 @@
-# Competitive Analysis — April 2026
+# Competitive Analysis — July 2026
 
-Landscape scan of opinionated Claude Code SDLC approaches, multi-agent orchestration, and memory management as of April 2026. Updated with insights from Claude Code source analysis (March 2026).
+Landscape scan of opinionated Claude Code SDLC approaches, multi-agent orchestration, and memory management as of July 2026. Updated with insights from Claude Code source analysis (March 2026) and a 2026-Q2/Q3 industry refresh covering the spec-driven-development landscape.
 
 ---
 
@@ -18,7 +18,7 @@ Battle-tested configs from an Anthropic hackathon winner. 12 agents, 24 commands
 - "Instinct-based learning" — commands for viewing, importing, exporting instincts that evolve into skills
 - Python/Django and Java Spring Boot skill packs (domain-specific)
 
-**PDS advantages:** Whitepaper-backed SDLC methodology (v3.0), worktree isolation architecture, source-analysis-informed defense-in-depth model (6 enforcement layers, 28 hook events leveraged), swarm tiers (lite/med/heavy) with model-cost optimization, statistical skill evaluation with Wilson score confidence intervals, zero-duplication install modes, context compression methodology with documented fidelity cliff.
+**PDS advantages:** Whitepaper-backed SDLC methodology (v4.0), worktree isolation architecture, source-analysis-informed defense-in-depth model (6 enforcement layers, 28 hook events leveraged), swarm tiers (lite/med/heavy) with model-cost optimization, statistical skill evaluation with Wilson score confidence intervals, zero-duplication install modes, context compression methodology with documented fidelity cliff.
 
 ### claude-flow (ruvnet)
 
@@ -73,6 +73,42 @@ Vercel's official agent skills collection + AGENTS.md. Their [eval blog post](ht
 Discussion of Vercel eval implications for personal AI infrastructure. Debating passive context vs active skill retrieval at the personal/user level.
 
 **Relevance:** PDS's marketplace install with plugin distribution is a direct answer to this question.
+
+---
+
+## Spec-Driven Development / Agentic SDLC Formalization
+
+"Agentic SDLC" genericized across the industry in 2026 — PwC, Port.io, CodeRabbit, Codebridge, and Beam all published guides describing roughly the same shape (agents lead planning/coding/testing/review/ops, humans set intent and review). This is convergent terminology, not shared lineage — sourcing on "who coined it first" stayed contradictory even after a verification pass, so no lineage claim is made here. What's new and worth tracking is a set of real formalization efforts that didn't exist when this document was last updated:
+
+### GitHub Spec Kit
+
+**Repo:** [github.com/github/spec-kit](https://github.com/github/spec-kit)
+
+Announced by GitHub (Den Delimarsky, Principal PM) September 2, 2025. Specs-as-source-of-truth workflow: constitution → specify → plan → tasks → implement — the "constitution" file plays the same role PDS's `CLAUDE.md`/`docs/ethos.md` play. 120k+ GitHub stars, fastest-growing developer tool on GitHub in June-July 2026, now works with 30+ AI coding agents including Claude Code.
+
+**Relevance to PDS:** Closest thing to official/neutral validation that spec-driven, multi-stage agentic workflows are the right shape. Convergence with PDS's architecture (constitution ≈ CLAUDE.md/ethos.md), not something to copy.
+
+### BMAD-METHOD
+
+**Repo:** [github.com/bmad-code-org/BMAD-METHOD](https://github.com/bmad-code-org/BMAD-METHOD)
+
+MIT-licensed, 37k+ stars. The closest analog to PDS's own multi-agent-role model: 12+ specialized agent roles (Analyst, PM, Architect, UX Designer, Scrum Master, Developer, QA, Tech Writer) simulating a full agile team, cross-platform (Claude Code, Cursor, Codex, Copilot, Windsurf — not Claude-Code-native).
+
+**The documented failure mode:** BMAD has no lightweight mode — it always runs the full agent ceremony regardless of task size. Its own GitHub issues (#511, #1235, #1343, #1188) document the cost: 80-100x the token usage of not using BMAD, users hitting daily rate limits even on the $100/mo Claude Max plan, 80k-100k tokens per step during analysis on Sonnet, only 2-3 stories completable before exhausting usage, and up to 86% of the context window consumed by a single agent's knowledge base on activation alone.
+
+**PDS advantage, now externally evidenced:** PDS's lite/med/heavy swarm tiers exist precisely to avoid this failure mode. BMAD's cost blowout is the clearest available proof that "always run the full multi-agent ceremony" doesn't scale down to routine work — a design choice PDS made independently, now validated by someone else's production incidents rather than just internal reasoning.
+
+### AWS Kiro
+
+IDE-integrated, spec-first: forces `requirements.md` (using EARS notation for acceptance criteria — see whitepaper Phase 1), `design.md`, and `tasks.md` before any code. GA since March 2026 with a free tier. Reception is mixed (reviews ranging roughly 5.0-8.4/10 depending on source); an August 2025 metering bug caused real billing shock for early adopters before AWS paused the affected charges. Works well for large multi-step features; adds pure overhead for simple edits.
+
+**Relevance to PDS:** Kiro formalizes only the planning/spec phase (roughly PDS's Phase 1), not full multi-agent execution — narrower in scope than PDS or BMAD, but a useful proof point that EARS-style acceptance criteria are viable at production scale.
+
+### Generic orchestration substrates (distinct category — not SDLC methodologies)
+
+Microsoft Agent Framework 1.0 (GA April 3, 2026 — the AutoGen + Semantic Kernel merger, multi-provider including Anthropic/Bedrock/Gemini/Ollama), OpenAI Agents SDK (handoff-based agent transfer), Google ADK, CrewAI 1.14. These are infrastructure, in the same category as claude-flow relative to PDS — none encode an opinionated SDLC methodology; they're substrates other tools (including Spec Kit, BMAD) can be built on top of.
+
+**The meta-lesson across this whole section:** structure helps, but only when its weight is matched to task size, and none of Spec Kit/BMAD/Kiro ship a cheap mode. PDS's tiers are the same process, cost-shaped to the task — Spec Kit/BMAD/Kiro are process templates; PDS's tiers are the differentiator that keeps the template affordable at routine scale.
 
 ---
 
@@ -149,4 +185,4 @@ The closest analogy: claude-flow is Kubernetes, everything-claude-code is a dotf
 
 ---
 
-*Last updated: 2026-04-02*
+*Last updated: 2026-07-27*

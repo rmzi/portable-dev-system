@@ -56,7 +56,7 @@ make install    # symlinks this checkout as the plugin
 
 ---
 
-## Skills (15)
+## Skills (16)
 
 | Skill | Purpose |
 |-------|---------|
@@ -73,6 +73,7 @@ make install    # symlinks this checkout as the plugin
 | `/pds:rebase` | Focused branch rebase |
 | `/pds:pr-review` | Address PR review comments |
 | `/pds:pause` | Save session state, WIP commit, resume later |
+| `/pds:resume` | Reconstruct swarm state after pause, crash, or cross-machine/person handoff |
 | `/pds:triage` | Triage insights into GitHub issues across repos |
 | `/pds:explore` | Structural codebase queries via codebase-memory-mcp index (falls back to Grep) |
 

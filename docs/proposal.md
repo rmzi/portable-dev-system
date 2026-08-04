@@ -28,7 +28,7 @@ Current development workflows, even with AI assistance, hit fundamental limits:
 
 ## The Model
 
-The Agentic SDLC consists of six phases. Human involvement concentrates at phase boundaries, not within them. Agents execute as native Claude Code teams — spawned via TeamCreate, coordinated through task DAGs, communicating via SendMessage, each isolated in their own git worktree.
+The Agentic SDLC consists of six phases. Human involvement concentrates at phase boundaries, not within them. Agents execute as native Claude Code teams — formed automatically on first spawn, coordinated through task DAGs, communicating via SendMessage, each isolated in their own git worktree.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐

@@ -43,7 +43,7 @@ Agents are spawned via the Task tool with type restrictions — `Task(worker)`, 
 
 A **hook** is a lifecycle event handler. Claude Code fires hook events at 28 points in the agent lifecycle (tool execution, session start/stop, agent spawn/idle, permission requests, configuration changes, and more). Hooks can be implemented as bash scripts, agent spawns, HTTP webhooks, or internal callbacks.
 
-PDS uses hooks for quality gates (Stop, TaskCompleted, TeammateIdle), audit logging (WorktreeCreate, InstructionsLoaded), session setup (SessionStart), and permission routing (PermissionRequest).
+PDS uses hooks for quality gates (Stop, TaskCompleted, TeammateIdle), audit logging (WorktreeCreate, InstructionsLoaded), and session setup (SessionStart). `PermissionRequest` was removed in v4.6.0 — static deny rules and the OS-level sandbox now provide equivalent enforcement without LLM-as-judge overhead.
 
 ---
 
@@ -186,7 +186,7 @@ Lite = routine work (1-2 workers, orchestrator self-reviews). Med = serious work
 Agents coordinate via native Claude Code tools:
 - **TaskCreate/TaskUpdate** — Task definition, status tracking, and dependencies
 - **SendMessage** — Direct and broadcast communication between agents
-- **TeamCreate** — Team setup with shared task list
+- **Automatic team formation** — a team forms with a shared task list on the first teammate spawn; no explicit setup call (Claude Code v2.1.178+)
 
 Agent spawning uses typed syntax — `Task(worker)`, `Task(validator)` — which restricts which agent definitions can fulfill the spawn. This prevents unauthorized agent escalation (e.g., a worker cannot spawn an orchestrator).
 
@@ -202,9 +202,10 @@ Claude Code provides 28 hook lifecycle events. PDS subscribes to the following:
 | **TeammateIdle** | Detect uncommitted changes |
 | **WorktreeCreate** | Audit log worktree provisioning |
 | **InstructionsLoaded** | Audit log rule file loading |
-| **PermissionRequest** | LLM-as-judge routing for subagent requests |
 
-Additionally, the orchestrator uses **PreToolUse** hooks for phase gates (blocking `gh pr create` and `TeamDelete` unless required artifacts exist).
+`PermissionRequest` (LLM-as-judge routing for subagent requests) was removed in v4.6.0 — static deny rules and the OS-level sandbox now cover the same ground without the LLM-as-judge overhead.
+
+Additionally, the orchestrator uses a **PreToolUse** hook for the PR gate (blocking `gh pr create` unless required artifacts exist) and a **Stop** hook for the teardown gate (blocking the orchestrator's own stop while phase = `knowledge` unless all phase artifacts exist — `TeamCreate`/`TeamDelete` no longer exist as tools, so there's no dedicated teardown call left to gate).
 
 HTTP hooks (available since Claude Code 2.1.63) allow PDS quality gates to call external services for policy enforcement when needed.
 
@@ -312,7 +313,7 @@ PDS enables Claude Code's native OS-level sandbox for all Bash commands. The san
 
 **Key behaviors:**
 - Sandboxed Bash commands auto-approve without permission prompts (`autoAllowBashIfSandboxed: true`)
-- `git` and `docker` are excluded from the sandbox — they go through normal deny rules and the PermissionRequest hook
+- `git`, `gh`, and `docker` are meant to bypass the sandbox entirely via `excludedCommands` and go through normal deny rules and permission prompts instead — but this isn't fully reliable in practice for git/gh network operations. See `docs/sandbox.md`'s "Excluded commands" troubleshooting section for the confirmed gap and workaround; `session-start.sh` warns once at session start if `origin` is an SSH remote, which is the one deterministic case.
 - Workers are OS-confined to their worktree directory for writes
 - Cross-worktree reads work via Bash on absolute paths (sandbox allows broad reads)
 

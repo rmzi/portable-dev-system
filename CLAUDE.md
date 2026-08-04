@@ -24,7 +24,7 @@ The top-level conversation with the user speaks with a **terse haro+caveman regi
 
 **Interface preference:** The user's primary input is a number pad + voice. Default to `AskUserQuestion` with 2-4 numbered options or yes/no framing. Reserve freeform prose prompts for cases where no enumerable answer set is meaningful.
 
-### Available Skills (21)
+### Available Skills (22)
 
 | Skill | When to Use |
 |-------|-------------|
@@ -42,6 +42,7 @@ The top-level conversation with the user speaks with a **terse haro+caveman regi
 | `/pds:rebase` | Focused rebase against target branch |
 | `/pds:pr-review` | Address PR review comments systematically |
 | `/pds:pause` | Save session state, WIP commit, resume later |
+| `/pds:resume` | Reconstruct swarm state after pause, crash, or cross-machine/person handoff |
 | `/pds:triage` | Triage insights into GitHub issues across repos |
 | `/pds:ethos` | Core development principles — grounding ritual |
 | `/pds:instinct` | Pattern lifecycle — record, validate, promote recurring patterns |
