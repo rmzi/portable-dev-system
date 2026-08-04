@@ -1,6 +1,6 @@
 # Philosophy
 
-## The Seven Principles
+## The Eight Principles
 
 1. **Understand before you act** — Read code before changing it
 2. **Small, reversible steps** — Atomic commits, small PRs
@@ -9,6 +9,7 @@
 5. **Optimize for change** — Code is read 10x more than written
 6. **Fail fast, recover gracefully** — Validate at boundaries
 7. **Automation as documentation** — Scripts > READMEs
+8. **Portability of operation** — Detect runtime capabilities, degrade gracefully on gaps
 
 These principles are documented in [docs/ethos.md](ethos.md) and grounded across all PDS skills. They are stable — tools and techniques evolve, but principles endure.
 
@@ -24,13 +25,27 @@ Skills encode team knowledge:
 
 ---
 
-## Portability Contract
+## Portability Contract (Distribution)
 
 PDS is "install once, works across all projects." To hold that promise, it ships **only** markdown, bash, Python 3, and `jq`. No compiled artifacts. No language toolchains (Rust, Go, Node). No private binaries.
 
 If a feature needs a compiled component, that component lives in a separate repo and PDS consumes its output through a skill — never bundles the build. Skills like `/pds:explore` read SQLite indexes written by external tools; PDS does not produce the indexer.
 
 This keeps the install path honest: `curl | bash` is enough, no hidden prerequisites. Users without Rust, Go, or Node installed still get the full PDS experience.
+
+This is portability of **install** — what it takes to get PDS onto a machine. It says nothing about what happens once PDS is running and the runtime underneath it turns out to be narrower than expected.
+
+---
+
+## Portability of Operation
+
+Distribution portability answers "can PDS get installed here?" A different question: once running, does PDS assume a fixed toolset, a fixed agent roster, a fixed place for state to live — and break when the runtime doesn't match?
+
+It has, before. The orchestrator's tool grants have silently lagged behind what its own skills required (`/pds:grill` shipped requiring `AskUserQuestion` and `EnterPlanMode` before the orchestrator's frontmatter granted either — a subagent only gets what its `tools:` list names, so Phase 1 grill had no way to ask a structured question). `TeamCreate`/`TeamDelete` were removed as Claude Code tools outright, and the teardown gate that keyed off `TeamDelete` had nothing left to bind to until it was migrated to a `Stop` hook. Both were the same failure shape: PDS assumed a capability the platform no longer promised, and had no way to notice before it broke.
+
+The principle: **detect the runtime's capabilities before relying on them, and degrade gracefully when one is missing.** A missing tool, agent type, or state path should narrow what an agent does, not crash it silently. This is graceful in the same sense as [ethos](ethos.md) principle 6 ("fail fast, recover gracefully") — the failure should be loud and legible, not a quiet no-op — but the emphasis here is upstream of that: notice the gap before you're relying on it, not after.
+
+Where this shows up concretely: when the shepherd is unavailable — lite tier skips it, or the agent is down — workers fall back to **self-consult**: read `docs/whitepaper.md`, `docs/philosophy.md`, and `docs/ethos.md` directly and reason from citations, noting the gap in the next status update so the human sees it (see `agents/worker.md`, "Fallback: self-consult"). That's the pattern this principle asks for — detect the capability is missing, degrade to a documented fallback, surface the gap rather than hiding it. An earlier version of this same fallback routed through an MCP server (`mcp/advisor`) instead of reading the docs directly; it was removed after a marketplace install turned up unable to ever spawn it — `plugin.json` pointed at a build artifact `install.sh` never produced (`docs/adr/0010`). The replacement needs nothing external to work, which is the more honest shape of this principle. PDS does not yet have a single session-start capability probe that surfaces every gap at once; each instance above was found and fixed individually, after breaking. Naming the principle is what turns "fixed after it broke" into something contributors check for before shipping.
 
 ---
 

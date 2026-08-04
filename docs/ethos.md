@@ -4,7 +4,7 @@
 
 When invoked, remind of these principles. Use as grounding before significant work.
 
-## The Seven Principles
+## The Eight Principles
 
 ### 1. Understand Before You Act
 Read existing code before modifying. Map the territory before changing it.
@@ -28,6 +28,9 @@ Validate at boundaries. Crash on programmer errors. Handle user errors.
 
 ### 7. Automation as Documentation
 Scripts encode knowledge. CI runs what developers run. Automate the repeated.
+
+### 8. Portability of Operation
+Detect the runtime's capabilities before relying on them. Degrade gracefully when a tool, agent type, or state path is missing — never hard-fail on an assumption the platform didn't promise. Where context lives, which tools exist, how the session was launched: none of it should decide whether the work gets done.
 
 ## When Stuck
 
