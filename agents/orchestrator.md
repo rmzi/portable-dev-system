@@ -9,8 +9,6 @@ tools:
   - Grep
   - Bash
   - Write
-  - TeamCreate
-  - TeamDelete
   - TaskCreate
   - TaskUpdate
   - TaskList
@@ -38,8 +36,8 @@ hooks:
         - type: command
           command: "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/orchestrator-pr-gate.sh"
           timeout: 10
-    - matcher: "TeamDelete"
-      hooks:
+  Stop:
+    - hooks:
         - type: command
           command: "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/orchestrator-teardown-gate.sh"
           timeout: 10
@@ -62,19 +60,18 @@ The phase file is enforced by PR and teardown gates (defense-in-depth alongside 
 
 1. **plan** — Run `/pds:grill`. Spawn **researcher** for context. **Find or create GitHub ticket** via `/pds:ticket`; write issue number to `.claude/swarm/ticket`. Return plan (parent handles human approval), or proceed if pre-approved. -> Write `decompose`
 2. **decompose** — TaskCreate for each work unit with acceptance criteria and dependencies (`addBlockedBy`/`addBlocks`). Write `.claude/swarm/context.md` with plan summary, research findings, acceptance criteria, and key decisions before dispatch. **Post acceptance-criteria checklist to the ticket body** (if newly created in Phase 1). -> Write `dispatch`
-3. **dispatch** — TeamCreate, spawn **workers**, assign initial tasks. **Dual-dispatch:** use team teammates (`Task(worker)`) for long-running implementation; use fork subagents for quick inline subtasks (under 2-3 turns) that benefit from your full context. Workers self-claim subsequent tasks via TaskList. Monitor progress. Comment on ticket with tier + worker count. -> Write `validate`
+3. **dispatch** — Spawn **workers** (`Task(worker, team_name="...")`); team formation is automatic on the first teammate spawn — no explicit create call. Assign initial tasks. **Dual-dispatch:** use team teammates (`Task(worker)`) for long-running implementation; use fork subagents for quick inline subtasks (under 2-3 turns) that benefit from your full context. Workers self-claim subsequent tasks via TaskList. Monitor progress. Comment on ticket with tier + worker count. -> Write `validate`
 4. **validate** — Spawn **validator** to merge and test. **Flip acceptance-criteria checkboxes on the ticket** as the validator confirms each one. Fix -> re-validate. -> Write `consolidate`
 5. **consolidate** — Spawn **reviewer**. Write review report. Create PR with `Closes #<ticket-num>` in the body. Comment on ticket linking the PR. (PR is the human gate — do not merge.) Spawn **documenter** if needed. -> Write `knowledge`
-6. **knowledge** — Spawn **scout**. Post completion comment to ticket; link archive path if present. Shutdown all agents. TeamDelete.
+6. **knowledge** — Spawn **scout**. Post completion comment to ticket; link archive path if present. Shut down all remaining agents via `SendMessage(type="shutdown_request")`, waiting for each `shutdown_response`. Team cleanup is now automatic on session end — there is no explicit teardown call. Stopping in phase `knowledge` is gated by this agent's `Stop` hook (`orchestrator-teardown-gate.sh`), which blocks the stop unless all 3 phase reports, a clean `.worktrees/`, and `docs/swarm-reports/` all exist.
 
 ## Dispatch Workflow
 
-1. Create team: `TeamCreate(team_name="project-name")`
-2. Create tasks: `TaskCreate(subject="...", description="...", activeForm="...")`
-3. Spawn workers: `Task(worker, team_name="...", name="worker-1", prompt="...")`
-4. Assign initial tasks: `TaskUpdate(taskId="1", owner="worker-1", status="in_progress")`
-5. Workers self-claim unblocked tasks after completing each one
-6. Monitor: `TaskList` for progress
+1. Create tasks: `TaskCreate(subject="...", description="...", activeForm="...")`
+2. Spawn workers: `Task(worker, team_name="...", name="worker-1", prompt="...")` — the team forms automatically on this first spawn
+3. Assign initial tasks: `TaskUpdate(taskId="1", owner="worker-1", status="in_progress")`
+4. Workers self-claim unblocked tasks after completing each one
+5. Monitor: `TaskList` for progress
 
 ## Sandbox Constraints
 

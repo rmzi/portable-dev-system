@@ -45,6 +45,14 @@ Rules:
   ```
 - If multiple matches exist, **ask the human** via `AskUserQuestion` with the candidate issue numbers as options + "Create new" + "Other".
 
+Whichever branch is taken (reuse or create), apply the `pds-active-swarm` label so the issue is discoverable by `/pds:resume` without any local state:
+
+```bash
+gh issue edit <num> --add-label pds-active-swarm
+```
+
+Create the label first if it doesn't exist yet (`gh label create pds-active-swarm --color BFD4F2 --description "A PDS swarm is actively working this issue" 2>/dev/null || true` — ignore the error if it already exists).
+
 ### 2. Store the issue number (or fallback marker)
 
 Write the resolved issue number to `.claude/swarm/ticket`:
@@ -82,7 +90,7 @@ gh issue comment <num> --body "Phase: <phase-name>. <one-line summary>"
 
 **On PR creation** (Phase 5), include `Closes #<num>` in the PR body. Not enforced by the PR gate — the gate only checks phase state + validation/review reports. Omitting `Closes` won't block the PR, but it will break GitHub's auto-close-on-merge and leave the ticket orphaned.
 
-**On swarm completion** (Phase 6, after scout report), post a completion comment with a link to `docs/swarm-reports/<YYYY-MM-DD-HHmm>/` if archived.
+**On swarm completion** (Phase 6, after scout report), post a completion comment with a link to `docs/swarm-reports/<YYYY-MM-DD-HHmm>/` if archived, then remove the `pds-active-swarm` label (`gh issue edit <num> --remove-label pds-active-swarm`) — the swarm is no longer in-flight, so it should drop out of `/pds:resume`'s discovery search.
 
 ### 4. Fallback — no GitHub available
 
@@ -98,12 +106,13 @@ Downstream phases (4, 5, 6) check the ticket file content: if it's numeric, run 
 ## Orchestrator Checklist
 
 - [ ] Phase 1: search for existing ticket; create if none; resolve ambiguity via `AskUserQuestion`
+- [ ] Phase 1: apply `pds-active-swarm` label
 - [ ] Phase 1: write issue number to `.claude/swarm/ticket`
 - [ ] Phase 2: append acceptance-criteria checklist to ticket body (if newly created)
 - [ ] Phase 3: comment on ticket when workers dispatch (tier + worker count)
 - [ ] Phase 4: flip criterion checkboxes as validator confirms; comment on validation result
 - [ ] Phase 5: include `Closes #<num>` in PR body; comment on ticket linking the PR
-- [ ] Phase 6: post completion comment; if archive path exists, link it
+- [ ] Phase 6: post completion comment; if archive path exists, link it; remove `pds-active-swarm` label
 
 ## User-Facing Register
 
@@ -113,3 +122,4 @@ The orchestrator speaks terse to the user (see `/pds:voice`) — the ticket body
 
 - `/pds:swarm` — Phases reference this skill at 1, 2, 4, 5, 6
 - `/pds:triage` — downstream skill for converting swarm findings into new tickets
+- `/pds:resume` — discovers in-flight swarms via the `pds-active-swarm` label this skill applies

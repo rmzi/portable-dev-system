@@ -1,8 +1,13 @@
 #!/bin/bash
-# PDS PreToolUse gate for orchestrator — blocks TeamDelete without all 3 phase reports.
-# Defined in orchestrator.md frontmatter; activates on TeamDelete tool use.
-# Only enforces when .claude/swarm/ exists (swarm is active).
-# Exit 0 = allow, Exit 2 = block with reason.
+# PDS Stop gate for orchestrator — blocks the orchestrator from stopping while
+# .claude/swarm/phase reads "knowledge" unless all 3 phase reports, a clean
+# .worktrees/, and docs/swarm-reports/ all exist. This is the teardown-equivalent
+# replacement for the old PreToolUse(TeamDelete) gate — TeamCreate/TeamDelete were
+# removed as Claude Code tools in v2.1.178; team formation and cleanup are now
+# automatic, so there is no tool call left to gate. See docs/adr/0007.
+# Defined in orchestrator.md frontmatter as a Stop hook; fires on every orchestrator
+# turn-end, not just intended teardown — see the phase check below for why that's safe.
+# Exit 0 = allow stop, Exit 2 = block with reason (orchestrator's turn continues).
 
 command -v jq >/dev/null 2>&1 || exit 0  # jq required for gate enforcement
 
@@ -20,7 +25,12 @@ if [ ! -d "$SWARM_DIR" ]; then
   exit 0
 fi
 
-# Phase check (defense-in-depth — warns if phase file missing, blocks if wrong phase)
+# Phase check. Only phase "knowledge" is teardown-shaped — every earlier phase is a
+# normal mid-swarm handoff (e.g. a Phase-1-only orchestrator returning a plan for
+# human approval, or an orchestrator instance ending after a checkpoint write) and
+# must be allowed to stop unconditionally. Blocking those would be a regression
+# introduced by Stop firing on every turn-end, unlike the old PreToolUse(TeamDelete)
+# gate which only ever fired at the one call site that meant "tear down now."
 KNOWN_PHASES="plan decompose dispatch validate consolidate knowledge"
 if [ -f "$SWARM_DIR/phase" ]; then
   PHASE=$(tr -d '[:space:]' < "$SWARM_DIR/phase" 2>/dev/null) || {
@@ -36,13 +46,15 @@ if [ -f "$SWARM_DIR/phase" ]; then
     exit 2
   fi
   if [[ "$PHASE" != "knowledge" ]]; then
-    printf "BLOCKED: Cannot tear down team in phase '%s' — advance to 'knowledge' first." "$PHASE" >&2
-    exit 2
+    exit 0
   fi
 else
   printf "WARNING: .claude/swarm/phase missing — phase gate bypassed, falling through to artifact checks.\n" >&2
 fi
 
+# From here on, phase is "knowledge" (or the phase file is missing entirely) — this
+# stop is teardown-shaped. Enforce the same artifact/worktree/archive checks the old
+# TeamDelete gate enforced.
 MISSING=""
 
 if [ ! -f "$SWARM_DIR/validation-report.md" ]; then
@@ -58,13 +70,13 @@ if [ ! -f "$SWARM_DIR/scout-report.md" ]; then
 fi
 
 if [ -n "$MISSING" ]; then
-  printf "BLOCKED: Cannot tear down team — missing required phase artifacts:\n%b\nComplete all phases before cleanup." "$MISSING" >&2
+  printf "BLOCKED: Cannot end swarm — missing required phase artifacts:\n%b\nComplete all phases before stopping." "$MISSING" >&2
   exit 2
 fi
 
 # Worktree cleanup check (#106) — all swarm worktrees must be removed before teardown
 if [ -d "$CWD/.worktrees" ] && [ -n "$(ls -A "$CWD/.worktrees" 2>/dev/null)" ]; then
-  printf "BLOCKED: Cannot tear down team — worktrees still exist in .worktrees/:\n" >&2
+  printf "BLOCKED: Cannot end swarm — worktrees still exist in .worktrees/:\n" >&2
   ls "$CWD/.worktrees" | sed 's/^/  - /' >&2
   printf "Remove each worktree with: git worktree remove .worktrees/<name>" >&2
   exit 2
@@ -72,7 +84,7 @@ fi
 
 # Artifact archival check (#106) — docs/swarm-reports/ must exist before teardown
 if [ ! -d "$CWD/docs/swarm-reports" ]; then
-  printf "BLOCKED: Cannot tear down team — docs/swarm-reports/ does not exist.\nArchive phase artifacts there before cleanup." >&2
+  printf "BLOCKED: Cannot end swarm — docs/swarm-reports/ does not exist.\nArchive phase artifacts there before cleanup." >&2
   exit 2
 fi
 

@@ -47,3 +47,33 @@ description: Eval scenarios for /pds:pause skill — verifies correct save-state
 3. No agents force-stopped
 
 **Anti-pattern:** Agents silently killed without warning — could corrupt in-progress work.
+
+---
+
+## Scenario 4: Ticketed Swarm — Pause Note Posted
+
+**Setup:** `.claude/swarm/ticket` contains a numeric issue number (e.g. `42`). Working tree has uncommitted changes.
+
+**Invoke:** `/pds:pause "finished auth, next: tests"`
+
+**Expected behavior:**
+1. `pause.json` written as in Scenario 1
+2. `gh issue comment 42 --body "..."` is run, including branch, phase, tier, and the note
+3. Confirmation message printed
+
+**Anti-pattern:** Comment omitted despite a real ticket number present. Or the pause blocked/failed because `gh` errored (should degrade silently — see Rules).
+
+---
+
+## Scenario 5: No Ticket or Fallback Marker
+
+**Setup:** `.claude/swarm/ticket` is absent, or contains a fallback marker (e.g. `none (no github remote)`).
+
+**Invoke:** `/pds:pause`
+
+**Expected behavior:**
+1. `pause.json` written normally
+2. No `gh issue comment` call attempted
+3. No error surfaced to the user
+
+**Anti-pattern:** Skill errors out or prints a warning about the missing ticket — this is a normal, silent no-op path.

@@ -125,7 +125,7 @@ Events fire in this order during a session:
 | Event | Matcher | Script | Behavior | Blocks? |
 |-------|---------|--------|----------|---------|
 | `PreToolUse` | `Bash` | `orchestrator-pr-gate.sh` | Block `gh pr create` unless phase >= consolidate + reports exist | Yes |
-| `PreToolUse` | `TeamDelete` | `orchestrator-teardown-gate.sh` | Block cleanup unless phase = knowledge + all reports + worktrees clean | Yes |
+| `Stop` | _(none — fires on every orchestrator turn-end)_ | `orchestrator-teardown-gate.sh` | Passes through unconditionally unless phase = knowledge; then blocks unless all reports + worktrees clean + archive dir exist | Yes (only when phase = knowledge) |
 
 ---
 
@@ -290,7 +290,7 @@ echo "decompose" > .claude/swarm/phase
 
 ### Phase Gates
 
-Shell scripts enforce the state machine. Defined as `PreToolUse` hooks on the orchestrator agent (in `orchestrator.md` frontmatter, not in `hooks.json`).
+Shell scripts enforce the state machine. Defined on the orchestrator agent (in `orchestrator.md` frontmatter, not in `hooks.json`) — the PR gate as a `PreToolUse` hook, the teardown gate as a `Stop` hook.
 
 **PR Gate** (`orchestrator-pr-gate.sh`)
 - Triggers on: `gh pr create` in Bash
@@ -298,9 +298,11 @@ Shell scripts enforce the state machine. Defined as `PreToolUse` hooks on the or
 - Falls through (allows) if no `.claude/swarm/` directory (non-swarm session)
 
 **Teardown Gate** (`orchestrator-teardown-gate.sh`)
-- Triggers on: `TeamDelete` tool call
-- Blocks unless: phase = `knowledge` AND all 3 reports exist AND `.worktrees/` clean AND `docs/swarm-reports/` exists
+- Triggers on: the orchestrator's `Stop` event — every turn-end, not a dedicated teardown call. `TeamCreate`/`TeamDelete` were removed as Claude Code tools in v2.1.178, so there is no explicit teardown call left to gate; team formation and cleanup are now automatic.
+- Passes through unconditionally when phase != `knowledge` — everything before the last phase is a normal mid-swarm handoff (e.g. a Phase-1-only orchestrator returning a plan for approval), not an attempt to end the swarm, and must not be blocked.
+- When phase = `knowledge`: blocks unless all 3 reports exist AND `.worktrees/` clean AND `docs/swarm-reports/` exists. A block is not a hang — exit code 2 on a `Stop` hook continues the orchestrator's own turn with the reason as feedback, so it can act and retry.
 - Falls through if no `.claude/swarm/` directory
+- See `docs/adr/0007-teardown-gate-migration-from-teamdelete-to-stop.md` for the full migration rationale.
 
 **Validator Stop Hook** (prompt hook in `validator.md`)
 - Triggers on: validator calling `Stop`
@@ -422,8 +424,8 @@ Orchestrator runs /pds:grill:
 ```
 .claude/swarm/phase → "dispatch"
 
-TeamCreate → ~/.claude/teams/<name>/config.json
-TaskCreate → ~/.claude/tasks/<name>/<id>.json (per task)
+First Task(worker) spawn → team forms automatically → ~/.claude/teams/session-<id>/config.json
+TaskCreate → ~/.claude/tasks/session-<id>/<task-id>.json (per task)
 
 Worker spawns:
   agents/worker.md (model=sonnet, isolation=worktree)
@@ -442,6 +444,8 @@ Worker completes task:
   hooks.json → TaskCompleted → task-completed-gate.sh (runs tests)
   Worker claims next: TaskList → TaskUpdate
 ```
+
+**Team vs. task persistence.** Team names follow the pattern `session-` + the first 8 characters of the session ID. `~/.claude/teams/session-<id>/config.json` is removed automatically when the session ends (team cleanup, formerly the `TeamDelete` call's job). `~/.claude/tasks/session-<id>/` persists after session end — task state outlives the team that created it, but neither directory syncs across machines. This is the platform-level ceiling `/pds:resume` (see `skills/resume/SKILL.md`) works around by reconstructing from the GitHub ticket instead of this local state.
 
 ### Phase 4: Validate
 ```
@@ -488,14 +492,17 @@ Scout spawns:
 Agents shutdown:
   SendMessage(type="shutdown_request") to each agent
 
-Team cleanup:
-  agents/orchestrator.md → PreToolUse (TeamDelete) → orchestrator-teardown-gate.sh
+Orchestrator turn ends:
+  agents/orchestrator.md → Stop → orchestrator-teardown-gate.sh
     checks: phase = knowledge ✓
     checks: validation-report.md exists ✓
     checks: review-report.md exists ✓
     checks: scout-report.md exists ✓
     checks: .worktrees/ clean ✓
-    allows: TeamDelete
+    allows: stop
+
+Team cleanup (automatic, no tool call):
+  session ends → ~/.claude/teams/session-<id>/config.json removed
 
 Artifact archival:
   .claude/swarm/*.md → docs/swarm-reports/<YYYY-MM-DD-HHmm>/

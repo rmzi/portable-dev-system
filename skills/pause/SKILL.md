@@ -60,10 +60,24 @@ Note: a swarm may be active. Consider shutting down agents before closing the se
 
 Do not force-stop agents — just surface the suggestion.
 
-### 5. Print Confirmation
+### 5. Post pause note to the ticket (if one exists)
+
+Read `.claude/swarm/ticket`. If its content matches `^[0-9]+$` (a real issue number, not a fallback marker — see `/pds:ticket` section 2), post the pause state as a comment:
+
+```bash
+gh issue comment <ticket-num> --body "$(cat <<'EOF'
+Paused. Branch: <branch>. Phase: <phase>. Tier: <tier>.
+<note>
+EOF
+)"
+```
+
+This is what makes the pause portable across machines and people — `/pds:resume` reads this comment thread when no local `.claude/swarm/` state is available. If the ticket file is missing or holds a fallback marker, skip this step silently — no ticket, no comment, no error.
+
+### 6. Print Confirmation
 
 ```
-Session paused. State saved to .claude/swarm/pause.json. Resume with /resume.
+Session paused. State saved to .claude/swarm/pause.json. Resume with /pds:resume.
 ```
 
 ## Rules
@@ -71,4 +85,10 @@ Session paused. State saved to .claude/swarm/pause.json. Resume with /resume.
 - Never create an empty commit on a clean working tree.
 - Stage files deliberately — no `git add -A`.
 - The pause.json write is the only required side effect on a clean tree.
+- The ticket comment (step 5) is best-effort — never block the pause on `gh` failing or being unavailable.
 - This is a save-state operation, not a workflow — keep it fast and simple.
+
+## See Also
+
+- `/pds:resume` — Reconstructs swarm state from local checkpoint, ticket comment thread, or archived swarm report.
+- `/pds:ticket` — Owns the ticket file and comment conventions this skill reuses.
