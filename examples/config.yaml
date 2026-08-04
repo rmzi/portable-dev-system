@@ -83,7 +83,7 @@ input:
 plugins:
   install: [pds]                         # pds sync shells out to `claude plugins install` per entry
 mcp:
-  core: [pds-advisor, claude-mem-search, zaku, haro]
+  core: [claude-mem-search, zaku, haro]
 
 # --- Gitignore (row 14) ---
 gitignore:

@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Removed
+- **`mcp/advisor` MCP server and the `advisor_consult` fallback path.** Discovered broken while verifying v5.0.0 (#177) would actually work as a marketplace install: `plugin.json` declared `mcpServers.pds-advisor` pointing at `mcp/advisor/dist/server.js`, but `dist/` and `node_modules/` were both gitignored and never committed, and nothing in `install.sh` ever ran the required `npm install && npm run build` — a marketplace install had no path to produce the file the plugin manifest pointed at. This was a known-unverified gap (issue #159's own "Zone 0" flagged it) that shipped unresolved in v5.0.0. Removed entirely rather than patched: it also required a Node/npm toolchain and a separate `ANTHROPIC_API_KEY` beyond whatever already authenticates the session, for a shepherd that is already opus-tier and duplicates capability the agent already has. Every `advisor_consult` fallback instruction (`agents/shared-rules.md`, `agents/worker.md`, `agents/shepherd.md`, `skills/swarm/SKILL.md`, `skills/team/SKILL.md`, `docs/philosophy.md`, `docs/whitepaper.md`, `examples/config.yaml`) is replaced with **self-consult**: read `docs/whitepaper.md`/`docs/philosophy.md`/`docs/ethos.md` directly when the shepherd is absent or unavailable. See `docs/adr/0010-remove-mcp-advisor.md`.
+
 ## [5.0.0] - 2026-08-04
 
 Breaking-change-scale consolidation: the native agent-teams migration (implicit team formation/teardown, named-teammate dispatch fix) changes how orchestrators and skills spawn and coordinate agents. No skill/agent public interface (slash commands, skill names) changed — the break is in the *internal* spawn/coordination pattern that PDS's own docs prescribe, not in anything an end user invokes directly. See `docs/adr/0007` (teardown-gate migration) and `docs/adr/0009` (evolving-body format) for the two largest design decisions folded in here.

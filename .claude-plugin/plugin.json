@@ -2,11 +2,5 @@
   "name": "pds",
   "version": "5.0.0",
   "description": "Portable Development System — AI-assisted development methodology with skills for consistency and agents for scale.",
-  "repository": "https://github.com/rmzi/portable-dev-system",
-  "mcpServers": {
-    "pds-advisor": {
-      "command": "node",
-      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/advisor/dist/server.js"]
-    }
-  }
+  "repository": "https://github.com/rmzi/portable-dev-system"
 }
