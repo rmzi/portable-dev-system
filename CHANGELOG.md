@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [5.1.0] - 2026-08-04
+
 ### Added
 - **`/pds:ethos` principle 8 — Portability of Operation.** "Detect the runtime's capabilities before relying on them, and degrade gracefully when one is missing." Added to `skills/ethos/SKILL.md`, its stale duplicate `docs/ethos.md`, and `docs/philosophy.md` (new "Portability of Operation" section, distinguished from the existing "Portability Contract" — retitled "Portability Contract (Distribution)" — since that section is about install, not runtime capability). Threaded into `docs/whitepaper.md`'s "LLM Independence" section as a new "Portability of Operation" subsection, citing concrete instances that already happened: the orchestrator's tool grants lagging `/pds:grill`'s `AskUserQuestion`/`EnterPlanMode` requirement, the dead `TeamDelete` teardown-gate trigger after Claude Code removed the tool at v2.1.178, and the `mcp/advisor` removal below. Two new glossary entries (Distribution Portability, Portability of Operation).
 - Scoped down from issue #161's original "first-principles rebuild" framing — the whitepaper already took a real v3.0→v4.1 industry refresh via #168/#173 without a rebuild, invalidating #161's "delta too large to patch" premise. This lands the acceptance-criteria items that were still genuinely missing (the named principle, the distribution/operation distinction, the capability-detection framing) as a patch, not a rewrite. Not claimed as done: a general session-start capability-detection probe — the whitepaper is explicit that every instance cited was found by breaking first, not by a check that ran ahead of time.
