@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [5.1.2] - 2026-08-04T18:06:34-05:00
+
+### Added
+- Archive the dispatch-restoration swarm artifacts under `docs/swarm-reports/2026-08-04-1804-dispatch-restoration/` — validation report, review report, scout report, and PR body for the v5.1.1 fix of #181/#182.
+
+  The scout report is the part worth keeping. It records that both fatal dispatch bugs shipped through a fully green test suite, why no self-consistency check could have caught either (the violated contract was Claude Code's, not PDS's — PDS was internally coherent and completely non-functional at the same time), and the six patterns that generalize: an empty list in an error message is a filter signal rather than an absence; differential probing beats re-reading code; never accept a model's account of a tool result over the raw tool result; a *changed* error message is progress and often a second bug; verify the premise, not just the conclusion; and registering a hook can silently take ownership you didn't intend to accept.
+
+  Documentation only — no runtime, agent, hook, or skill behavior changes from 5.1.2. Everything functional in this line shipped in 5.1.1.
+
 ## [5.1.1] - 2026-08-04
 
 ### Fixed
