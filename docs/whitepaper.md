@@ -156,7 +156,7 @@ PDS distributes as a **Claude Code plugin** — a first-class extension mechanis
 
 **What a plugin provides:**
 - **Skills** (`skills/` directory): 24 workflow protocols in markdown format. Each skill is loaded on demand when invoked (e.g., `/pds:swarm`). Skills encode multi-step procedures that would bloat passive context if always present.
-- **Agents** (`agents/` directory): 8 role definitions with model selection, permission mode, tool access, and behavioral constraints. Agents are spawnable via the Task tool with type restrictions (`Task(pds:worker)`, `Task(pds:validator)`) — plugin agents carry the `pds:` namespace prefix.
+- **Agents** (`agents/` directory): 9 role definitions with model selection, permission mode, tool access, and behavioral constraints. Agents are spawnable via the Task tool with type restrictions (`Task(pds:worker)`, `Task(pds:validator)`) — plugin agents carry the `pds:` namespace prefix.
 - **Hooks** (`hooks/hooks.json`): Lifecycle event handlers that fire on specific Claude Code events. PDS uses hooks for quality gates (Stop, TaskCompleted, TeammateIdle), audit logging (WorktreeCreate, InstructionsLoaded), session setup (SessionStart), telemetry (PostToolUse), roster enforcement (SubagentStart), context management (PreCompact, PostCompact), and skill hints (UserPromptSubmit).
 - **MCP servers**: Tool integrations declared in the plugin manifest, available to agents based on role permissions.
 

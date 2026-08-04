@@ -19,6 +19,8 @@ jobs:
         run: bash hooks/tests/test-orchestrator-teardown-gate.sh
       - name: worktree hook tests
         run: bash hooks/tests/test-worktree-hooks.sh
+      - name: roster-check hook tests
+        run: bash hooks/tests/test-roster-check.sh
 
   dispatch-contract:
     # Static guards for the two bugs that have each, on their own, made every
@@ -34,6 +36,8 @@ jobs:
         run: python3 scripts/check-agent-roster.py .
       - name: WorktreeCreate hook returns a path
         run: bash hooks/tests/test-worktree-hooks.sh
+      - name: SubagentStart roster check handles pds: namespace
+        run: bash hooks/tests/test-roster-check.sh
       - name: install.sh static suite
         run: bash install.sh --test
 

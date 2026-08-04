@@ -35,7 +35,7 @@ Skills are loaded on demand when the user or agent invokes them, keeping context
 
 ### Agent
 
-An **agent** is a specialized role definition. Each agent has a model (which Claude version to use), a permission mode (what tools it can access), declared skills, and behavioral constraints defined in markdown. PDS provides 8 agents spanning core roles (orchestrator, researcher, worker, validator) and specialist roles (reviewer, documenter, scout, auditor).
+An **agent** is a specialized role definition. Each agent has a model (which Claude version to use), a permission mode (what tools it can access), declared skills, and behavioral constraints defined in markdown. PDS provides 9 agents spanning core roles (orchestrator, researcher, worker, validator), specialist roles (reviewer, documenter, scout, auditor), and the advisory shepherd.
 
 Agents are spawned via the Task tool with type restrictions — `Task(pds:worker)`, `Task(pds:validator)` — preventing unauthorized agent escalation. PDS agents ship in a plugin, so they register under the `pds:` namespace and the prefix is mandatory in both the allowlist and the spawn call.
 

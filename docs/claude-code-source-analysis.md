@@ -363,7 +363,7 @@ PDS is a Claude Code plugin. Understanding the plugin system tells us what we ca
 | Component | Mechanism | PDS Uses? |
 |-----------|-----------|-----------|
 | **Skills** | Markdown files in `skills/` directory | Yes — 18 skills |
-| **Agents** | Markdown files in `agents/` directory | Yes — 8 agents |
+| **Agents** | Markdown files in `agents/` directory | Yes — 9 agents |
 | **Hooks** | `hooks.json` file | Yes — 6 events |
 | **MCP servers** | MCP config in manifest | No |
 | **Settings overlay** | Plugin-scoped settings | Partially — env vars |
@@ -397,7 +397,7 @@ Skills are loaded lazily — only the frontmatter (name, description, whenToUse)
 When the model calls the `Agent` tool:
 
 1. `AgentTool.tsx` (234k) processes the request
-2. If `subagent_type` matches a defined agent (PDS's 8 agents, or built-in types like `Explore`, `Plan`), that agent's definition is loaded
+2. If `subagent_type` matches a defined agent (PDS's 9 agents — namespaced `pds:<name>`, since they ship in a plugin — or built-in types like `Explore`, `Plan`), that agent's definition is loaded
 3. `runAgent.ts` (36k) forks a new Claude Code subprocess
 4. The child process gets:
    - Its own system prompt (from agent definition's `getSystemPrompt()`)

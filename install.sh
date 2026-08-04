@@ -703,6 +703,7 @@ run_tests() {
   # worktree creation from Claude Code. If it doesn't create one and print its
   # path, every worktree-isolated agent (pds:worker) fails to spawn.
   assert "worktree hooks honor contract" bash "$SRC_DIR/hooks/tests/test-worktree-hooks.sh"
+  assert "roster-check hook namespaced" bash "$SRC_DIR/hooks/tests/test-roster-check.sh"
 
   echo ""
 
