@@ -32,6 +32,8 @@ If no tier is specified, the Phase 1 orchestrator MUST run `/pds:grill` first to
 
 The orchestrator has `TaskCreate`, `Task(worker)`, `SendMessage`, and other coordination tools. The main conversation does not — delegation is required. The team is implicit (one per session, formed on first spawn); there is no TeamCreate/TeamDelete (removed at CC v2.1.178).
 
+**Named-teammate constraint (confirmed, #171).** The orchestrator above is spawned *as a named teammate* (`name="orchestrator"`). A teammate cannot spawn further named teammates — "the team roster is flat" is the platform's own error text for it. This means every worker/validator/reviewer/etc. spawn below must **omit `name=`** and capture the returned `agent_id` for addressing instead, or — preferred, see Phase 3 — use task-mediated coordination and skip agent-addressed messaging entirely. Examples below already reflect this; do not add `name=` back in when adapting them.
+
 Everything below is written for the orchestrator.
 
 ## Swarm Tiers
@@ -93,13 +95,17 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
 4. **Find or create the GitHub ticket.** Run `/pds:ticket` to search for an existing issue matching this task; create one if none, resolve ambiguity via `AskUserQuestion` if multiple match. Write the issue number to `.claude/swarm/ticket`. Ticket body contains plan + acceptance criteria checklist. If `gh` is unavailable or there's no GitHub remote, warn and proceed without a ticket — note it in `scout-report.md` at Phase 6. See `/pds:ticket` for the full protocol.
 5. **Spawn shepherd (med/heavy only, after grill).** After the grill completes and you know the tier is med or heavy, spawn the shepherd agent to walk the ticket alongside workers through Phases 2-6:
    ```
-   Task(shepherd, team_name=team_name, name="shepherd",
+   shepherd = Task(shepherd, team_name=team_name,
         model="opus",
         prompt="Walk this ticket. Reference corpus: docs/whitepaper.md, docs/philosophy.md, docs/ethos.md, CLAUDE.md, skills/swarm/SKILL.md, .claude/shepherd-journal.md. Tier: <tier>. Plan context: see .claude/swarm/context.md once Phase 2 writes it. Respond to substance questions via SendMessage. Flag observed drift proactively. Write to journal continuously and on teardown.")
    ```
+   No `name=` — the orchestrator is itself a named teammate and cannot spawn further named teammates (see the constraint note near the top of this skill). Record `shepherd.agent_id` in `.claude/swarm/checkpoint.json` so later phases can address it.
+
    **Do NOT spawn shepherd at lite tier** — keeps lite cheap. Workers at lite tier invoke `advisor_consult` directly for substance questions.
 
    The shepherd reads its reference corpus on spawn, notes its arrival to the orchestrator via SendMessage, and enters steady state. It is single-instance per swarm — if one is already active, skip this step.
+
+   **This step is not guaranteed to run (#158).** In the two-phase delegation pattern, the Phase-1-only orchestrator's prompt says "do NOT proceed to decomposition" — that framing has caused this step to get skipped as "Phase 2+ work," and the Phase-2+ orchestrator's own prompt ("Execute Phases 2-6") never revisits Phase 1's step list to catch the gap. Don't rely on this step alone — Phase 3 step 1 below re-checks and spawns if this didn't happen.
 
 6. **If spawned as Phase 1 only** (plan prompt): Return the plan + criteria + tier. The parent handles human approval and spawns a Phase 2+ orchestrator.
    **If spawned with pre-approval** (full execution prompt): Proceed directly to Phase 2.
@@ -133,39 +139,41 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
 
 ## Phase 3: Dispatch
 
-1. Read tier from `.claude/swarm/tier`. Spawn workers with tier-appropriate model overrides — the team is implicit and forms on the first `Task(...)` spawn below, nothing to create (`team_name` is accepted but ignored: one session-scoped team):
+**Hard rule (#158).** The orchestrator MUST NOT own implementation tasks. Set `owner` on every task to a worker's `agent_id`, spawned via `Task(worker, ...)` below. If you find yourself editing application code directly instead of dispatching a worker, stop — you are violating the dispatch contract, regardless of how foundational or "easier to just do" the task feels (this includes greenfield/bootstrap work).
+
+0. **Shepherd checkpoint (med/heavy only).** Before spawning workers, confirm the shepherd is active. If tier is med or heavy and no shepherd has responded with its arrival message yet, spawn it now using the exact call from Phase 1 step 5 — do not assume Phase 1 already handled it (see the note there). This is the guaranteed checkpoint; treat Phase 1's attempt as best-effort, this one as required.
+1. Read tier from `.claude/swarm/tier`. Spawn workers with tier-appropriate model overrides — the team is implicit and forms on the first `Task(...)` spawn below, nothing to create (`team_name` is accepted but ignored: one session-scoped team). **Do not pass `name=`** — the orchestrator is itself a named teammate and cannot spawn further named teammates (see the constraint note above). Capture the spawn's returned `agent_id` instead, and record it against the task so it's addressable later:
    ```
    # Lite — haiku workers
-   Task(worker, team_name="project-name", name="worker-auth",
+   worker_1 = Task(worker, team_name="project-name",
         model="haiku",
         prompt="Implement auth module per task description. Run /pds:verify before reporting done.")
+   TaskUpdate(taskId="1", owner=worker_1.agent_id, status="in_progress")
 
    # Med — no model override needed (sonnet is the agent default)
-   Task(worker, team_name="project-name", name="worker-auth",
+   worker_1 = Task(worker, team_name="project-name",
         prompt="Implement auth module per task description. Run /pds:verify before reporting done.")
+   TaskUpdate(taskId="1", owner=worker_1.agent_id, status="in_progress")
 
    # Heavy — workers stay sonnet (no override), but use more workers for parallelism
    ```
    Use `Task(validator)` for validation tasks, `Task(researcher)` for research, etc. The typed syntax restricts which agent definitions can fulfill the spawn. Always pass the tier-appropriate `model` override — see the Swarm Tiers table above.
 
    **Worktree isolation:** If workers will edit overlapping files, spawn them with `isolation: "worktree"` so each gets an isolated copy of the repo. If workers touch non-overlapping files (different modules/skills), they can share the current worktree — but document the boundary in each worker's prompt to prevent collisions.
-2. Assign initial tasks to workers:
-   ```
-   TaskUpdate(taskId="1", owner="worker-auth", status="in_progress")
-   ```
+2. **Prefer task-mediated coordination over agent-addressed messaging.** Put the full contract — requirements, acceptance criteria, dependencies — in the task's `description` field via `TaskCreate`, and let workers self-claim from `TaskList` rather than routing coordination through `SendMessage` by name. This is naming-independent (survives the constraint above without friction) and is the pattern to reach for first; `SendMessage(agent_id=...)` is for genuine blockers, not routine coordination.
 3. Workers implement autonomously using a **pull model**:
    - Read task via `TaskGet` for requirements and acceptance criteria
    - Implement, commit frequently
-   - Use `SendMessage` for cross-agent coordination or to report blockers
-   - For **substance questions** (design, trade-offs, principle-checks), SendMessage the **shepherd** (med/heavy) or invoke `advisor_consult` (lite or shepherd down)
-   - For **graph questions** (dispatch, dependencies, phase state), SendMessage the **orchestrator**
+   - Use `SendMessage(agent_id=...)` for genuine blockers only — not routine coordination, which the task description + `TaskList` already carries
+   - For **substance questions** (design, trade-offs, principle-checks), `SendMessage` the **shepherd**'s `agent_id` (med/heavy) or invoke `advisor_consult` directly (lite tier, or med/heavy when the shepherd is unavailable — not spawned, idle past its health timeout, or already shut down)
+   - For **graph questions** (dispatch, dependencies, phase state), `SendMessage` the **orchestrator**'s `agent_id`
    - Run `/pds:verify` before declaring done
    - Mark task completed: `TaskUpdate(taskId="1", status="completed")`
    - Check `TaskList` and **self-claim** next unblocked task (prefer lowest ID)
    - Create new tasks via `TaskCreate` if they discover additional work
 4. **Monitor and backpressure.** Check progress via `TaskList`. On `TeammateIdle` events:
    - Check `TaskGet` first — if the agent awaits a blocked dependency, no action needed
-   - If the agent has an unblocked task and is idle, send a `SendMessage` to re-activate
+   - If the agent has an unblocked task and is idle, `SendMessage(agent_id=...)` (from the task's `owner` field) to re-activate
    - **Health timeout**: default is 2x the task's estimated turns. On first timeout, send a warning via `SendMessage`. On second timeout, use `TaskStop` and reassign the task
    - If 3+ workers are idle simultaneously with blocked tasks, the bottleneck task may need decomposition or priority escalation
 5. **Shepherd is idle-resilient.** The shepherd spawned in Phase 1 continues to respond to SendMessage during Phase 3 and later. If the shepherd goes idle with no traffic, that's normal — proactive flagging is evidence-based, not scheduled. The shepherd will log observations as they accrue.
@@ -178,10 +186,11 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
 1. Workers run `/pds:verify` (self-check) before reporting task complete.
 2. **Pipeline validation** — spawn the validator when the FIRST task completes (don't wait for all workers):
    ```
-   Task(validator, team_name="project-name", name="validator",
+   validator = Task(validator, team_name="project-name",
         prompt="Check TaskList for completed tasks. Merge branches as they complete, run tests
                 incrementally. Write structured report to .claude/swarm/validation-report.md.")
    ```
+   No `name=` (see the constraint note near the top of this skill) — capture `validator.agent_id` if you need to address it directly; prefer reading its progress via `TaskList`/the report file.
 3. The validator monitors `TaskList` continuously, merges and tests incrementally. The report must include these JSON-checkable fields:
    - `merge_status`: `"merged" | "conflict" | "failed"` per branch
    - `test_counts`: `{ "total": N, "passed": N, "failed": N, "skipped": N }`
@@ -201,30 +210,46 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
 1. **Parallel `/finish`.** Run `/pds:finish` on each task branch simultaneously — each branch gets its own finish (rebase, clean history, post-rebase tests) in parallel. Wait for all to complete before proceeding.
 2. **Med/Heavy tier**: Spawn a reviewer for pre-human code review:
    ```
-   Task(reviewer, team_name="project-name", name="reviewer",
+   reviewer = Task(reviewer, team_name="project-name",
         model="<tier-model>",
         prompt="Review the diff against acceptance criteria from Phase 1. Send your review report via SendMessage when done.")
    ```
-   Tier models — med: omit `model` (sonnet default). Heavy: `model="opus"`.
+   No `name=` — capture `reviewer.agent_id` if a direct nudge is needed. Tier models — med: omit `model` (sonnet default). Heavy: `model="opus"`.
    Write reviewer report to `.claude/swarm/review-report.md` after receiving it via SendMessage.
 
    **Lite tier**: Orchestrator performs a lightweight diff review and writes `.claude/swarm/review-report.md` directly (no reviewer spawn). The PR gate checks file existence, not authorship.
 3. `.claude/swarm/review-report.md` is **required** — PR gate checks for this file regardless of tier.
 4. **Med/Heavy tier**: Spawn a documenter if user-facing docs are affected:
    ```
-   Task(documenter, team_name="project-name", name="documenter",
+   documenter = Task(documenter, team_name="project-name",
         prompt="Update docs for the changes in this PR. Send summary via SendMessage when done.")
    ```
+   No `name=` — capture `documenter.agent_id` if a direct nudge is needed.
 5. **Human approval gate.** Present the consolidated package before creating the PR:
    ```
    ExitPlanMode(plan="## Proposed Merge\n<diff summary>\n\n## Validation\n<key results from validation-report.md>\n\n## Review\n<key findings from review-report.md>")
    ```
    The parent responds with `plan_approval_response`. On approval, create PR. On rejection, return to earlier phases as directed.
-6. Create PR with full context. **Include `Closes #<ticket-num>`** in the PR body if a ticket exists (read from `.claude/swarm/ticket`):
+6. Create PR with full context. **Include `Closes #<ticket-num>`** in the PR body if a ticket exists (read from `.claude/swarm/ticket`). **Compose the body and create the PR as two separate Bash calls, not one chained call (#172):** the PR gate's block voids the *entire* Bash command it fires on — if you compose the body via a heredoc and call `gh pr create` in the same invocation, a block (e.g. artifacts genuinely missing) discards the heredoc write too, and the composed body is gone, not just deferred. Write the body first, confirm the file exists, then create the PR:
    ```bash
-   gh pr create --title "feat: ..." --body "## Summary\n...\n## Acceptance Criteria\n...\n## Validation\n...\n## Issues\n...\n\nCloses #<ticket-num>"
+   # Call 1 — compose the body to a file
+   cat > /tmp/pr-body.md << 'EOF'
+   ## Summary
+   ...
+   ## Acceptance Criteria
+   ...
+   ## Validation
+   ...
+   ## Issues
+   ...
+
+   Closes #<ticket-num>
+   EOF
+
+   # Call 2 — separate invocation, only after confirming the file exists
+   gh pr create --title "feat: ..." --body-file /tmp/pr-body.md
    ```
-   **Note:** The PR gate blocks `gh pr create` unless phase is `consolidate`+ AND both `validation-report.md` and `review-report.md` exist.
+   **Note:** The PR gate blocks `gh pr create` unless phase is `consolidate`+ AND both `validation-report.md` and `review-report.md` exist. If blocked, the gate's message states explicitly whether a chained write in the same call was also discarded.
 7. **Comment on ticket** (if one exists) linking the PR: `gh issue comment <ticket-num> --body "PR opened: <pr-url>"`. See `/pds:ticket`.
 8. **Do not merge.** The PR is the human gate. The orchestrator creates the PR and reports it — the human merges after review.
 
@@ -294,16 +319,17 @@ Landing approved PRs on the main branch:
 
 1. **Scout spawns before agent shutdown** — workers are still active so scout can query them for clarification:
    ```
-   Task(scout, team_name="project-name", name="scout",
+   scout = Task(scout, team_name="project-name",
         model="<tier-model>",
         prompt="Read .claude/instincts.md. Update counts for re-observed patterns. Propose new instincts. Flag high-confidence patterns for skill promotion. Run /pds:eval on skills exercised in this swarm. Compact .claude/shepherd-journal.md (keep 3 most recent swarms verbatim, digest older into Historical Digest, promote 3+-observation patterns to instincts). Distill key learnings: write 1-2 auto-memory entries (project or feedback type) capturing decisions that future sessions need, patterns worth remembering, and constraints discovered — skip anything derivable from code or git history. If telemetry exists, run scripts/detect-patterns.sh and scripts/efficiency-chart.sh — include pattern results and efficiency ratio in the report. Permission audit: read .claude/settings.local.json and .claude/settings.json — identify glob-style allow patterns in local that should be promoted to project-level settings (exclude one-off paths). Write a '### Permission Promotions' section in the report. Write report to .claude/swarm/scout-report.md. Send summary via SendMessage when done.")
    ```
-   Tier models — lite: `model="haiku"` (default). Med: omit (haiku default). Heavy: `model="sonnet"`.
+   No `name=` — capture `scout.agent_id` for the shutdown message in step 9. Tier models — lite: `model="haiku"` (default). Med: omit (haiku default). Heavy: `model="sonnet"`.
 2. **Heavy tier only**: Spawn auditor for tech debt scan:
    ```
-   Task(auditor, team_name="project-name", name="auditor",
+   auditor = Task(auditor, team_name="project-name",
         prompt="Scan the codebase for tech debt, missing tests, and inconsistencies. File findings as GitHub issues. Send summary via SendMessage when done.")
    ```
+   No `name=` — capture `auditor.agent_id`.
 3. Scout writes report to `.claude/swarm/scout-report.md` **(required — the teardown gate checks for this file)**
 4. Scout updates observation counts, proposes new patterns, flags promotions (human-gated — new skill = new file = PR review). Scout also runs skill evals per `/pds:eval` and compacts `.claude/shepherd-journal.md`.
 5. **Memory distillation**: Before writing scout-report.md, scout distills key learnings into **1-2 auto-memory entries** (project or feedback type). Focus on:
@@ -313,16 +339,16 @@ Landing approved PRs on the main branch:
    - Skip anything derivable from code, git history, or existing CLAUDE.md
 6. **Telemetry analysis**: If `.claude/telemetry.jsonl` exists, scout runs `scripts/detect-patterns.sh` to detect usage patterns and proposes instinct entries for recurring patterns. Results appear in `### Telemetry-Detected Patterns` section of the scout report.
 7. **Permission audit**: Scout reads `.claude/settings.local.json` and `.claude/settings.json`. Identifies recurring allow patterns in local (e.g., `Bash(git add:*)`, `Bash(gh pr:*)`) that aren't already in project-level settings. Recommends promotions in a `### Permission Promotions` section of the scout report. One-off commands (specific file paths, session artifacts) are excluded. Only glob-style patterns (`Bash(git *:*)`, `Bash(gh *:*)`, tool names) qualify for promotion.
-8. **Shepherd teardown.** If a shepherd was spawned (med/heavy), send shutdown after scout completes and before ending the swarm:
+8. **Shepherd teardown.** If a shepherd was spawned (med/heavy), send shutdown after scout completes and before ending the swarm, addressed by the `agent_id` captured at spawn time (Phase 1 step 5):
    ```
-   SendMessage(type="shutdown_request", recipient="shepherd", content="Swarm complete, shutting down.")
+   SendMessage(type="shutdown_request", agent_id=shepherd.agent_id, content="Swarm complete, shutting down.")
    ```
    The shepherd marks its current swarm section `**Status**: graceful` in the journal and responds with `shutdown_response`. The `SubagentStop` hook (`hooks/scripts/shepherd-finalize.sh`) also fires on abort paths, so the journal is finalized even if shutdown is interrupted.
-9. **Shutdown all remaining agents** after scout, auditor, and shepherd complete:
+9. **Shutdown all remaining agents** after scout, auditor, and shepherd complete, addressed by each one's captured `agent_id`:
    ```
-   SendMessage(type="shutdown_request", recipient="worker-auth", content="Work complete, shutting down.")
-   SendMessage(type="shutdown_request", recipient="validator", content="Work complete, shutting down.")
-   # ... for each active agent
+   SendMessage(type="shutdown_request", agent_id=worker_1.agent_id, content="Work complete, shutting down.")
+   SendMessage(type="shutdown_request", agent_id=validator.agent_id, content="Work complete, shutting down.")
+   # ... for each active agent, using the agent_id captured at its spawn
    ```
    Wait for `shutdown_response` from each agent before proceeding. **This is now the only safeguard against tearing down while agents are still active** — team cleanup is automatic on session end, so there is no `TeamDelete` call left to mechanically fail if a shutdown was skipped. Do not skip this step because it "used to be enforced" by the tool; it is the enforcement now.
 10. **Complete the swarm.** There is no explicit teardown call — team cleanup happens automatically when this session ends. This agent's `Stop` hook (`orchestrator-teardown-gate.sh`) gates the stop itself: it blocks with a reason (and this agent's turn continues, unblocked, to address it) unless phase is `knowledge` AND all 3 reports exist AND `.worktrees/` is clean AND `docs/swarm-reports/` exists. Finish the cleanup sub-phase below, then let this turn end normally.

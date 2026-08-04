@@ -67,9 +67,11 @@ The phase file is enforced by the PR gate and the teardown gate (defense-in-dept
 
 ## Dispatch Workflow
 
+**Named-teammate constraint (#171):** this orchestrator is itself a named teammate — a teammate cannot spawn further named teammates ("the team roster is flat"). Omit `name=` on every spawn below; capture the returned `agent_id` if direct addressing is needed, and prefer task-mediated coordination (contract in the task description, workers self-claim via `TaskList`) over agent-addressed messaging for routine coordination.
+
 1. Create tasks: `TaskCreate(subject="...", description="...", activeForm="...")`
-2. Spawn workers: `Task(worker, name="worker-1", prompt="...")` — the team forms automatically on this first spawn. `team_name` is accepted but ignored (one implicit team per session, session-derived name).
-3. Assign initial tasks: `TaskUpdate(taskId="1", owner="worker-1", status="in_progress")`
+2. Spawn workers: `worker_1 = Task(worker, team_name="...", prompt="...")` — the team forms automatically on this first spawn. `team_name` is accepted but ignored (one implicit team per session, session-derived name).
+3. Assign initial tasks: `TaskUpdate(taskId="1", owner=worker_1.agent_id, status="in_progress")`
 4. Workers self-claim unblocked tasks after completing each one
 5. Monitor: `TaskList` for progress
 
