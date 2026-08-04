@@ -15,6 +15,19 @@ case "$COMMAND" in
   *) exit 0 ;;
 esac
 
+# #172 — a block below voids the WHOLE Bash command, not just the
+# `gh pr create` portion. If this call also composed a PR body (heredoc,
+# `&&`-chained write, etc.) in the same invocation, that write never
+# happened either — say so explicitly in every block message below, or the
+# orchestrator discovers the missing file separately and has to
+# reconstruct the body from scratch.
+LOST_WRITE_NOTE=""
+case "$COMMAND" in
+  *'<<'*|*'&&'*|*';'*)
+    LOST_WRITE_NOTE="\nNote: this call chained other commands (e.g. a heredoc body write) before 'gh pr create' — those did NOT run either. Compose the PR body in its own Bash call, confirm the file exists, then call 'gh pr create --body-file' separately."
+    ;;
+esac
+
 CWD=$(echo "$INPUT" | jq -r '.cwd // empty')
 if [ -z "$CWD" ]; then
   exit 0
@@ -31,23 +44,23 @@ fi
 KNOWN_PHASES="plan decompose dispatch validate consolidate knowledge"
 if [ -f "$SWARM_DIR/phase" ]; then
   PHASE=$(tr -d '[:space:]' < "$SWARM_DIR/phase" 2>/dev/null) || {
-    printf "BLOCKED: Cannot read .claude/swarm/phase — check file permissions." >&2
+    printf "[PDS GATE] BLOCKED: Cannot read .claude/swarm/phase — check file permissions." >&2
     exit 2
   }
   if [ -z "$PHASE" ]; then
-    printf "BLOCKED: .claude/swarm/phase is empty. Write the current phase name and retry." >&2
+    printf "[PDS GATE] BLOCKED: .claude/swarm/phase is empty. Write the current phase name and retry." >&2
     exit 2
   fi
   if ! echo "$KNOWN_PHASES" | grep -qw "$PHASE"; then
-    printf "BLOCKED: Unrecognized phase '%s' in .claude/swarm/phase.\nValid phases: %s" "$PHASE" "$KNOWN_PHASES" >&2
+    printf "[PDS GATE] BLOCKED: Unrecognized phase '%s' in .claude/swarm/phase.\nValid phases: %s" "$PHASE" "$KNOWN_PHASES" >&2
     exit 2
   fi
   if [[ "$PHASE" != "consolidate" && "$PHASE" != "knowledge" ]]; then
-    printf "BLOCKED: Cannot create PR in phase '%s' — advance to 'consolidate' first." "$PHASE" >&2
+    printf "[PDS GATE] BLOCKED: Cannot create PR in phase '%s' — advance to 'consolidate' first.%b" "$PHASE" "$LOST_WRITE_NOTE" >&2
     exit 2
   fi
 else
-  printf "WARNING: .claude/swarm/phase missing — phase gate bypassed, falling through to artifact checks.\n" >&2
+  printf "[PDS GATE] WARNING: .claude/swarm/phase missing — phase gate bypassed, falling through to artifact checks.\n" >&2
 fi
 
 MISSING=""
@@ -61,7 +74,7 @@ if [ ! -f "$SWARM_DIR/review-report.md" ]; then
 fi
 
 if [ -n "$MISSING" ]; then
-  printf "BLOCKED: Cannot create PR — missing required phase artifacts:\n%b\nComplete Phase 4 (validation) and Phase 5 (review) before creating a PR." "$MISSING" >&2
+  printf "[PDS GATE] BLOCKED: Cannot create PR — missing required phase artifacts:\n%b\nComplete Phase 4 (validation) and Phase 5 (review) before creating a PR.%b" "$MISSING" "$LOST_WRITE_NOTE" >&2
   exit 2
 fi
 
