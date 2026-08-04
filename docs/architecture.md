@@ -424,7 +424,7 @@ Orchestrator runs /pds:grill:
 ```
 .claude/swarm/phase → "dispatch"
 
-First Task(worker) spawn → team forms automatically → ~/.claude/teams/session-<id>/config.json
+First Task(worker) spawn → team forms automatically (implicit per-session; no `TeamCreate` call — removed at v2.1.178, `team_name` param accepted-but-ignored) → ~/.claude/teams/session-<id>/config.json
 TaskCreate → ~/.claude/tasks/session-<id>/<task-id>.json (per task)
 
 Worker spawns:

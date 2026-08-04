@@ -186,7 +186,7 @@ Lite = routine work (1-2 workers, orchestrator self-reviews). Med = serious work
 Agents coordinate via native Claude Code tools:
 - **TaskCreate/TaskUpdate** — Task definition, status tracking, and dependencies
 - **SendMessage** — Direct and broadcast communication between agents
-- **Automatic team formation** — a team forms with a shared task list on the first teammate spawn; no explicit setup call (Claude Code v2.1.178+)
+- **Implicit team** — one team per session; forms automatically with a shared task list on the first teammate spawn, no explicit `TeamCreate`/`TeamDelete` call (both removed as Claude Code tools in v2.1.178+)
 
 Agent spawning uses typed syntax — `Task(worker)`, `Task(validator)` — which restricts which agent definitions can fulfill the spawn. This prevents unauthorized agent escalation (e.g., a worker cannot spawn an orchestrator).
 
@@ -205,7 +205,7 @@ Claude Code provides 28 hook lifecycle events. PDS subscribes to the following:
 
 `PermissionRequest` (LLM-as-judge routing for subagent requests) was removed in v4.6.0 — static deny rules and the OS-level sandbox now cover the same ground without the LLM-as-judge overhead.
 
-Additionally, the orchestrator uses a **PreToolUse** hook for the PR gate (blocking `gh pr create` unless required artifacts exist) and a **Stop** hook for the teardown gate (blocking the orchestrator's own stop while phase = `knowledge` unless all phase artifacts exist — `TeamCreate`/`TeamDelete` no longer exist as tools, so there's no dedicated teardown call left to gate).
+Additionally, the orchestrator uses a **PreToolUse** hook for the PR gate (blocking `gh pr create` unless required artifacts exist) and a **Stop** hook for the teardown gate (blocking the orchestrator's own stop while phase = `knowledge` unless all phase artifacts exist — `TeamCreate`/`TeamDelete` no longer exist as tools, so there's no dedicated teardown call left to gate). Teams are implicit per-session and dissolve automatically at session end.
 
 HTTP hooks (available since Claude Code 2.1.63) allow PDS quality gates to call external services for policy enforcement when needed.
 

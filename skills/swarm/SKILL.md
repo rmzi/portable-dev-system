@@ -30,7 +30,7 @@ Agent(subagent_type="pds:orchestrator", name="orchestrator",
 
 If no tier is specified, the Phase 1 orchestrator MUST run `/pds:grill` first to determine the tier. Grill is mandatory before any swarm — it validates requirements AND recommends a tier.
 
-The orchestrator has `TaskCreate`, `Task(worker)`, `SendMessage`, and other coordination tools. The main conversation does not — delegation is required.
+The orchestrator has `TaskCreate`, `Task(worker)`, `SendMessage`, and other coordination tools. The main conversation does not — delegation is required. The team is implicit (one per session, formed on first spawn); there is no TeamCreate/TeamDelete (removed at CC v2.1.178).
 
 **Named-teammate constraint (confirmed, #171).** The orchestrator above is spawned *as a named teammate* (`name="orchestrator"`). A teammate cannot spawn further named teammates — "the team roster is flat" is the platform's own error text for it. This means every worker/validator/reviewer/etc. spawn below must **omit `name=`** and capture the returned `agent_id` for addressing instead, or — preferred, see Phase 3 — use task-mediated coordination and skip agent-addressed messaging entirely. Examples below already reflect this; do not add `name=` back in when adapting them.
 
@@ -142,7 +142,7 @@ Advance by writing the next phase name (`echo "X" > .claude/swarm/phase`) as the
 **Hard rule (#158).** The orchestrator MUST NOT own implementation tasks. Set `owner` on every task to a worker's `agent_id`, spawned via `Task(worker, ...)` below. If you find yourself editing application code directly instead of dispatching a worker, stop — you are violating the dispatch contract, regardless of how foundational or "easier to just do" the task feels (this includes greenfield/bootstrap work).
 
 0. **Shepherd checkpoint (med/heavy only).** Before spawning workers, confirm the shepherd is active. If tier is med or heavy and no shepherd has responded with its arrival message yet, spawn it now using the exact call from Phase 1 step 5 — do not assume Phase 1 already handled it (see the note there). This is the guaranteed checkpoint; treat Phase 1's attempt as best-effort, this one as required.
-1. Read tier from `.claude/swarm/tier`. Spawn workers with tier-appropriate model overrides — team formation is automatic on the first teammate spawn below, no explicit create call. **Do not pass `name=`** — the orchestrator is itself a named teammate and cannot spawn further named teammates (see the constraint note above). Capture the spawn's returned `agent_id` instead, and record it against the task so it's addressable later:
+1. Read tier from `.claude/swarm/tier`. Spawn workers with tier-appropriate model overrides — the team is implicit and forms on the first `Task(...)` spawn below, nothing to create (`team_name` is accepted but ignored: one session-scoped team). **Do not pass `name=`** — the orchestrator is itself a named teammate and cannot spawn further named teammates (see the constraint note above). Capture the spawn's returned `agent_id` instead, and record it against the task so it's addressable later:
    ```
    # Lite — haiku workers
    worker_1 = Task(worker, team_name="project-name",

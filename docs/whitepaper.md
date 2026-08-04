@@ -106,7 +106,7 @@ The orchestrator writes the reviewer's report to `.claude/swarm/review-report.md
 
 Before merging, the orchestrator reviews what happened: patterns emerged, architectural decisions made, unexpected challenges. A **scout** agent analyzes the completed swarm for meta-improvements — workflow optimizations, skill gaps, configuration updates. The scout writes its report to `.claude/swarm/scout-report.md` and can access cross-session memory via claude-mem MCP tools (when available) to enrich analysis with historical context.
 
-A `Stop` hook on the orchestrator blocks the swarm from ending while phase = `knowledge` unless all three phase artifacts exist (validation, review, scout reports), plus a clean `.worktrees/` and an existing `docs/swarm-reports/`. This ensures no phase is skipped during swarm completion.
+A `Stop` hook on the orchestrator blocks the swarm from ending while phase = `knowledge` unless all three phase artifacts exist (validation, review, scout reports), plus a clean `.worktrees/` and an existing `docs/swarm-reports/`. Because teams are implicit per-session (TeamCreate/TeamDelete were removed at v2.1.178) and dissolve at session end, this gate guards the pre-cleanup boundary rather than an explicit teardown call — ensuring no phase is skipped during swarm completion.
 
 **Implemented:** This gate was formerly a `PreToolUse` hook bound to the `TeamDelete` tool call. `TeamCreate` and `TeamDelete` were removed as Claude Code tools in v2.1.178 — team formation and cleanup are now automatic, so there was no tool call left to gate. The gate is now an orchestrator-scoped `Stop` hook (`orchestrator-teardown-gate.sh`): it passes through unconditionally at every phase before `knowledge` (a normal mid-swarm handoff — e.g. a Phase-1-only orchestrator returning a plan for human approval — not a teardown attempt), and runs the full artifact/worktree/archive check only once phase reaches `knowledge`. The `TeamDelete` call's other guarantee — failing outright if agents were still active — has no mechanical replacement; that safeguard is now instruction-only (the orchestrator's `SendMessage(shutdown_request)` protocol, awaited before it lets its own turn end), a named reduction in defense-in-depth. Confirmed directly against Claude Code's hooks documentation: `Stop` hooks receive the same `cwd`-bearing JSON payload `PreToolUse` hooks do, support the same exit-code-2 blocking, and multiple `Stop` hooks (a global plugin-level one plus this agent-scoped one) compose as AND — neither silently overrides the other. See `docs/adr/0007-teardown-gate-migration-from-teamdelete-to-stop.md`. Not yet exercised: a full live swarm run through Phase 6 to observe the gate fire and block/allow correctly under real conditions — the mechanism is built and doc-verified, not yet runtime-verified.
 
@@ -120,7 +120,7 @@ An **auditor** agent may be spawned periodically (not per-swarm) to scan for tec
 
 Agents query the lexicon during future planning and execution, avoiding repeated mistakes and building on proven patterns [5].
 
-**Implemented:** The scout now spawns **before agent shutdown** — workers remain active so the scout can query them via `SendMessage` for clarification on decisions made during execution. The feedback loop is established: instincts captured or updated in Phase 6 are written to `.claude/instincts.md`, and Phase 1 explicitly loads this file into grill context at the start of the next swarm. Phase 6 also includes a **cleanup sub-phase** before the swarm ends: worktree deletion (`git worktree remove`), artifact archival to `docs/swarm-reports/<YYYY-MM-DD-HHmm>/`, state validation (all tasks completed, all branches merged), and merged branch deletion. Heavy tier spawns the auditor for a post-swarm tech debt scan. See Phase 6 in `/pds:swarm`.
+**Implemented:** The scout now spawns **before agent shutdown** — workers remain active so the scout can query them via `SendMessage` for clarification on decisions made during execution. The feedback loop is established: instincts captured or updated in Phase 6 are written to `.claude/instincts.md`, and Phase 1 explicitly loads this file into grill context at the start of the next swarm. Phase 6 also includes a **cleanup sub-phase** after agent shutdown and before the swarm ends (the implicit team dissolves at session end): worktree deletion (`git worktree remove`), artifact archival to `docs/swarm-reports/<YYYY-MM-DD-HHmm>/`, state validation (all tasks completed, all branches merged), and merged branch deletion. Heavy tier spawns the auditor for a post-swarm tech debt scan. See Phase 6 in `/pds:swarm`.
 
 ---
 
@@ -226,7 +226,7 @@ PDS layers six enforcement mechanisms, from OS-level sandboxing to human review:
 
 1. **OS-level sandbox** — Claude Code's native sandbox (Seatbelt on macOS, bubblewrap on Linux) confines Bash commands: filesystem writes are restricted to the working directory, network access is limited to an allowlist of domains. This is the hard floor — no prompt injection or agent confusion can bypass OS-level enforcement.
 2. **Static deny rules** — Pattern-matched rules in `settings.json` block credential paths, protected branches, sensitive files, and production patterns across all tools. Deny rules are evaluated before any permission mode logic and cannot be overridden.
-3. **Hook gates** — PreToolUse phase gates enforce SDLC transitions mechanically. A forward-only phase state machine (`.claude/swarm/phase`) tracks the current phase; gates validate both phase state and required artifacts. The orchestrator's PR gate blocks `gh pr create` unless phase >= `consolidate` and validation + review reports exist; its teardown gate — a `Stop` hook, since `TeamCreate`/`TeamDelete` no longer exist as tools — blocks the orchestrator from stopping while phase = `knowledge` unless all three phase artifacts exist. Phase checks are defense-in-depth — if the phase file is absent, gates fall through to artifact-only checks. SubagentStart hooks enforce the agent roster. HTTP hooks (Claude Code 2.1.63) allow quality gates to call external services for policy enforcement. Hooks receive `agent_id` and `agent_type` in all hook events (Claude Code 2.1.69), enabling agent-aware decisions. `WorktreeCreate`/`WorktreeRemove` hook events provide lifecycle gates for worktree operations. The validator's Stop hook uses an LLM evaluator to verify report completeness. `InstructionsLoaded` events let hooks audit which rule files are active at session start.
+3. **Hook gates** — PreToolUse phase gates enforce SDLC transitions mechanically. A forward-only phase state machine (`.claude/swarm/phase`) tracks the current phase; gates validate both phase state and required artifacts. The orchestrator's PR gate blocks `gh pr create` unless phase >= `consolidate` and validation + review reports exist; its teardown gate — a `Stop` hook, since `TeamCreate`/`TeamDelete` no longer exist as tools (removed at CC v2.1.178) — blocks the orchestrator from stopping while phase = `knowledge` unless all three phase artifacts exist. Teams are implicit per-session and dissolve at session end, so this gate guards the pre-teardown boundary. Phase checks are defense-in-depth — if the phase file is absent, gates fall through to artifact-only checks. SubagentStart hooks enforce the agent roster. HTTP hooks (Claude Code 2.1.63) allow quality gates to call external services for policy enforcement. Hooks receive `agent_id` and `agent_type` in all hook events (Claude Code 2.1.69), enabling agent-aware decisions. `WorktreeCreate`/`WorktreeRemove` hook events provide lifecycle gates for worktree operations. The validator's Stop hook uses an LLM evaluator to verify report completeness. `InstructionsLoaded` events let hooks audit which rule files are active at session start.
 4. **Agent prompt constraints** — Each agent's `.md` file defines role-specific boundaries ("read-only", "stay in your worktree", "does not fix code"). Shared behavioral rules (`shared-rules.md`) are inherited by all agents via `inherits:` frontmatter. This shared-rules pattern has a hidden benefit: agents with byte-identical system prompt prefixes get better prompt cache efficiency. Placing shared rules at the top of agent definitions maximizes the shared prefix, reducing per-agent cache warming cost across a swarm.
 5. **Permission modes** — `plan`, `acceptEdits`, `default`, and `auto` control which tools each agent type can access. Orchestrators declare which agent types they can spawn via `Task(agent_type)` restriction syntax, preventing unauthorized agent escalation. In auto mode, a Sonnet classifier evaluates each tool call — agent-declared modes are overridden, but deny rules, sandbox, and hook gates remain enforced.
 6. **The human gate** — All changes flow through PR review before reaching production.
@@ -252,7 +252,7 @@ This approach favors lightweight isolation over heavyweight containers. The sand
 
 Agents execute as native Claude Code teams — no containers, no file synchronization, no heavyweight orchestration.
 
-**Platform shift worth tracking:** `TeamCreate` and `TeamDelete` no longer exist as Claude Code tools, as of v2.1.178. Team formation and cleanup are now automatic — a team forms with a shared task list on the first teammate spawn, and tears down when the session ends. PDS's Phase 6 teardown gate, previously bound to the `TeamDelete` call, has been migrated to an orchestrator-scoped `Stop` hook in response — see Phase 6 above and `docs/adr/0007-teardown-gate-migration-from-teamdelete-to-stop.md`.
+**Implicit team** — since CC v2.1.178 a team is established automatically per session (one team, formed on the first `Task(...)` spawn; no `TeamCreate`/`TeamDelete`). It carries a shared task list the orchestrator uses to coordinate multiple agents working on related tasks, and tears down automatically when the session ends. PDS's Phase 6 teardown gate, previously bound to the `TeamDelete` call, has been migrated to an orchestrator-scoped `Stop` hook in response — see Phase 6 above and `docs/adr/0007-teardown-gate-migration-from-teamdelete-to-stop.md`.
 
 **TaskCreate** defines work units with dependencies, forming task DAGs. Workers can depend on each other's completion, enabling sophisticated workflows while maintaining clarity about execution order.
 
@@ -481,7 +481,7 @@ The terminal provides a powerful interface for multi-worktree workflows. Graphic
 - **yazi** or similar: Terminal file manager for worktree navigation
 - **neovim + telescope**: Editor with multi-worktree support
 
-Claude Code handles agent lifecycle natively through automatic team formation and the TaskCreate/Task tools. tmux and terminal tools enhance the developer's monitoring experience but are not required for agent orchestration.
+Claude Code handles agent lifecycle natively through automatic team formation (implicit per-session; `TeamCreate`/`TeamDelete` were removed at v2.1.178) and the Task/TaskCreate tools. tmux and terminal tools enhance the developer's monitoring experience but are not required for agent orchestration.
 
 ### Version Control
 
@@ -498,7 +498,7 @@ Each worktree needs dependencies. Prefer tools that make environment creation fa
 
 ### Agent Runtime
 
-**Claude Code** is the agent runtime. It provides the execution environment for agents: spawning (Task tool, with automatic team formation on first spawn), coordination (TaskCreate, SendMessage), isolation (worktree provisioning), permissions (sandbox, deny rules, hooks), and lifecycle management (agent start, stop, idle detection) [7].
+**Claude Code** is the agent runtime. It provides the execution environment for agents: spawning (Task tool, with automatic — implicit per-session — team formation on first spawn), coordination (TaskCreate, SendMessage), isolation (worktree provisioning), permissions (sandbox, deny rules, hooks), and lifecycle management (agent start, stop, idle detection) [7].
 
 Claude Code requires:
 - **Claude model access**: API key or organization account with Anthropic, Bedrock, Vertex, or Foundry
@@ -540,7 +540,7 @@ Parallel workers on local machines. Learn task decomposition and resource manage
 
 **Deliverable**: Each engineer completes three multi-agent tasks. Team documents best practices.
 
-**Achievable today** using Claude Code's native automatic team formation and TaskCreate/Task tools with PDS's swarm skill. Requires sufficient local compute for concurrent agents.
+**Achievable today** using Claude Code's native automatic team formation (implicit per-session teams) and TaskCreate/Task tools with PDS's swarm skill. Requires sufficient local compute for concurrent agents.
 
 ### Phase 3: Cloud Infrastructure
 
@@ -709,7 +709,7 @@ The main compaction uses the LLM itself to summarize old messages, creating a co
 
 Two questions, in order:
 
-1. **"Would an agent get *stuck* without this?"** Multi-step sequences where missing a step causes failure (shutdown → response → stop, plan approval response flow) must stay — even if they're native platform behavior documented elsewhere. The agent may never navigate to that documentation in time.
+1. **"Would an agent get *stuck* without this?"** Multi-step sequences where missing a step causes failure (shutdown request → response → Stop hook fires as the implicit team dissolves at session end, plan approval response flow) must stay — even if they're native platform behavior documented elsewhere. The agent may never navigate to that documentation in time.
 2. **"Would an agent behave *differently* without this?"** If the line changes agent behavior — or you're unsure — keep it. If it restates something the agent already knows from built-in tool documentation and can't cause a failure mode, cut it.
 
 ---
@@ -823,7 +823,7 @@ This is a living document. The model evolves with implementation experience, imp
 | Dependencies | pnpm | Node.js (efficient) |
 | Agent Runtime | Claude Code | Agent execution environment |
 | Agent Runtime | MCP servers | Tool integrations |
-| Agent Coordination | Automatic team formation | Team setup with shared task list, on first teammate spawn |
+| Agent Coordination | Implicit per-session team | Automatic team setup with shared task list, formed on first teammate spawn (no TeamCreate/TeamDelete since v2.1.178) |
 | Agent Coordination | TaskCreate/TaskUpdate | Task DAG management |
 | Agent Coordination | SendMessage | Inter-agent communication |
 | Agent Coordination | Task (worker) | Worker agent spawning |
@@ -904,6 +904,8 @@ This is a living document. The model evolves with implementation experience, imp
 **TaskCreate**: Tool for defining work units with dependencies, forming task DAGs.
 
 **TeamCreate**: Formerly a tool for establishing an agent team with shared task list and coordination; removed as a Claude Code tool in v2.1.178. Team formation is now automatic on the first teammate spawn — retained here as the concept, not a callable tool. See "Native Agent Teams."
+
+**Implicit team**: Since CC v2.1.178 an agent team with a shared task list is established automatically per session (formed on first spawn; the explicit `TeamCreate`/`TeamDelete` tools were removed).
 
 ---
 
