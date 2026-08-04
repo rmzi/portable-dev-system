@@ -705,6 +705,10 @@ run_tests() {
   assert "worktree hooks honor contract" bash "$SRC_DIR/hooks/tests/test-worktree-hooks.sh"
   assert "roster-check hook namespaced" bash "$SRC_DIR/hooks/tests/test-roster-check.sh"
 
+  # A malformed workflow file skips every CI job while reporting only
+  # "workflow file issue" — the suite looks green because it never ran.
+  assert "CI workflows are valid" python3 "$SRC_DIR/scripts/check-workflows.py" "$SRC_DIR"
+
   echo ""
 
   # --- Test 2: Skill namespace ---

@@ -32,11 +32,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: orchestrator spawn roster is pds:-namespaced and complete
+      - name: "workflow files are valid YAML"
+        run: python3 scripts/check-workflows.py .
+      - name: "orchestrator spawn roster is namespaced and complete"
         run: python3 scripts/check-agent-roster.py .
       - name: WorktreeCreate hook returns a path
         run: bash hooks/tests/test-worktree-hooks.sh
-      - name: SubagentStart roster check handles pds: namespace
+      - name: "SubagentStart roster check handles the pds namespace"
         run: bash hooks/tests/test-roster-check.sh
       - name: install.sh static suite
         run: bash install.sh --test
