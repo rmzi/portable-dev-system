@@ -29,6 +29,10 @@ curl -sfL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/instal
 
 Installs the plugin to `~/.claude/plugins/pds/` and security settings to `~/.claude/settings.json`.
 
+### Upgrading from v4.x?
+
+No file-layout changes — a normal plugin update is enough unless you've forked `agents/orchestrator.md` or the swarm/team skills. See [v5.0.0 Migration Guide](docs/migration-v5.md) for details.
+
 ### Upgrading from v3.x?
 
 Clean up old project-level files:
@@ -38,7 +42,7 @@ cd ~/your-project
 curl -sfL https://raw.githubusercontent.com/rmzi/portable-dev-system/main/install.sh | bash -s -- --cleanup
 ```
 
-See [Migration Guide](docs/migration-v4.md) for details.
+See [v4.0.0 Migration Guide](docs/migration-v4.md) for details.
 
 ### Requirements
 
@@ -168,7 +172,8 @@ Most projects need **zero local PDS files**. The plugin provides everything. Add
 
 | Doc | Purpose |
 |-----|---------|
-| [Migration Guide](docs/migration-v4.md) | Upgrading from v3.x |
+| [Migration Guide (v5)](docs/migration-v5.md) | Upgrading from v4.x |
+| [Migration Guide (v4)](docs/migration-v4.md) | Upgrading from v3.x |
 | [Philosophy](docs/philosophy.md) | Principles and motivation |
 | [Core Principles](docs/ethos.md) | The seven development principles |
 | [Team Setup](docs/teams.md) | Agent roster, permissions, team onboarding |
