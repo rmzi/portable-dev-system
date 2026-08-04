@@ -38,7 +38,8 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   _origin_url=$(git remote get-url origin 2>/dev/null)
   case "$_origin_url" in
     git@*|ssh://*)
-      SSH_REMOTE_WARNING=" SSH GIT REMOTE UNDER SANDBOX: origin uses SSH ($_origin_url) — this will fail under the sandbox (HTTP(S)-only proxy, cannot tunnel SSH). Switch to HTTPS with a credential helper (git remote set-url origin https://github.com/<org>/<repo>.git; gh auth setup-git) — but note this mitigates, not eliminates, sandboxed git failures: substantial fetches can still fail intermittently over HTTPS too. If a git/gh network command fails under the sandbox, retry it with the sandbox explicitly disabled for that command."
+      _https_url=$(echo "$_origin_url" | sed -E 's#^git@([^:]+):#https://\1/#; s#^ssh://git@#https://#')
+      SSH_REMOTE_WARNING=" ACTION NEEDED — SSH GIT REMOTE UNDER SANDBOX: origin uses SSH ($_origin_url), which fails deterministically under the sandbox (HTTP(S)-only proxy, cannot tunnel SSH — confirmed by direct testing, see docs/sandbox.md and issue #174). At the start of this session, ask the user via AskUserQuestion whether to fix it now: git remote set-url origin $_https_url && gh auth setup-git. This fully resolves the SSH failure. Note in the same prompt that a separate, rarer issue can still affect large HTTPS fetches under the sandbox (see docs/sandbox.md) — HTTPS is strictly better, not a complete guarantee. If the user declines, don't ask again this session."
       ;;
   esac
 fi
