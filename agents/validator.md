@@ -19,7 +19,7 @@ skills:
   - pds:verify
   - pds:swarm
 color: yellow
-maxTurns: 40
+maxTurns: 80
 hooks:
   Stop:
     - hooks:
