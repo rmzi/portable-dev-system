@@ -1,6 +1,6 @@
 # Agentic SDLC: A Technical Whitepaper
 
-**v4.1 | August 2026**
+**v4.2 | August 2026**
 
 ---
 
@@ -215,6 +215,23 @@ PDS is already more model-agnostic than Claude Code itself. The methodology (six
 This is a vision-forward strategy. Today, PDS runs on Claude Code and benefits from its deep Claude integration. The portable markdown/JSON layer means PDS could migrate to another runtime without rewriting its methodology — only the runtime adapter would change.
 
 This section is about portability — running the same methodology on a different generic harness. That's a distinct question from how much of the harness itself PDS should own; see "The Harness Layer: Where PDS Sits Today," below.
+
+### Portability of Operation
+
+LLM Independence is about **distribution** portability: can the methodology run on a different harness? A separate question, inside the harness PDS already runs on: does PDS assume a fixed toolset, agent roster, or state path, and break when the runtime doesn't match?
+
+It has, concretely, twice:
+
+- **The orchestrator's tool grants lagged its own skill's requirements.** `/pds:grill` was rewritten to require `AskUserQuestion` (every question) and `EnterPlanMode` (its Mode section), but `agents/orchestrator.md`'s `tools:` frontmatter granted neither, and `pds:grill` wasn't in its `skills:` list. Subagents only get tools explicitly named in frontmatter, so orchestrator-driven Phase 1 grill — mandatory before every swarm — had no way to ask a structured question. Direct `/pds:grill` from the main session was unaffected, because the top-level session isn't scoped by agent frontmatter; only orchestrator-driven grill broke, and quietly.
+- **`TeamCreate`/`TeamDelete` were removed as Claude Code tools** (v2.1.178). The Phase 6 teardown gate was a `PreToolUse` hook bound to `TeamDelete` — when the tool disappeared, the gate had nothing left to bind to, and enforcement went dark with no error. It's since been migrated to an orchestrator-scoped `Stop` hook (see Phase 6, above, and `docs/adr/0007`), but the gap between removal and migration is the failure mode this section names.
+
+Both are the same shape: PDS assumed a capability the platform no longer promised — a tool grant, a tool's existence — and had no mechanism to notice before an agent hit the gap mid-task. Neither was a Claude Code bug; both were PDS not checking its own assumptions against the runtime it was actually handed.
+
+**The principle** (see `/pds:ethos` #8): detect the runtime's capabilities before relying on them, and degrade gracefully when one is missing. A missing tool, agent type, or state path should narrow what an agent does — fall back, warn, ask for the human gate to widen — not fail silently mid-swarm.
+
+**Where this is already mechanism, not just principle:** the shepherd's `advisor_consult` MCP tool falls back to plain Opus if the advisor beta is unreachable, and returns a structured degraded response if `ANTHROPIC_API_KEY` is unset, rather than failing the consultation outright (see "The Shepherd," below). That is the pattern this section asks for, generalized: one capability check, one explicit fallback, at the point of use.
+
+**What doesn't exist yet:** a single session-start probe that enumerates available tools, agent types, and state paths and surfaces gaps before an agent relies on them. Every instance above was found by breaking first, not by a check that ran ahead of time. Naming the principle is what makes that check something contributors design for, rather than something the next capability removal discovers for them.
 
 ### Agent Isolation
 
@@ -906,6 +923,10 @@ This is a living document. The model evolves with implementation experience, imp
 **TeamCreate**: Formerly a tool for establishing an agent team with shared task list and coordination; removed as a Claude Code tool in v2.1.178. Team formation is now automatic on the first teammate spawn — retained here as the concept, not a callable tool. See "Native Agent Teams."
 
 **Implicit team**: Since CC v2.1.178 an agent team with a shared task list is established automatically per session (formed on first spawn; the explicit `TeamCreate`/`TeamDelete` tools were removed).
+
+**Distribution Portability**: Can PDS be installed on a given machine? Governed by the Portability Contract — markdown, bash, Python 3, `jq` only, no compiled artifacts. See `docs/philosophy.md`, "Portability Contract (Distribution)."
+
+**Portability of Operation**: `/pds:ethos` principle 8. Once running, does PDS detect the runtime's actual capabilities (tools, agent types, state paths) before relying on them, and degrade gracefully when one is missing — rather than hard-failing on an assumption the platform didn't promise. Distinct from distribution portability; see "Portability of Operation" above and `docs/philosophy.md`.
 
 ---
 
